@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  rifa-app:
+    container_name: rifa-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # We pass the env variables as build arguments
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    ports:
+      - "80:80"
+    restart: always

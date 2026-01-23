@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Search,
     LogOut,
     Trash2,
-    Phone,
-    CheckCircle,
-    Circle,
-    MapPin,
-    Calendar,
     IndianRupee,
     Clock,
     Package,
     FileText,
-    CreditCard,
-    ChevronRight,
     User,
-    Filter,
     Send
 } from 'lucide-react';
 import type { StoredInquiry } from './CustomOrder';

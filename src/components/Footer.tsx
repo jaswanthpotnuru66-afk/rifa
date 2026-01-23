@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Mail, MessageCircle, Heart } from 'lucide-react';
 
@@ -62,7 +61,7 @@ const Footer = () => {
                 <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
                     <p>&copy; {new Date().getFullYear()} Rifa Arts & Crafts. All rights reserved.</p>
                     <p className="flex items-center gap-1 mt-2 md:mt-0">
-                        Made with <Heart size={14} className="text-red-400 fill-red-400" /> 
+                        Made with <Heart size={14} className="text-red-400 fill-red-400" />
                         <Link to="/admin" className="ml-2 text-transparent hover:text-gray-300 transition-colors w-2 h-2 inline-block">.</Link>
                     </p>
                 </div>
