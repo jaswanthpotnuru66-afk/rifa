@@ -9,7 +9,10 @@ import {
     Package,
     FileText,
     User,
-    Send
+    Send,
+    ArrowLeft,
+    Menu,
+    X
 } from 'lucide-react';
 import type { StoredInquiry } from './CustomOrder';
 import { supabase } from '../lib/supabase';
@@ -223,26 +226,35 @@ const Admin = () => {
         <div className="fixed inset-0 top-[76px] bg-gray-100 flex flex-col overflow-hidden z-40">
 
             {/* Top Bar */}
-            <div className="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm z-10 font-sans">
-                <div className="flex items-center gap-4">
-                    <h1 className="font-serif text-xl font-bold text-gray-900">Rifa Admin</h1>
-                    <div className="h-6 w-px bg-gray-200"></div>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                        <Package size={14} /> {inquiries.length} Orders
+            <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex justify-between items-center shadow-sm z-10 font-sans">
+                <div className="flex items-center gap-3">
+                    {/* Mobile: Show Back button if details open, else show Menu icon (cosmetic or for future sidebar) */}
+                    {selectedId && (
+                        <button
+                            onClick={() => setSelectedId(null)}
+                            className="md:hidden p-1.5 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                    )}
+                    <h1 className="font-serif text-lg md:text-xl font-bold text-gray-900">Rifa Admin</h1>
+                    <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
+                    <span className="text-xs md:text-sm text-gray-500 flex items-center gap-1">
+                        <Package size={14} /> {inquiries.length} <span className="hidden md:inline">Orders</span>
                     </span>
                 </div>
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors text-sm font-medium"
+                    className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors text-xs md:text-sm font-medium"
                 >
-                    <LogOut size={16} /> Logout
+                    <LogOut size={16} /> <span className="hidden md:inline">Logout</span>
                 </button>
             </div>
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
 
-                {/* Sidebar List */}
-                <div className="w-full md:w-1/3 lg:w-1/4 bg-white border-r border-gray-200 flex flex-col z-0">
+                {/* Sidebar List - Hidden on mobile if detail selected */}
+                <div className={`w-full md:w-1/3 lg:w-1/4 bg-white border-r border-gray-200 flex flex-col z-0 transition-all ${selectedId ? 'hidden md:flex' : 'flex'}`}>
 
                     {/* Search & Filter */}
                     <div className="p-4 border-b border-gray-100 flex flex-col gap-3">
@@ -303,18 +315,26 @@ const Admin = () => {
                     </div>
                 </div>
 
-                {/* Main Content (Detail View) */}
-                <div className="flex-1 bg-gray-50 overflow-y-auto p-4 md:p-8 pb-20">
+                {/* Main Content (Detail View) - Hidden on mobile if no selection */}
+                <div className={`flex-1 bg-gray-50 overflow-y-auto p-4 md:p-8 pb-20 ${!selectedId ? 'hidden md:block' : 'block'}`}>
                     {selectedInquiry ? (
                         <div className="max-w-4xl mx-auto space-y-6">
 
                             {/* Header Actions */}
-                            <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200 gap-4">
                                 <div>
-                                    <h2 className="text-lg font-serif font-bold text-gray-900">Order Details</h2>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <button
+                                            onClick={() => setSelectedId(null)}
+                                            className="md:hidden p-1 -ml-1 text-gray-500"
+                                        >
+                                            <ArrowLeft size={18} />
+                                        </button>
+                                        <h2 className="text-lg font-serif font-bold text-gray-900">Order Details</h2>
+                                    </div>
                                     <p className="text-sm text-gray-500">ID: {selectedInquiry.id.slice(0, 8)}</p>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 w-full md:w-auto">
                                     <select
                                         value={selectedInquiry.status}
                                         onChange={(e) => updateInquiry(selectedInquiry.id, { status: e.target.value as any })}
