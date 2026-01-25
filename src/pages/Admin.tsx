@@ -10,23 +10,22 @@ import {
     FileText,
     User,
     Send,
-    ArrowLeft,
-    Menu,
-    X
+    ArrowLeft
 } from 'lucide-react';
 import type { StoredInquiry } from './CustomOrder';
 import { supabase } from '../lib/supabase';
 
 const Admin = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [inquiries, setInquiries] = useState<StoredInquiry[]>([]);
-    const [filter, setFilter] = useState<'all' | 'new' | 'contacted' | 'in-progress' | 'completed'>('all');
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(false);
+    // --- State Management ---
+    const [isAuthenticated, setIsAuthenticated] = useState(false); // Tracks if admin is logged in
+    const [email, setEmail] = useState(''); // Login form email
+    const [password, setPassword] = useState(''); // Login form password
+    const [error, setError] = useState(''); // Login error messages
+    const [inquiries, setInquiries] = useState<StoredInquiry[]>([]); // All fetched orders
+    const [filter, setFilter] = useState<'all' | 'new' | 'contacted' | 'in-progress' | 'completed'>('all'); // Current filter tab
+    const [selectedId, setSelectedId] = useState<string | null>(null); // ID of the currently viewed order (for Detail view)
+    const [searchQuery, setSearchQuery] = useState(''); // Search bar input
+    const [loading, setLoading] = useState(false); // Loading spinner state
 
     useEffect(() => {
         checkUser();
@@ -38,6 +37,8 @@ const Admin = () => {
         }
     }, [isAuthenticated]);
 
+    // --- Authentication Check ---
+    // Checks if the user was previously logged in (saved in SessionStorage)
     const checkUser = () => {
         const isAuth = sessionStorage.getItem('rifa_admin_auth') === 'true';
         if (isAuth) {
@@ -45,6 +46,8 @@ const Admin = () => {
         }
     };
 
+    // --- Data Fetching ---
+    // Fetches all inquiries from the Supabase database
     const loadInquiries = async () => {
         setLoading(true);
         const { data, error } = await supabase
@@ -82,6 +85,8 @@ const Admin = () => {
         setLoading(false);
     };
 
+    // --- Login Logic ---
+    // Verifies email/password against the 'admins' table in Supabase
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -111,6 +116,8 @@ const Admin = () => {
         setInquiries([]);
     };
 
+    // --- Update Logic ---
+    // Updates specific fields of an inquiry (e.g. status, price)
     const updateInquiry = async (id: string, updates: Partial<StoredInquiry>) => {
         // Optimistic update locally
         setInquiries(prev => prev.map(inq => inq.id === id ? { ...inq, ...updates } : inq));
@@ -154,6 +161,8 @@ const Admin = () => {
         }
     };
 
+    // --- Filtering Logic ---
+    // Filters the list based on the selected tab (New, Completed, etc.) AND the search bar
     const filteredInquiries = inquiries.filter(inq => {
         const matchesFilter = filter === 'all' || inq.status === filter;
         const matchesSearch = inquiryMatchesSearch(inq, searchQuery);
@@ -222,7 +231,9 @@ const Admin = () => {
         );
     }
 
+    // --- Main Admin UI ---
     return (
+        // Main Container: Fixed full screen (below navbar)
         <div className="fixed inset-0 top-[76px] bg-gray-100 flex flex-col overflow-hidden z-40">
 
             {/* Top Bar */}
@@ -251,9 +262,14 @@ const Admin = () => {
                 </button>
             </div>
 
+            {/* Split View Container */}
             <div className="flex flex-1 overflow-hidden relative">
 
-                {/* Sidebar List - Hidden on mobile if detail selected */}
+                {/* Left Side: Order List */}
+                {/* Responsive Logic: 
+                    - On Mobile: Hidden if an order is selected (Details view covers it)
+                    - On Desktop: Always visible (Side-by-side view)
+                */}
                 <div className={`w-full md:w-1/3 lg:w-1/4 bg-white border-r border-gray-200 flex flex-col z-0 transition-all ${selectedId ? 'hidden md:flex' : 'flex'}`}>
 
                     {/* Search & Filter */}
@@ -315,7 +331,11 @@ const Admin = () => {
                     </div>
                 </div>
 
-                {/* Main Content (Detail View) - Hidden on mobile if no selection */}
+                {/* Right Side: Order Details */}
+                {/* Responsive Logic:
+                    - On Mobile: Only visible if an order is selected
+                    - On Desktop: Always visible (shows placeholder if nothing selected)
+                */}
                 <div className={`flex-1 bg-gray-50 overflow-y-auto p-4 md:p-8 pb-20 ${!selectedId ? 'hidden md:block' : 'block'}`}>
                     {selectedInquiry ? (
                         <div className="max-w-4xl mx-auto space-y-6">

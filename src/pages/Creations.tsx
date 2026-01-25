@@ -25,7 +25,7 @@ const Creations = () => {
                     <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-text mb-4">Our Creations</h1>
                     <div className="bg-brand-rose-50 border border-brand-rose-100 rounded-xl p-4 md:p-6 max-w-3xl mx-auto shadow-sm mt-6">
                         <p className="text-brand-text font-medium text-lg leading-relaxed">
-                            
+
                         </p>
                     </div>
                 </div>
@@ -83,13 +83,16 @@ const Creations = () => {
                     */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {(galleryImages.length > 0 ? galleryImages : [1, 2, 3, 4, 5, 6, 7, 8]).map((item, idx) => (
-                            <motion.div
+                            <motion.a
                                 key={idx}
+                                href={typeof item === 'string' ? item : undefined}
+                                target={typeof item === 'string' ? "_blank" : undefined}
+                                rel={typeof item === 'string' ? "noopener noreferrer" : undefined}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.1 }}
                                 viewport={{ once: true }}
-                                className={`relative group overflow-hidden rounded-2xl bg-brand-rose-100 ${
+                                className={`relative group overflow-hidden rounded-2xl bg-brand-rose-100 block w-full h-full ${
                                     // Masonry logic: Make every 3rd item span 2 cols/rows (if we have enough items)
                                     galleryImages.length > 0
                                         ? (idx % 5 === 0 ? 'md:col-span-2 md:row-span-2' : '') // Randomize slightly for real images
@@ -113,7 +116,7 @@ const Creations = () => {
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                     <p className="text-white font-medium tracking-wide translate-y-4 group-hover:translate-y-0 transition-transform duration-300">View Art</p>
                                 </div>
-                            </motion.div>
+                            </motion.a>
                         ))}
                     </div>
                 </div>
