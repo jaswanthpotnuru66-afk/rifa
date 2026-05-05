@@ -1,120 +1,185 @@
 import { motion } from 'framer-motion';
-import { Heart, Users } from 'lucide-react';
+import { Heart, Users, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import aboutBg from '../assets/about_founder_crafting.png';
+
+const milestones = [
+    { year: 'Aug 2025', label: 'Founded on Rakhi' },
+    { year: 'Month 1', label: '27 orders received' },
+    { year: 'Dec 2025', label: 'Relaunched stronger' },
+    { year: 'Now',      label: 'Still crafting with heart' },
+];
+
+const values = [
+    {
+        icon: <Heart size={24} strokeWidth={1.5} />,
+        title: 'Made with Heart',
+        desc: 'Every detail is considered personally, ensuring your gift carries the exact emotional weight you intended.',
+    },
+    {
+        icon: <Users size={24} strokeWidth={1.5} />,
+        title: 'Customer First',
+        desc: "Your happiness is our ultimate success metric. We don't rest until the final piece is absolutely perfect.",
+    },
+];
 
 const About = () => {
     return (
-        <div className="pt-16 min-h-screen bg-brand-cream">
-            {/* Header */}
-            <section className="relative py-20 bg-brand-rose-50 text-center">
+        <div className="pt-24 min-h-screen bg-transparent">
+
+            {/* Hero Header */}
+            <section className="relative py-24 md:py-36 bg-white border-b border-neutral-200 overflow-hidden">
+                <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    className="max-w-4xl mx-auto px-4 text-center"
+                >
+                    <h2 className="text-xs font-bold tracking-widest uppercase text-brand-pink mb-6">Our Heritage</h2>
+                    <h1 className="text-6xl md:text-8xl font-serif font-bold text-neutral-950 tracking-tighter mb-8 leading-[0.9]">
+                        The Story<br />
+                        <span className="italic font-light text-neutral-400">of Rifa.</span>
+                    </h1>
+                    <p className="text-xl text-neutral-500 font-light leading-relaxed max-w-2xl mx-auto">
+                        Born from a belief that gifts should carry emotions, not just price tags — founded on Rakhi, August 7, 2025.
+                    </p>
+                </motion.div>
+
+                {/* Milestone timeline */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="max-w-4xl mx-auto px-4"
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    className="max-w-4xl mx-auto px-4 mt-20 grid grid-cols-2 md:grid-cols-4 border-t border-neutral-200"
                 >
-                    <h1 className="text-4xl md:text-5xl font-serif font-bold text-brand-text mb-4">Our Story</h1>
-                    <p className="text-lg text-gray-600">Founded on Rakhi, August 7, 2025</p>
+                    {milestones.map((m, i) => (
+                        <div key={i} className={`py-8 px-4 text-center ${i < milestones.length - 1 ? 'border-r border-neutral-200' : ''}`}>
+                            <div className="text-xs font-bold tracking-widest uppercase text-brand-pink mb-2">{m.year}</div>
+                            <div className="font-serif text-lg font-bold text-neutral-950">{m.label}</div>
+                        </div>
+                    ))}
                 </motion.div>
             </section>
 
-            <div className="max-w-7xl mx-auto px-4 py-16 space-y-20">
-                {/* Section 1: How it Started (Text Left, Image Right) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-24 space-y-32">
+
+                {/* Chapter I — How it Started */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                     <motion.div
-                        initial={{ opacity: 0, x: -20 }}
+                        initial={{ opacity: 0, x: -24 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="space-y-6"
+                        transition={{ duration: 0.7 }}
+                        className="space-y-8"
                     >
-                        <h2 className="text-4xl font-serif font-bold text-brand-text">How it Started</h2>
-                        <div className="space-y-4 text-lg text-gray-600 leading-relaxed">
+                        <div>
+                            <h2 className="text-xs font-bold tracking-widest uppercase text-brand-pink mb-4">Chapter I</h2>
+                            <h3 className="text-4xl md:text-5xl font-serif font-bold text-neutral-950 tracking-tight leading-tight">How It Started</h3>
+                        </div>
+                        <div className="space-y-6 text-lg text-neutral-600 font-light leading-relaxed">
                             <p>
-                                Rifa Arts & Crafts was founded on August 7, 2025, on the occasion of Rakhi, with a clear vision — to build a trusted handmade gifting brand where creativity has no limits.
+                                Rifa Arts &amp; Crafts was founded on August 7, 2025, on the occasion of Rakhi, with a clear vision — to build a trusted handmade gifting brand where creativity has no limits.
                             </p>
                             <p>
-                                In the very first month, we received 27 orders, proving that people genuinely value handmade and personalized gifts. After a short academic break, we restarted on December 2nd and haven't looked back since.
+                                In the very first month, we received 27 orders, proving that people genuinely value handmade and personalised gifts. After a short academic break, we relaunched on December 2nd and haven't looked back since.
                             </p>
+                        </div>
+
+                        {/* Pull stat */}
+                        <div className="flex items-baseline gap-4 border-l-2 border-brand-pink pl-6">
+                            <span className="text-5xl font-serif font-bold text-neutral-950">27</span>
+                            <span className="text-neutral-500 font-light">orders in our very first month</span>
                         </div>
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={{ opacity: 0, x: 24 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
+                        transition={{ duration: 0.7 }}
                         className="relative"
                     >
-                        <div className="aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl rotate-1 hover:rotate-0 transition-all duration-500">
-                            <img src={aboutBg} alt="Founder crafting" className="w-full h-full object-cover" />
+                        <div className="aspect-[4/5] overflow-hidden bg-neutral-100 relative group">
+                            <img
+                                src={aboutBg}
+                                alt="Founder crafting"
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                            />
                         </div>
+                        {/* Offset border accent */}
+                        <div className="absolute -bottom-4 -right-4 w-full h-full border border-neutral-300 pointer-events-none -z-10" />
                     </motion.div>
                 </div>
 
-                {/* Section 2: Why I Chose This Field (Card Style) */}
+                {/* Philosophy — Dark editorial */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="bg-white rounded-[2.5rem] p-8 md:p-12 text-center max-w-5xl mx-auto relative overflow-hidden"
+                    transition={{ duration: 0.8 }}
+                    className="bg-neutral-950 text-white p-12 md:p-24 max-w-6xl mx-auto"
                 >
+                    <div className="space-y-10 text-center">
+                        <h2 className="text-xs font-bold tracking-widest uppercase text-brand-pink">The Philosophy</h2>
 
-                    <div className="relative z-10 space-y-8">
-                        <h2 className="text-4xl font-serif font-bold text-brand-text">Why I Chose This Field</h2>
-                        <div className="space-y-6 text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
-                            <p className="font-serif italic text-xl text-brand-menu-text">
-                                "I chose the handmade gifting field because I believe gifts should carry emotions, not just price tags."
+                        <p className="font-serif italic text-3xl md:text-5xl leading-tight max-w-4xl mx-auto text-white">
+                            "I chose the handmade gifting field because I believe gifts should carry emotions, not just price tags."
+                        </p>
+
+                        <div className="space-y-6 text-lg text-neutral-400 font-light leading-relaxed max-w-3xl mx-auto pt-8 border-t border-neutral-800">
+                            <p>
+                                Every product I make is imagined as if it were my own gift for someone I care about. I spend hours crafting each item with patience, attention, and emotional involvement — something mass-produced products can never offer.
                             </p>
                             <p>
-                                "Every product I make is imagined as if it were my own gift for someone I care about. I spend hours crafting each item with patience, attention, and emotional involvement — something mass-produced products can never offer."
-                            </p>
-                            <p>
-                                "This brand is also my foundation as an entrepreneur. Rifa Arts & Crafts is my learning ground, my passion, and my stepping stone toward building a larger, trusted brand."
+                                This brand is also my foundation as an entrepreneur. Rifa Arts &amp; Crafts is my learning ground, my passion, and my stepping stone toward building a larger, trusted brand.
                             </p>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Section 3: Our Vision & Values */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
+                {/* Vision & Values */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start max-w-6xl mx-auto border-t border-neutral-200 pt-24">
                     <motion.div
-                        initial={{ opacity: 0, x: -20 }}
+                        initial={{ opacity: 0, x: -24 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
+                        transition={{ duration: 0.7 }}
                     >
-                        <h2 className="text-3xl font-serif font-bold mb-6 text-brand-text">Our Vision</h2>
-                        <p className="text-gray-600 text-lg leading-relaxed">
-                            To become a one-stop destination for customized handmade gifts, décor, and emotional gifting — where customers feel understood, valued, and excited to create something unique.
+                        <h2 className="text-xs font-bold tracking-widest uppercase text-brand-pink mb-4">The Future</h2>
+                        <h3 className="text-4xl md:text-5xl font-serif font-bold text-neutral-950 tracking-tight mb-8 leading-tight">Our Vision</h3>
+                        <p className="text-neutral-600 text-xl font-light leading-relaxed border-l-2 border-brand-pink pl-6 mb-12">
+                            To become a one-stop destination for customised handmade gifts, décor, and emotional gifting — where every customer feels understood, valued, and excited to create something uniquely theirs.
                         </p>
+                        <Link
+                            to="/custom-order"
+                            className="inline-flex items-center gap-3 px-8 py-4 bg-neutral-950 text-white text-xs font-bold tracking-widest uppercase hover:bg-neutral-700 transition-all duration-300 group"
+                        >
+                            Commission a Piece
+                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0, x: 20 }}
+                        initial={{ opacity: 0, x: 24 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="bg-white p-8 rounded-2xl shadow-lg border border-brand-rose-100"
+                        transition={{ duration: 0.7 }}
+                        className="space-y-6"
                     >
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-brand-rose-50 rounded-full text-brand-pink">
-                                    <Heart size={24} className="fill-current" />
+                        {values.map((v, i) => (
+                            <div key={i} className="group flex items-start gap-6 p-8 border border-neutral-200 bg-white hover:border-neutral-950 hover:shadow-lg transition-all duration-500">
+                                <div className="flex-shrink-0 w-12 h-12 border border-neutral-200 group-hover:border-neutral-950 group-hover:bg-neutral-950 group-hover:text-white text-neutral-700 flex items-center justify-center transition-all duration-500">
+                                    {v.icon}
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-brand-text">Made with Heart</h4>
-                                    <p className="text-sm text-gray-500">Every detail matters personally.</p>
+                                    <h4 className="font-serif text-xl font-bold text-neutral-950 mb-2">{v.title}</h4>
+                                    <p className="text-neutral-500 font-light leading-relaxed">{v.desc}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-brand-rose-50 rounded-full text-brand-pink">
-                                    <Users size={24} className="fill-current" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-brand-text">Customer First</h4>
-                                    <p className="text-sm text-gray-500">Your happiness is our success.</p>
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </motion.div>
                 </div>
+
             </div>
         </div>
     );

@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-brand-cream text-brand-text font-sans antialiased;
+    @apply bg-[#F9F9F6] text-neutral-900 font-sans antialiased;
   }
 
   h1,
@@ -21,15 +21,19 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-brand-pink text-gray-800 rounded-full hover:bg-opacity-90 transition-all duration-300 font-medium tracking-wide shadow-sm hover:shadow-md;
+    @apply px-8 py-4 bg-neutral-950 text-white rounded-none hover:bg-neutral-800 transition-all duration-500 font-serif tracking-widest uppercase text-sm shadow-xl hover:shadow-2xl hover:-translate-y-1;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 border border-brand-text/20 rounded-full hover:bg-brand-text/5 transition-all duration-300 font-medium tracking-wide;
+    @apply px-8 py-4 border border-neutral-900 text-neutral-900 rounded-none hover:bg-neutral-900 hover:text-white transition-all duration-500 font-serif tracking-widest uppercase text-sm;
   }
 
   .section-padding {
     @apply py-16 md:py-24 px-4 md:px-8 max-w-7xl mx-auto;
+  }
+
+  .form-input {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all bg-white;
   }
 }
 

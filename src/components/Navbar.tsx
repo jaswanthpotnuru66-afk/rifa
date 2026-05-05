@@ -31,13 +31,13 @@ const Navbar = () => {
 
     return (
         <nav
-            className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-2' : 'bg-transparent py-4'
+            className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#F9F9F6] border-b border-neutral-200 py-4' : 'bg-transparent py-6'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
                 {/* Logo */}
-                <Link to="/" className="text-2xl font-serif font-bold text-gray-800 tracking-tight">
-                    Rifa Arts <span className="text-brand-pink">&</span> Crafts
+                <Link to="/" className="text-3xl font-serif font-bold text-neutral-950 tracking-tighter hover:opacity-60 transition-opacity duration-300">
+                    Rifa Arts <span className="font-light italic">&</span> Crafts
                 </Link>
 
                 {/* Desktop Navigation */}
@@ -46,24 +46,24 @@ const Navbar = () => {
                         <Link
                             key={link.name}
                             to={link.path}
-                            className={`text-sm font-medium transition-colors hover:text-brand-pink ${location.pathname === link.path ? 'text-brand-pink' : 'text-gray-600'
+                            className={`text-xs font-bold tracking-widest uppercase transition-colors hover:text-neutral-950 ${location.pathname === link.path ? 'text-neutral-950 border-b border-neutral-950 pb-1' : 'text-neutral-500'
                                 }`}
                         >
                             {link.name}
                         </Link>
                     ))}
-                    <Link to="/custom-order" className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-full text-sm font-medium hover:bg-slate-800 transition-colors shadow-md">
-                        <ShoppingBag size={16} />
+                    <Link to="/custom-order" className="flex items-center gap-2 px-6 py-2.5 bg-neutral-950 text-white text-xs font-bold tracking-widest uppercase hover:bg-neutral-700 transition-all duration-300">
+                        <ShoppingBag size={14} />
                         Customize
                     </Link>
                 </div>
 
                 {/* Mobile Menu Button */}
                 <button
-                    className="md:hidden text-gray-700"
+                    className="md:hidden text-neutral-950 hover:opacity-60 transition-opacity"
                     onClick={() => setIsOpen(!isOpen)}
                 >
-                    {isOpen ? <X size={28} /> : <Menu size={28} />}
+                    {isOpen ? <X size={28} strokeWidth={1.5} /> : <Menu size={28} strokeWidth={1.5} />}
                 </button>
             </div>
 
@@ -76,17 +76,17 @@ const Navbar = () => {
                         exit={{ opacity: 0, height: 0 }}
                         className="md:hidden bg-white border-t border-gray-100 overflow-hidden"
                     >
-                        <div className="px-4 py-6 space-y-4 flex flex-col items-center">
+                        <div className="px-4 py-8 space-y-6 flex flex-col items-center bg-[#F9F9F6]">
                             {navLinks.map((link) => (
                                 <Link
                                     key={link.name}
                                     to={link.path}
-                                    className="text-lg font-medium text-gray-700"
+                                    className="text-lg font-serif font-bold tracking-widest uppercase text-neutral-950"
                                 >
                                     {link.name}
                                 </Link>
                             ))}
-                            <Link to="/custom-order" className="btn-primary w-full text-center">
+                            <Link to="/custom-order" className="btn-primary w-full text-center mt-4">
                                 Customize Order
                             </Link>
                         </div>
@@ -98,3 +98,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

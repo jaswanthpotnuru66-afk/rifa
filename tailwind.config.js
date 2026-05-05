@@ -11,31 +11,21 @@ export default {
         serif: ['Playfair Display', 'serif'],
       },
       colors: {
-        primary: '#0284c7', // Sky Blue 600
-        rose: { // Remapped to Blue scale
-          50: '#f0f9ff', // light blue pastel
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          DEFAULT: '#0284c7',
-        },
-        // Custom Palette
+        // Custom Brand Palette — Rifa Arts & Crafts
         'brand': {
-          cream: '#E6F4FA', // Light Blue Pastel (Main BG)
-          beige: '#F1F5F9', // Slate 50
-          pink: '#38BDF8', // Remapped to Bright Blue accent
-          rose: { // Remapped to Blue scale for explicit brand-rose usages
-            50: '#E6F4FA',
-            100: '#e0f2fe',
+          pink:      '#C17B7B', // Warm dusty rose — primary accent
+          cream:     '#F9F9F6', // Off-white page background
+          beige:     '#F1EDE8', // Warm beige surface
+          rose: {
+            50:  '#FAF3F3',
+            100: '#F3E5E5',
           },
-          sage: '#94a3b8', // Slate
-          mauve: '#64748b', // Slate
-          text: '#020617', // Very Dark Blue/Black
-          'menu-text': '#1e293b', // Slate 800
-          gold: '#0ea5e9', // Blue Accent
-          chocolate: '#F3E5D8', // Keeping chocolate as distinct accent
+          sage:      '#8A9E8A', // Muted sage green
+          mauve:     '#9E7B8A', // Muted mauve
+          text:      '#0A0A0A', // Near-black
+          'menu-text': '#1A1A1A',
+          gold:      '#C4956A', // Warm gold accent
+          chocolate: '#F3E5D8', // Warm cream surface
         }
       },
       animation: {

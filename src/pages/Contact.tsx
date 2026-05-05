@@ -1,45 +1,43 @@
-import { Mail, Instagram, MessageCircle } from 'lucide-react';
+import { Mail, Instagram, MessageCircle, ArrowRight } from 'lucide-react';
 
 const Contact = () => {
     return (
-        <div className="pt-24 pb-16 min-h-screen bg-brand-cream flex items-center justify-center">
-            <div className="bg-white p-8 md:p-12 rounded-2xl shadow-xl max-w-2xl w-full text-center border border-gray-100">
-                <h1 className="text-4xl font-serif font-bold text-brand-text mb-6">Get in Touch</h1>
-                <p className="text-gray-600 mb-8 max-w-lg mx-auto">
-                    Have an idea, reference, or question? We’re happy to talk.
-                    <br />
-                    <strong>“Talk directly to the maker.”</strong>
-                </p>
+        <div className="pt-32 pb-32 min-h-screen flex items-center justify-center bg-transparent">
+            <div className="max-w-4xl w-full px-4 sm:px-8">
+                <div className="text-center mb-16">
+                    <h2 className="text-xs font-bold tracking-widest uppercase text-brand-pink mb-4">Inquiries</h2>
+                    <h1 className="text-5xl md:text-6xl font-serif font-bold text-neutral-950 tracking-tighter mb-6">Get in Touch</h1>
+                    <p className="text-xl text-neutral-500 font-serif italic max-w-lg mx-auto">
+                        "Talk directly to the maker."
+                    </p>
+                </div>
 
-                <div className="space-y-6">
-                    <a href="#" className="flex items-center justify-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-brand-pink hover:bg-brand-rose-50 transition-all group">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                            <MessageCircle size={24} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-y border-neutral-200 bg-white">
+                    <a href="#" className="flex flex-col items-center justify-center gap-6 p-12 border-b md:border-b-0 md:border-r border-neutral-200 hover:bg-neutral-950 hover:text-white transition-all duration-500 group">
+                        <MessageCircle size={32} strokeWidth={1} className="text-neutral-400 group-hover:text-brand-pink transition-colors" />
+                        <div className="text-center">
+                            <h3 className="font-serif text-2xl font-bold mb-2">WhatsApp</h3>
+                            <p className="text-sm text-neutral-500 font-light group-hover:text-neutral-400">Instant replies</p>
                         </div>
-                        <div className="text-left">
-                            <h3 className="font-bold text-gray-800">WhatsApp</h3>
-                            <p className="text-gray-500 text-sm">Chat for instant replies</p>
-                        </div>
+                        <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity mt-4" />
                     </a>
 
-                    <a href="#" className="flex items-center justify-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-brand-pink hover:bg-brand-rose-50 transition-all group">
-                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                            <Instagram size={24} />
+                    <a href="#" className="flex flex-col items-center justify-center gap-6 p-12 border-b md:border-b-0 md:border-r border-neutral-200 hover:bg-neutral-950 hover:text-white transition-all duration-500 group">
+                        <Instagram size={32} strokeWidth={1} className="text-neutral-400 group-hover:text-brand-pink transition-colors" />
+                        <div className="text-center">
+                            <h3 className="font-serif text-2xl font-bold mb-2">Instagram</h3>
+                            <p className="text-sm text-neutral-500 font-light group-hover:text-neutral-400">Our portfolio</p>
                         </div>
-                        <div className="text-left">
-                            <h3 className="font-bold text-gray-800">Instagram</h3>
-                            <p className="text-gray-500 text-sm">See our latest work</p>
-                        </div>
+                        <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity mt-4" />
                     </a>
 
-                    <a href="#" className="flex items-center justify-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-brand-pink hover:bg-brand-rose-50 transition-all group">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                            <Mail size={24} />
+                    <a href="#" className="flex flex-col items-center justify-center gap-6 p-12 hover:bg-neutral-950 hover:text-white transition-all duration-500 group">
+                        <Mail size={32} strokeWidth={1} className="text-neutral-400 group-hover:text-brand-pink transition-colors" />
+                        <div className="text-center">
+                            <h3 className="font-serif text-2xl font-bold mb-2">Email</h3>
+                            <p className="text-sm text-neutral-500 font-light group-hover:text-neutral-400">Detailed requests</p>
                         </div>
-                        <div className="text-left">
-                            <h3 className="font-bold text-gray-800">Email</h3>
-                            <p className="text-gray-500 text-sm">Send detailed inquiries</p>
-                        </div>
+                        <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity mt-4" />
                     </a>
                 </div>
             </div>
@@ -48,3 +46,4 @@ const Contact = () => {
 };
 
 export default Contact;
+
