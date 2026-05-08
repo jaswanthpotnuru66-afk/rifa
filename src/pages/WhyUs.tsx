@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Lightbulb, Palette, Gem, Gift, Clock, Users, ArrowRight, Check, Sparkles } from 'lucide-react';
+import { Lightbulb, Palette, Gem, Gift, Clock, Users, ArrowRight, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -167,36 +167,37 @@ const WhyUs = () => {
                                 </Link>
                             </div>
                         </div>
-                        <div className="relative aspect-square md:aspect-video lg:aspect-square bg-[#FAF7F2] p-8 md:p-12 border border-neutral-100 flex items-center justify-center">
-                            <div className="relative w-full h-full bg-white border border-neutral-100 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1),0_15px_30px_-10px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center p-8 text-center space-y-8">
-                                {/* Subtle Texture Overlay */}
-                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/natural-paper.png")' }} />
-                                
-                                <div className="flex gap-4 mb-2">
-                                    <div className="w-12 h-12 rounded-full bg-[#FAF7F2] shadow-sm border border-neutral-100 flex items-center justify-center text-brand-pink transition-transform hover:-translate-y-1">
+                        <div className="relative aspect-square md:aspect-video lg:aspect-square bg-neutral-950 p-8 md:p-12 border border-neutral-800 group overflow-hidden shadow-2xl">
+                            {/* Decorative Background Elements */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-pink/10 blur-[100px] rounded-full -mr-32 -mt-32" />
+                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-gold/5 blur-[100px] rounded-full -ml-32 -mb-32" />
+
+                            <div className="relative z-10 w-full h-full border border-neutral-800 flex flex-col items-center justify-center p-8 text-center space-y-8">
+                                <div className="flex gap-4 mb-4">
+                                    <div className="w-12 h-12 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-brand-pink">
                                         <Palette size={20} />
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-[#FAF7F2] shadow-sm border border-neutral-100 flex items-center justify-center text-brand-gold transition-transform hover:-translate-y-1">
+                                    <div className="w-12 h-12 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-brand-gold">
                                         <Gem size={20} />
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-[#FAF7F2] shadow-sm border border-neutral-100 flex items-center justify-center text-blue-400 transition-transform hover:-translate-y-1">
+                                    <div className="w-12 h-12 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-blue-400">
                                         <Clock size={20} />
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-300">The Artisan Partnership</p>
-                                    <h4 className="text-3xl md:text-5xl font-serif italic text-neutral-950 leading-tight">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold/60">The Artisan Partnership</p>
+                                    <h4 className="text-3xl md:text-5xl font-serif italic text-white leading-tight">
                                         Empowering Every<br />
-                                        <span className="text-brand-pink/60 not-italic">Masterpiece.</span>
+                                        <span className="text-neutral-500 not-italic">Masterpiece.</span>
                                     </h4>
                                 </div>
 
-                                <div className="w-24 h-px bg-gradient-to-r from-transparent via-brand-gold/30 to-transparent" />
+                                <div className="w-24 h-px bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent" />
 
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-neutral-900 uppercase tracking-[0.3em]">Join 50+ Global Masters</p>
-                                    <p className="text-[8px] text-neutral-400 uppercase tracking-widest italic">Across 8+ Specialized Art Forms</p>
+                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.3em]">Join 50+ Global Masters</p>
+                                    <p className="text-[8px] text-neutral-600 uppercase tracking-widest italic">Across 8+ Specialized Art Forms</p>
                                 </div>
                             </div>
                         </div>
