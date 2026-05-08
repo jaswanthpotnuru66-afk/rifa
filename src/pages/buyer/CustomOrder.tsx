@@ -5,7 +5,7 @@ import {
     Check, Upload, Send, ArrowRight, ArrowLeft,
     Sparkles, Shield, Clock, Heart, Loader2, Trash2
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 export type FormInputs = {
     name: string;
@@ -75,8 +75,6 @@ const CustomOrder = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl]     = useState<string | null>(null);
 
-
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             const file = e.target.files[0];
@@ -131,10 +129,10 @@ const CustomOrder = () => {
 
     /* ── Success screen ── */
     if (isSubmitted) return (
-        <div className="min-h-screen pt-32 pb-32 flex items-center justify-center px-4 bg-transparent">
+        <div className="min-h-screen pt-24 pb-16 flex items-center justify-center px-4 bg-transparent">
             <motion.div
                 initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white p-16 border border-neutral-200 text-center max-w-lg w-full"
+                className="bg-white p-12 md:p-16 border border-neutral-200 text-center max-w-lg w-full"
             >
                 <div className="w-20 h-20 border border-neutral-200 flex items-center justify-center mx-auto mb-8 text-neutral-950">
                     <Check size={32} strokeWidth={1} />
@@ -154,7 +152,7 @@ const CustomOrder = () => {
         <div className="min-h-screen bg-transparent flex flex-col lg:flex-row overflow-x-hidden pt-20 md:pt-24">
 
             {/* ── Left editorial panel ── */}
-            <div className="hidden lg:flex w-5/12 flex-col justify-center px-12 xl:px-20 py-16 border-r border-neutral-200 bg-transparent sticky top-0 h-screen">
+            <div className="hidden lg:flex w-5/12 flex-col justify-center px-12 xl:px-20 py-12 border-r border-neutral-200 bg-transparent sticky top-0 h-screen">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
                     <span className="inline-flex items-center gap-2 mb-12 px-4 py-2 rounded-full bg-white border border-neutral-200 shadow-sm text-xs font-bold tracking-widest uppercase">
                         <Sparkles size={13} className="text-brand-pink" /> Bespoke Commissions
@@ -166,14 +164,12 @@ const CustomOrder = () => {
                         to life.
                     </h1>
 
-
-
                     {/* Trust signals */}
                     <div className="space-y-4 border-t border-neutral-200 pt-10">
                         {trust.map((t, i) => (
                             <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.08 }}
                                 className="flex items-center gap-4 text-neutral-600">
-                                <div className="flex-shrink-0 w-9 h-9 bg-white border border-neutral-200 flex items-center justify-center shadow-sm">
+                                <div className="flex-shrink-0 w-9 h-9 bg-brand-rose-100 border border-brand-rose-100 flex items-center justify-center shadow-sm text-brand-pink">
                                     {t.icon}
                                 </div>
                                 <span className="text-sm font-light">{t.text}</span>
@@ -184,7 +180,7 @@ const CustomOrder = () => {
             </div>
 
             {/* ── Right form panel ── */}
-            <div className="flex-1 flex flex-col px-4 sm:px-8 lg:px-16 xl:px-24 py-12 lg:py-20">
+            <div className="flex-1 flex flex-col px-4 sm:px-8 lg:px-16 xl:px-24 py-8 lg:py-16">
 
                 {/* Mobile header */}
                 <div className="lg:hidden mb-10">
@@ -193,17 +189,17 @@ const CustomOrder = () => {
                 </div>
 
                 {/* Step progress */}
-                <div className="mb-14 max-w-lg">
+                <div className="mb-10 max-w-lg">
                     <div className="flex items-center justify-between relative">
                         <div className="absolute top-1/2 left-0 w-full h-[1px] bg-neutral-200 -translate-y-1/2 z-0" />
                         <div
-                            className="absolute top-1/2 left-0 h-[2px] bg-neutral-950 -translate-y-1/2 z-0 transition-all duration-700"
+                            className="absolute top-1/2 left-0 h-[2px] bg-brand-pink -translate-y-1/2 z-0 transition-all duration-700"
                             style={{ width: `${((step - 1) / 2) * 100}%` }}
                         />
                         {STEPS.map(s => (
                             <div key={s.num} className="relative z-10 flex flex-col items-center">
                                 <motion.div
-                                    animate={{ backgroundColor: step >= s.num ? '#0a0a0a' : '#fff', color: step >= s.num ? '#fff' : '#a1a1aa', scale: step === s.num ? 1.15 : 1 }}
+                                    animate={{ backgroundColor: step >= s.num ? '#D4547A' : '#fff', color: step >= s.num ? '#fff' : '#a1a1aa', scale: step === s.num ? 1.15 : 1 }}
                                     transition={{ duration: 0.3 }}
                                     className="w-10 h-10 rounded-full border-2 border-neutral-200 flex items-center justify-center font-bold text-sm shadow-sm"
                                 >
@@ -220,14 +216,12 @@ const CustomOrder = () => {
                 {/* Form card */}
                 <div className="bg-white border border-neutral-200 shadow-xl shadow-neutral-100 flex-1 max-w-2xl w-full">
                     <form onSubmit={e => { e.preventDefault(); if (step === 3) handleSubmit(onSubmit)(); }} className="h-full flex flex-col">
-                        <div>
-
-    
+                        <div className="flex-1">
 
                             {/* Step 1 — Contact */}
                             {step === 1 && (
                                 <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35 }}
-                                    className="p-8 sm:p-12 flex-1 space-y-8">
+                                    className="p-6 sm:p-10 space-y-6">
                                     <div>
                                         <h2 className="text-2xl font-serif font-bold text-neutral-950 mb-1">Who are you?</h2>
                                         <p className="text-neutral-500 text-sm font-light">We'd love to know who we're creating for.</p>
@@ -248,7 +242,7 @@ const CustomOrder = () => {
                             {/* Step 2 — Vision */}
                             {step === 2 && (
                                 <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35 }}
-                                    className="p-8 sm:p-12 flex-1 space-y-8">
+                                    className="p-6 sm:p-10 space-y-6">
                                     <div>
                                         <h2 className="text-2xl font-serif font-bold text-neutral-950 mb-1">What's the occasion?</h2>
                                         <p className="text-neutral-500 text-sm font-light">Help us tailor every detail to the moment.</p>
@@ -301,7 +295,7 @@ const CustomOrder = () => {
                             {/* Step 3 — Details */}
                             {step === 3 && (
                                 <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35 }}
-                                    className="p-8 sm:p-12 flex-1 space-y-8">
+                                    className="p-6 sm:p-10 space-y-6">
                                     <div>
                                         <h2 className="text-2xl font-serif font-bold text-neutral-950 mb-1">Final details</h2>
                                         <p className="text-neutral-500 text-sm font-light">Almost there — tell us where and when.</p>

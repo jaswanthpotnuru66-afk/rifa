@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag } from 'lucide-react';
+import { Menu, X, ShoppingBag, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
@@ -23,15 +23,15 @@ const Navbar = () => {
 
     const navLinks = [
         { name: 'Home', path: '/' },
-        { name: 'About', path: '/about' },
+        { name: 'Shop', path: '/marketplace' },
+        { name: 'Story', path: '/about' },
         { name: 'Creations', path: '/creations' },
         { name: 'Combos', path: '/combos' },
-        { name: 'Why Us', path: '/why-us' },
     ];
 
     return (
         <nav
-            className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#F9F9F6] border-b border-neutral-200 py-4' : 'bg-transparent py-6'
+            className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#FAF7F2] border-b border-neutral-200 py-4' : 'bg-transparent py-6'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center">
@@ -52,6 +52,10 @@ const Navbar = () => {
                             {link.name}
                         </Link>
                     ))}
+                    <Link to="/profile" className="text-xs font-bold tracking-widest uppercase text-neutral-500 hover:text-neutral-950 transition-colors flex items-center gap-2">
+                        <User size={14} />
+                        Profile
+                    </Link>
                     <Link to="/custom-order" className="flex items-center gap-2 px-6 py-2.5 bg-neutral-950 text-white text-xs font-bold tracking-widest uppercase hover:bg-neutral-700 transition-all duration-300">
                         <ShoppingBag size={14} />
                         Customize
@@ -76,19 +80,38 @@ const Navbar = () => {
                         exit={{ opacity: 0, height: 0 }}
                         className="md:hidden bg-white border-t border-gray-100 overflow-hidden"
                     >
-                        <div className="px-4 py-8 space-y-6 flex flex-col items-center bg-[#F9F9F6]">
-                            {navLinks.map((link) => (
-                                <Link
+                        <div className="px-4 py-8 space-y-6 flex flex-col items-center bg-[#FAF7F2]">
+                            {navLinks.map((link, idx) => (
+                                <motion.div
                                     key={link.name}
-                                    to={link.path}
-                                    className="text-lg font-serif font-bold tracking-widest uppercase text-neutral-950"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.1 + 0.1 }}
                                 >
-                                    {link.name}
-                                </Link>
+                                    <Link
+                                        to={link.path}
+                                        className="text-lg font-serif font-bold tracking-widest uppercase text-neutral-950"
+                                    >
+                                        {link.name}
+                                    </Link>
+                                </motion.div>
                             ))}
-                            <Link to="/custom-order" className="btn-primary w-full text-center mt-4">
-                                Customize Order
-                            </Link>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: navLinks.length * 0.1 + 0.1 }}
+                                className="w-full space-y-4"
+                            >
+                                <Link to="/profile" className="block text-center text-xs font-bold tracking-widest uppercase text-neutral-950 flex items-center justify-center gap-2">
+                                    <User size={14} /> Profile
+                                </Link>
+                                <Link to="/collaborate" className="block text-center text-xs font-bold tracking-widest uppercase text-neutral-500 hover:text-neutral-950 transition-colors">
+                                    Sell with Us
+                                </Link>
+                                <Link to="/custom-order" className="btn-primary w-full text-center block">
+                                    Customize Order
+                                </Link>
+                            </motion.div>
                         </div>
                     </motion.div>
                 )}

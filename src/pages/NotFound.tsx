@@ -4,7 +4,7 @@ import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 const NotFound = () => {
     return (
-        <div className="min-h-screen bg-[#F9F9F6] flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
+        <div className="min-h-screen bg-[#FAF7F2] flex flex-col items-center justify-center px-4 text-center relative overflow-hidden">
 
             {/* Large background number */}
             <div className="absolute select-none pointer-events-none">
@@ -55,7 +55,7 @@ const NotFound = () => {
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute bottom-0 left-0 right-0 h-[2px] bg-neutral-950 origin-left"
+                className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-pink origin-left"
             />
         </div>
     );

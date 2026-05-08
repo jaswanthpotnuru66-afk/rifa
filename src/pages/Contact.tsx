@@ -14,7 +14,9 @@ const Contact = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-y border-neutral-200 bg-white">
                     <a href="#" className="flex flex-col items-center justify-center gap-6 p-12 border-b md:border-b-0 md:border-r border-neutral-200 hover:bg-neutral-950 hover:text-white transition-all duration-500 group">
-                        <MessageCircle size={32} strokeWidth={1} className="text-neutral-400 group-hover:text-brand-pink transition-colors" />
+                        <div className="w-14 h-14 bg-brand-rose-100 flex items-center justify-center rounded-full group-hover:bg-brand-pink/20 transition-colors">
+                            <MessageCircle size={28} strokeWidth={1} className="text-brand-pink group-hover:text-white transition-colors" />
+                        </div>
                         <div className="text-center">
                             <h3 className="font-serif text-2xl font-bold mb-2">WhatsApp</h3>
                             <p className="text-sm text-neutral-500 font-light group-hover:text-neutral-400">Instant replies</p>
@@ -23,7 +25,9 @@ const Contact = () => {
                     </a>
 
                     <a href="#" className="flex flex-col items-center justify-center gap-6 p-12 border-b md:border-b-0 md:border-r border-neutral-200 hover:bg-neutral-950 hover:text-white transition-all duration-500 group">
-                        <Instagram size={32} strokeWidth={1} className="text-neutral-400 group-hover:text-brand-pink transition-colors" />
+                        <div className="w-14 h-14 bg-brand-rose-100 flex items-center justify-center rounded-full group-hover:bg-brand-pink/20 transition-colors">
+                            <Instagram size={28} strokeWidth={1} className="text-brand-pink group-hover:text-white transition-colors" />
+                        </div>
                         <div className="text-center">
                             <h3 className="font-serif text-2xl font-bold mb-2">Instagram</h3>
                             <p className="text-sm text-neutral-500 font-light group-hover:text-neutral-400">Our portfolio</p>
@@ -32,7 +36,9 @@ const Contact = () => {
                     </a>
 
                     <a href="#" className="flex flex-col items-center justify-center gap-6 p-12 hover:bg-neutral-950 hover:text-white transition-all duration-500 group">
-                        <Mail size={32} strokeWidth={1} className="text-neutral-400 group-hover:text-brand-pink transition-colors" />
+                        <div className="w-14 h-14 bg-brand-rose-100 flex items-center justify-center rounded-full group-hover:bg-brand-pink/20 transition-colors">
+                            <Mail size={28} strokeWidth={1} className="text-brand-pink group-hover:text-white transition-colors" />
+                        </div>
                         <div className="text-center">
                             <h3 className="font-serif text-2xl font-bold mb-2">Email</h3>
                             <p className="text-sm text-neutral-500 font-light group-hover:text-neutral-400">Detailed requests</p>

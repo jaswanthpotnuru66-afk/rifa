@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ArrowRight, Check, Image as ImageIcon, Phone, Send,
+    ArrowRight, Check, Image as ImageIcon, Send,
     Store, Sparkles, ArrowLeft, Shield, Star, MapPin, 
-    Shapes, AlignLeft, Trash2, Camera, Loader2
+    Trash2, Camera, Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-
-export type CollaborationType = 'sell-through-rifa' | 'merchandise-dashboard' | 'both';
-export type CreatorStatus = 'new' | 'reviewing' | 'approved' | 'rejected';
-export type DashboardStatus = 'not-started' | 'planning' | 'in-progress' | 'live';
+import MagneticButton from '../components/MagneticButton';
 
 export type CreatorApplicationInputs = {
     mobileNumber: string;
@@ -20,6 +17,29 @@ export type CreatorApplicationInputs = {
     homeRegion: string;
     craftOriginStory: string;
     shippingOriginPinCode: string;
+};
+
+/** Full DB record used by Admin panel */
+export type CreatorApplication = CreatorApplicationInputs & {
+    id: string;
+    date: string;
+    creatorName: string;
+    brandName: string;
+    contact: string;
+    email: string;
+    location: string;
+    collaborationType: 'sell-through-rifa' | 'merchandise-dashboard' | 'both';
+    productCategories: string[];
+    priceRange: string;
+    productDescription: string;
+    socialLink: string;
+    imageUrl?: string;
+    status: 'new' | 'reviewing' | 'approved' | 'rejected';
+    dashboardStatus: 'not-started' | 'planning' | 'in-progress' | 'live';
+    commissionTerms: string;
+    adminNotes: string;
+    shopBannerUrl: string;
+    shopLogoUrl: string;
 };
 
 const craftCategoryOptions = [
@@ -240,20 +260,18 @@ const Collaborate = () => {
     };
 
     return (
-        <div className="min-h-screen bg-transparent relative font-sans flex flex-col lg:flex-row overflow-x-hidden pt-20 md:pt-24 selection:bg-brand-gold/20 selection:text-brand-text text-brand-text">
-            {/* Grain Texture Overlay handled globally by App.tsx */}
-
-            {/* Mobile Header */}
-            <div className="lg:hidden relative z-10 px-6 pt-10 pb-12 border-b border-neutral-200 bg-transparent">
-                <span className="inline-block px-3 py-1 mb-5 text-xs font-bold tracking-widest text-brand-text uppercase bg-white rounded-full border border-neutral-200 shadow-sm">
-                    Partner Program
+        <div className="min-h-screen bg-[#FAF7F2] relative font-sans flex flex-col lg:flex-row overflow-x-hidden pt-20 md:pt-24 selection:bg-brand-pink/20 text-neutral-900">
+            
+            {/* Mobile Header (Hidden on LG) */}
+            <div className="lg:hidden relative z-10 px-6 pt-10 pb-8">
+                <span className="inline-block px-3 py-1 mb-5 text-[10px] font-bold tracking-[0.2em] text-brand-pink uppercase bg-white border border-neutral-200 shadow-sm">
+                    The Collective
                 </span>
-                <h1 className="text-4xl sm:text-5xl font-serif font-bold mb-4 leading-tight text-brand-text tracking-tighter">Apply to Sell<br/>on Rifa</h1>
-                <p className="text-neutral-600 text-base sm:text-lg opacity-90 max-w-sm">Join the curated collective of India's finest artisans.</p>
+                <h1 className="text-5xl font-serif font-bold mb-4 leading-tight tracking-tighter">Apply to Join.</h1>
             </div>
 
-            {/* Left Side (Desktop) */}
-            <div className="hidden lg:flex w-5/12 flex-col justify-center relative z-10 px-12 xl:px-20 py-12 xl:py-16 border-r border-neutral-200/80 bg-transparent">
+            {/* Sidebar / Preview Section - (Top on Mobile, Left on Desktop) */}
+            <div className="w-full lg:w-5/12 flex flex-col justify-center relative z-10 px-6 lg:px-12 xl:px-20 py-8 lg:py-12 border-b lg:border-b-0 lg:border-r border-neutral-200 order-1 lg:order-1">
                 <AnimatePresence mode="wait">
                     {!hasStartedTyping ? (
                         <motion.div
@@ -262,43 +280,43 @@ const Collaborate = () => {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
                             transition={{ duration: 0.5 }}
-                            className="flex flex-col justify-between h-full"
+                            className="hidden lg:flex flex-col justify-between h-full"
                         >
                             <div>
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="inline-flex items-center gap-2 mb-16 px-4 py-2 rounded-full bg-white border border-neutral-200 shadow-sm"
+                                    className="inline-flex items-center gap-2 mb-16 px-4 py-2 rounded-none bg-neutral-950 text-white"
                                 >
-                                    <Sparkles className="text-brand-text w-4 h-4" />
-                                    <span className="text-xs font-bold tracking-widest text-brand-text uppercase">Premium Artisan Collective</span>
+                                    <Sparkles className="text-brand-pink w-4 h-4" />
+                                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Artisan Partner Program</span>
                                 </motion.div>
                                 
                                 <motion.h1 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                                    className="text-6xl xl:text-8xl font-serif text-brand-text leading-[0.95] mb-8 tracking-tighter"
+                                    className="text-7xl xl:text-9xl font-serif leading-[0.85] mb-8 tracking-tighter"
                                 >
-                                    Elevate <br className="hidden xl:block"/>
-                                    your <br className="hidden xl:block"/>
-                                    <span className="italic text-brand-gold font-light">craft.</span>
+                                    Scale <br />
+                                    your <br />
+                                    <span className="italic text-neutral-400 font-light">vision.</span>
                                 </motion.h1>
                                 
                                 <motion.p 
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                                    className="text-lg xl:text-xl text-neutral-600 max-w-md mb-16 leading-relaxed font-light"
+                                    className="text-xl text-neutral-500 max-w-md mb-16 leading-relaxed font-light"
                                 >
-                                    Join India's most exclusive marketplace for handmade luxury. Reach global buyers who truly value your authentic artistry.
+                                    We provide the stage, you provide the craft. Join a hand-picked community of India's most dedicated creators.
                                 </motion.p>
 
-                                <div className="space-y-6">
+                                <div className="space-y-10">
                                     {[
-                                        { icon: <Store className="w-5 h-5 text-brand-text" />, title: 'Bespoke Storefront', desc: 'A meticulously designed space to showcase your masterpieces.' },
-                                        { icon: <Shield className="w-5 h-5 text-brand-text" />, title: 'Curated Audience', desc: 'Connect directly with buyers seeking true craftsmanship.' },
-                                        { icon: <Sparkles className="w-5 h-5 text-brand-text" />, title: 'Seamless Experience', desc: 'We handle the technology, you focus on creating.' },
+                                        { icon: <Store className="w-5 h-5" />, title: 'Luxury Storefront', desc: 'A meticulously designed editorial space to showcase your masterpieces.' },
+                                        { icon: <Shield className="w-5 h-5" />, title: 'Secured Payments', desc: 'Automated split payouts and escrow protection for every single transaction.' },
+                                        { icon: <Sparkles className="w-5 h-5" />, title: 'Brand Storytelling', desc: 'We help you craft a narrative that connects with high-value buyers.' },
                                     ].map((feature, idx) => (
                                         <motion.div 
                                             key={idx}
@@ -307,12 +325,12 @@ const Collaborate = () => {
                                             transition={{ duration: 0.6, delay: 0.4 + idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
                                             className="flex items-start gap-6 group"
                                         >
-                                            <div className="flex-shrink-0 bg-white p-4 rounded-full border border-neutral-200 group-hover:scale-110 group-hover:border-neutral-400 transition-all duration-500 shadow-sm mt-1">
+                                            <div className="flex-shrink-0 bg-white p-4 border border-neutral-100 group-hover:border-neutral-900 transition-all duration-500 shadow-sm mt-1">
                                                 {feature.icon}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-lg text-brand-text tracking-tight">{feature.title}</h3>
-                                                <p className="text-neutral-500 text-base font-light mt-1.5 leading-relaxed">{feature.desc}</p>
+                                                <h3 className="font-bold text-lg text-neutral-950 tracking-tight">{feature.title}</h3>
+                                                <p className="text-neutral-500 text-sm font-light mt-1.5 leading-relaxed">{feature.desc}</p>
                                             </div>
                                         </motion.div>
                                     ))}
@@ -325,17 +343,11 @@ const Collaborate = () => {
                                 transition={{ delay: 0.8, duration: 1 }}
                                 className="mt-20 pt-10 border-t border-neutral-200"
                             >
-                                <div className="flex items-center gap-6">
-                                    <div>
-                                        <div className="flex items-center gap-1 text-brand-text mb-1">
-                                            <Star className="w-4 h-4 fill-current" />
-                                            <Star className="w-4 h-4 fill-current" />
-                                            <Star className="w-4 h-4 fill-current" />
-                                            <Star className="w-4 h-4 fill-current" />
-                                            <Star className="w-4 h-4 fill-current" />
-                                        </div>
-                                        <span className="text-neutral-600 font-medium text-sm tracking-wide uppercase">Trusted by 500+ Top Artisans</span>
-                                    </div>
+                                <div className="flex items-center gap-6 opacity-40">
+                                    <Star size={12} fill="currentColor" />
+                                    <Star size={12} fill="currentColor" />
+                                    <Star size={12} fill="currentColor" />
+                                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Trusted by India's finest artisans</span>
                                 </div>
                             </motion.div>
                         </motion.div>
@@ -348,47 +360,47 @@ const Collaborate = () => {
                             className="w-full max-w-md mx-auto"
                         >
                             <div className="mb-10 text-center">
-                                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-brand-text text-xs font-bold tracking-widest uppercase border border-neutral-200 shadow-sm animate-pulse">
-                                    <Sparkles size={14} /> Live Storefront Preview
+                                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-neutral-950 text-brand-pink text-[9px] font-bold tracking-[0.2em] uppercase border border-neutral-800 shadow-xl">
+                                    <Sparkles size={14} className="animate-pulse" /> LIVE PREVIEW
                                 </span>
                             </div>
                             
                             {/* Stark Editorial Store Card Preview */}
-                            <div className="bg-white overflow-hidden border border-neutral-200 shadow-2xl shadow-neutral-200/50 transform hover:-translate-y-2 transition-transform duration-500">
+                            <div className="bg-white overflow-hidden border border-neutral-200 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)] transform hover:-translate-y-2 transition-transform duration-700">
                                 {/* Banner */}
-                                <div className="h-40 bg-neutral-100 relative overflow-hidden group">
+                                <div className="h-48 bg-neutral-50 relative overflow-hidden group">
                                     {previews.banner ? (
-                                        <img src={previews.banner} className="w-full h-full object-cover grayscale-[20%]" alt="Banner Preview" />
+                                        <img src={previews.banner} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Banner Preview" />
                                     ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center text-neutral-300">
-                                            <ImageIcon size={32} />
+                                        <div className="absolute inset-0 flex items-center justify-center text-neutral-200">
+                                            <ImageIcon size={32} strokeWidth={1} />
                                         </div>
                                     )}
                                 </div>
                                 {/* Avatar & Content */}
-                                <div className="px-10 pb-10 relative">
-                                    <div className="w-24 h-24 rounded-full bg-white border-4 border-white absolute -top-12 overflow-hidden shadow-lg flex items-center justify-center z-10">
+                                <div className="px-10 pb-12 relative">
+                                    <div className="w-24 h-24 bg-white border border-neutral-200 absolute -top-12 overflow-hidden shadow-xl flex items-center justify-center z-10">
                                         {previews.logo ? (
                                             <img src={previews.logo} className="w-full h-full object-cover" alt="Logo Preview" />
                                         ) : (
-                                            <Store size={32} className="text-neutral-400" />
+                                            <Store size={32} strokeWidth={1} className="text-neutral-300" />
                                         )}
                                     </div>
-                                    <div className="pt-16 text-center">
-                                        <h3 className="text-3xl font-serif font-bold text-brand-text leading-tight">
-                                            {shopName || <span className="text-neutral-300 italic">Your Shop Name</span>}
+                                    <div className="pt-20 text-center">
+                                        <h3 className="text-4xl font-serif font-bold text-neutral-950 leading-tight">
+                                            {shopName || <span className="text-neutral-200 italic">Un-named Studio</span>}
                                         </h3>
-                                        <p className="text-neutral-500 font-bold text-xs mt-3 flex items-center justify-center gap-2 tracking-widest uppercase">
-                                            {primaryCraftCategory || <span className="text-neutral-300">Craft Category</span>}
+                                        <div className="h-[1px] w-8 bg-brand-pink mx-auto my-6" />
+                                        <p className="text-neutral-400 font-bold text-[10px] flex items-center justify-center gap-2 tracking-[0.2em] uppercase">
+                                            {primaryCraftCategory || <span className="text-neutral-200">Craft Type</span>}
                                         </p>
-                                        <div className="flex items-center justify-center gap-2 mt-5 text-neutral-500 text-sm">
-                                            <MapPin size={16} className="text-neutral-400" /> 
-                                            {homeRegion ? `${homeRegion}, India` : 'Your Region, India'}
+                                        <div className="flex items-center justify-center gap-2 mt-4 text-neutral-500 text-xs font-medium uppercase tracking-widest">
+                                            <MapPin size={14} className="text-brand-pink" /> 
+                                            {homeRegion ? `${homeRegion}, India` : 'Region, India'}
                                         </div>
-                                        <div className="mt-8 relative">
-                                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-[1px] bg-neutral-200" />
-                                            <p className="text-neutral-600 text-sm leading-relaxed font-serif italic text-center">
-                                                "{craftOriginStory || 'Your unique craft origin story will appear here. Tell buyers what makes your handmade process special and authentic.'}"
+                                        <div className="mt-10">
+                                            <p className="text-neutral-600 text-sm leading-relaxed font-serif italic text-center opacity-80 px-4">
+                                                "{craftOriginStory || 'Your story of craftsmanship will be showcased here in a premium editorial format.'}"
                                             </p>
                                         </div>
                                     </div>
@@ -400,67 +412,61 @@ const Collaborate = () => {
             </div>
 
             {/* Right Side - Form Container */}
-            <div className="flex-1 overflow-y-auto flex flex-col relative z-10 w-full lg:pt-16 lg:pb-24 px-4 sm:px-8 lg:px-16 xl:px-24 mb-16">
+            <div className="flex-1 overflow-y-auto flex flex-col relative z-10 w-full lg:pt-10 lg:pb-16 px-4 sm:px-8 lg:px-16 xl:px-24 mb-8 order-2 lg:order-2">
                 {isSubmitted ? (
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="flex-1 flex items-center justify-center"
                     >
-                        <div className="bg-white p-12 md:p-16 shadow-xl text-center max-w-lg w-full border border-neutral-200 relative overflow-hidden">
-                            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-10 text-green-500 border border-green-100 shadow-inner">
+                        <div className="bg-white p-12 md:p-16 shadow-2xl text-center max-w-lg w-full border border-neutral-100 relative">
+                            <div className="w-24 h-24 bg-neutral-950 rounded-full flex items-center justify-center mx-auto mb-10 text-brand-pink border border-neutral-800 shadow-xl">
                                 <Check size={48} strokeWidth={2} />
                             </div>
-                            <h2 className="text-4xl font-serif font-bold text-brand-text mb-6">Application Received</h2>
+                            <h2 className="text-5xl font-serif font-bold text-neutral-950 mb-6 tracking-tighter">Welcome.</h2>
                             <p className="text-neutral-500 text-lg mb-12 leading-relaxed font-light">
-                                Thank you for choosing Rifa. Our curation team will review your profile and reach out to you shortly.
+                                Your application has been received. Our curation team will review your profile and reach out within 48 hours.
                             </p>
-                            <button onClick={() => setIsSubmitted(false)} className="w-full py-4 rounded-xl bg-brand-text text-white font-bold tracking-wide uppercase text-sm hover:bg-neutral-800 transition-all hover:-translate-y-1">
-                                Submit Another Profile
-                            </button>
+                            <MagneticButton className="w-full">
+                                <button onClick={() => setIsSubmitted(false)} className="w-full py-5 bg-neutral-950 text-white font-bold tracking-[0.2em] uppercase text-[10px] hover:bg-neutral-800 transition-all">
+                                    Return to Collective
+                                </button>
+                            </MagneticButton>
                         </div>
                     </motion.div>
                 ) : (
                     <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
                         
                         {/* Progress Indicator */}
-                        <div className="mb-14 relative z-10">
+                        <div className="mb-12 relative z-10">
                             <div className="flex items-center justify-between relative">
-                                {/* Track Background */}
-                                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-neutral-300 -translate-y-1/2 z-0" />
-                                {/* Track Fill */}
+                                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-neutral-200 -translate-y-1/2 z-0" />
                                 <div 
-                                    className="absolute top-1/2 left-0 h-[2px] bg-brand-text -translate-y-1/2 z-0 transition-all duration-700 ease-in-out"
+                                    className="absolute top-1/2 left-0 h-[1.5px] bg-brand-pink -translate-y-1/2 z-0 transition-all duration-1000 ease-[0.16,1,0.3,1]"
                                     style={{ width: `${((step - 1) / 2) * 100}%` }}
                                 />
                                 
-                                {/* Steps */}
                                 {[1, 2, 3].map((i) => (
                                     <div key={i} className="relative z-10 flex flex-col items-center">
                                         <motion.div 
                                             animate={{
                                                 backgroundColor: step >= i ? '#0a0a0a' : '#ffffff',
-                                                borderColor: step >= i ? '#0a0a0a' : '#d4d4d8',
-                                                color: step >= i ? '#ffffff' : '#a1a1aa',
-                                                scale: step === i ? 1.15 : 1
+                                                borderColor: step >= i ? '#0a0a0a' : '#e5e5e5',
+                                                color: step >= i ? '#ffffff' : '#a3a3a3',
+                                                scale: step === i ? 1.2 : 1
                                             }}
-                                            transition={{ duration: 0.3 }}
-                                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center font-bold text-sm sm:text-base shadow-sm transition-shadow bg-white"
+                                            transition={{ duration: 0.5 }}
+                                            className="w-10 h-10 rounded-full border flex items-center justify-center font-bold text-xs shadow-sm bg-white"
                                         >
-                                            {step > i ? <Check size={20} strokeWidth={3} /> : i}
+                                            {step > i ? <Check size={16} strokeWidth={3} /> : `0${i}`}
                                         </motion.div>
-                                        <span className={`absolute -bottom-8 whitespace-nowrap text-xs font-bold tracking-widest uppercase transition-colors duration-300 ${
-                                            step === i ? 'text-brand-text' : step > i ? 'text-neutral-500' : 'text-neutral-400'
-                                        }`}>
-                                            {i === 1 ? 'Shop Info' : i === 2 ? 'Craft' : 'Assets'}
-                                        </span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Form Card */}
-                        <div className="bg-white shadow-2xl shadow-neutral-200 border border-neutral-200 p-8 sm:p-12 lg:p-14 flex-1 relative overflow-hidden">
+                        <div className="bg-white shadow-[0_32px_64px_-20px_rgba(0,0,0,0.05)] border border-neutral-100 p-6 sm:p-10 lg:p-12 flex-1 relative">
                             <form onSubmit={(e) => { e.preventDefault(); if(step===3) handleSubmit(onSubmit)(); }} className="h-full flex flex-col">
                                 <AnimatePresence mode="wait">
                                     
@@ -468,50 +474,49 @@ const Collaborate = () => {
                                     {step === 1 && (
                                         <motion.div
                                             key="step1"
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -20 }}
-                                            transition={{ duration: 0.4, ease: "easeOut" }}
-                                            className="flex-1 space-y-10"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.4 }}
+                                            className="flex-1 space-y-12"
                                         >
                                             <div>
-                                                <h2 className="text-3xl font-serif font-bold text-brand-text mb-3">Let's start with the basics</h2>
-                                                <p className="text-neutral-500 text-lg font-light">Tell us about your brand and how we can reach you.</p>
+                                                <h2 className="text-4xl font-serif font-bold text-neutral-950 mb-3 tracking-tight">The Essentials</h2>
+                                                <p className="text-neutral-500 text-lg font-light leading-relaxed">Tell us about your brand identity and how we can reach you.</p>
                                             </div>
 
-                                            <div className="space-y-8">
-                                                <Field label="Mobile Number" icon={<Phone size={18} />} error={errors.mobileNumber && 'Enter a valid 10-digit mobile number'}>
+                                            <div className="space-y-10">
+                                                <Field label="Mobile Number" error={errors.mobileNumber && 'Enter a valid 10-digit mobile number'}>
                                                     <input
                                                         type="tel"
                                                         inputMode="numeric"
                                                         {...register('mobileNumber', { required: true, pattern: /^[6-9]\d{9}$/ })}
-                                                        className="w-full px-5 py-4 border-b border-neutral-300 bg-transparent focus:border-brand-pink transition-all outline-none text-neutral-950 placeholder:text-neutral-400 font-medium"
+                                                        className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium text-lg"
                                                         placeholder="9876543210"
                                                     />
                                                 </Field>
 
-                                                <Field label="Shop Name" icon={<Store size={18} />} error={errors.shopName && 'Shop name is required'}>
+                                                <Field label="Studio Name" error={errors.shopName && 'Studio name is required'}>
                                                     <input
                                                         {...register('shopName', { required: true })}
-                                                        className="w-full px-5 py-4 border-b border-neutral-300 bg-transparent focus:border-brand-pink transition-all outline-none text-neutral-950 placeholder:text-neutral-400 font-medium"
-                                                        placeholder="e.g. Rajesh Woodworks"
+                                                        className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium text-lg"
+                                                        placeholder="e.g. Heritage Weaves"
                                                     />
                                                 </Field>
 
-                                                <Field label="Shop URL Slug" icon={<AlignLeft size={18} />} error={errors.shopSlug && 'Use lowercase letters, numbers, and hyphens only'}>
-                                                    <div className="flex border-b border-neutral-300 bg-transparent focus-within:border-brand-pink transition-all overflow-hidden group/slug">
-                                                        <span className="px-5 py-4 text-neutral-400 bg-transparent select-none font-medium group-focus-within/slug:text-neutral-950 transition-colors">rifa.in/</span>
+                                                <Field label="Unique Store Handle" error={errors.shopSlug && 'Lowercase letters, numbers, and hyphens only'}>
+                                                    <div className="flex border-b border-neutral-200 bg-transparent focus-within:border-neutral-950 transition-all group/slug">
+                                                        <span className="py-4 text-neutral-300 font-medium text-lg">rifa.in/</span>
                                                         <input
                                                             {...register('shopSlug', {
                                                                 required: true,
                                                                 pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
                                                                 onChange: () => setIsSlugEdited(true),
                                                             })}
-                                                            className="flex-1 px-5 py-4 outline-none bg-transparent text-brand-text placeholder:text-neutral-400 font-medium"
-                                                            placeholder="rajesh-woodworks"
+                                                            className="flex-1 px-1 py-4 outline-none bg-transparent text-neutral-950 placeholder:text-neutral-300 font-medium text-lg"
+                                                            placeholder="heritage-weaves"
                                                         />
                                                     </div>
-                                                    <p className="text-xs text-neutral-400 mt-2 ml-1">This will be your unique store link.</p>
                                                 </Field>
                                             </div>
                                         </motion.div>
@@ -521,57 +526,47 @@ const Collaborate = () => {
                                     {step === 2 && (
                                         <motion.div
                                             key="step2"
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -20 }}
-                                            transition={{ duration: 0.4, ease: "easeOut" }}
-                                            className="flex-1 space-y-10"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.4 }}
+                                            className="flex-1 space-y-12"
                                         >
                                             <div>
-                                                <h2 className="text-3xl font-serif font-bold text-brand-text mb-3">Define your craft</h2>
-                                                <p className="text-neutral-500 text-lg font-light">Help buyers understand the origin and beauty of your work.</p>
+                                                <h2 className="text-4xl font-serif font-bold text-neutral-950 mb-3 tracking-tight">The Artistry</h2>
+                                                <p className="text-neutral-500 text-lg font-light leading-relaxed">Define your craft and share the heritage behind your work.</p>
                                             </div>
 
-                                            <div className="space-y-8">
-                                                <div className="grid sm:grid-cols-2 gap-8">
-                                                    <Field label="Primary Category" icon={<Shapes size={18} />} error={errors.primaryCraftCategory && 'Select a craft category'}>
-                                                        <div className="relative">
-                                                            <select {...register('primaryCraftCategory', { required: true })} className="w-full px-5 py-4 border-b border-neutral-300 bg-transparent focus:border-brand-pink transition-all outline-none text-neutral-950 font-medium appearance-none cursor-pointer">
-                                                                <option value="" disabled>Select category</option>
-                                                                {craftCategoryOptions.map((category) => (
-                                                                    <option key={category} value={category}>{category}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                            </div>
-                                                        </div>
+                                            <div className="space-y-10">
+                                                <div className="grid sm:grid-cols-2 gap-10">
+                                                    <Field label="Discipline" error={errors.primaryCraftCategory && 'Select a craft category'}>
+                                                        <select {...register('primaryCraftCategory', { required: true })} className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 font-medium appearance-none cursor-pointer text-lg">
+                                                            <option value="" disabled>Select Category</option>
+                                                            {craftCategoryOptions.map((category) => (
+                                                                <option key={category} value={category}>{category}</option>
+                                                            ))}
+                                                        </select>
                                                     </Field>
 
-                                                    <Field label="Home Region" icon={<MapPin size={18} />} error={errors.homeRegion && 'Select your state or region'}>
-                                                        <div className="relative">
-                                                            <select {...register('homeRegion', { required: true })} className="w-full px-5 py-4 border-b border-neutral-300 bg-transparent focus:border-brand-pink transition-all outline-none text-neutral-950 font-medium appearance-none cursor-pointer">
-                                                                <option value="" disabled>Select state / region</option>
-                                                                {indianStateOptions.map((state) => (
-                                                                    <option key={state} value={state}>{state}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                            </div>
-                                                        </div>
+                                                    <Field label="Heritage Region" error={errors.homeRegion && 'Select your region'}>
+                                                        <select {...register('homeRegion', { required: true })} className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 font-medium appearance-none cursor-pointer text-lg">
+                                                            <option value="" disabled>Select Region</option>
+                                                            {indianStateOptions.map((state) => (
+                                                                <option key={state} value={state}>{state}</option>
+                                                            ))}
+                                                        </select>
                                                     </Field>
                                                 </div>
 
-                                                <Field label="Craft Origin Story" icon={<AlignLeft size={18} />} error={errors.craftOriginStory && 'Bio should be 150-200 characters'}>
+                                                <Field label="The Origin Story" error={errors.craftOriginStory && 'Manifesto should be 150-200 characters'}>
                                                     <textarea
                                                         {...register('craftOriginStory', { required: true, minLength: 150, maxLength: 200 })}
-                                                        rows={5}
-                                                        className="w-full px-5 py-4 border-b border-neutral-300 bg-transparent focus:border-brand-pink transition-all outline-none text-neutral-950 placeholder:text-neutral-400 font-medium resize-none leading-relaxed"
-                                                        placeholder="Share the heritage, techniques, and inspiration behind your creations..."
+                                                        rows={4}
+                                                        className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium resize-none leading-relaxed text-lg"
+                                                        placeholder="Share the inspirations and techniques that define your authentic process..."
                                                     />
-                                                    <div className={`text-xs text-right mt-2 font-bold tracking-wider uppercase ${craftOriginStory.length >= 150 && craftOriginStory.length <= 200 ? 'text-green-600' : 'text-neutral-400'}`}>
-                                                        {craftOriginStory.length} / 200 characters
+                                                    <div className={`text-[10px] text-right mt-2 font-bold tracking-[0.2em] uppercase ${craftOriginStory.length >= 150 && craftOriginStory.length <= 200 ? 'text-green-600' : 'text-neutral-300'}`}>
+                                                        {craftOriginStory.length} / 200
                                                     </div>
                                                 </Field>
                                             </div>
@@ -582,21 +577,21 @@ const Collaborate = () => {
                                     {step === 3 && (
                                         <motion.div
                                             key="step3"
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -20 }}
-                                            transition={{ duration: 0.4, ease: "easeOut" }}
-                                            className="flex-1 space-y-10"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.4 }}
+                                            className="flex-1 space-y-12"
                                         >
                                             <div>
-                                                <h2 className="text-3xl font-serif font-bold text-brand-text mb-3">Final touches</h2>
-                                                <p className="text-neutral-500 text-lg font-light">Upload your shop visuals and specify shipping details.</p>
+                                                <h2 className="text-4xl font-serif font-bold text-neutral-950 mb-3 tracking-tight">The Visuals</h2>
+                                                <p className="text-neutral-500 text-lg font-light leading-relaxed">Upload your boutique visuals and logistics data.</p>
                                             </div>
 
-                                            <div className="space-y-8">
-                                                <div className="grid sm:grid-cols-2 gap-8">
+                                            <div className="space-y-10">
+                                                <div className="grid sm:grid-cols-2 gap-10">
                                                     <AssetUploader
-                                                        label="Shop Banner"
+                                                        label="Boutique Banner"
                                                         helper="1200x300px ideal"
                                                         icon={ImageIcon}
                                                         selectedFile={assets.banner}
@@ -606,7 +601,7 @@ const Collaborate = () => {
                                                         onRemove={() => removeAsset('banner')}
                                                     />
                                                     <AssetUploader
-                                                        label="Shop Logo"
+                                                        label="Brand Identity"
                                                         helper="Square 500x500px"
                                                         icon={Camera}
                                                         selectedFile={assets.logo}
@@ -616,27 +611,25 @@ const Collaborate = () => {
                                                         onRemove={() => removeAsset('logo')}
                                                     />
                                                 </div>
-                                                {assetError && (
-                                                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-600 text-sm font-bold bg-red-50 p-4 rounded-xl border border-red-100">
-                                                        {assetError}
-                                                    </motion.p>
-                                                )}
 
-                                                <Field label="Shipping Origin PIN Code" icon={<MapPin size={18} />} error={errors.shippingOriginPinCode && 'Enter a strict 6-digit PIN code'}>
+                                                <Field label="Shipping Origin PIN" error={errors.shippingOriginPinCode && 'Strict 6-digit PIN required'}>
                                                     <input
                                                         type="text"
                                                         inputMode="numeric"
                                                         maxLength={6}
                                                         {...register('shippingOriginPinCode', { required: true, pattern: /^\d{6}$/ })}
-                                                        className="w-full md:w-1/2 px-5 py-4 border-b border-neutral-300 bg-transparent focus:border-brand-pink transition-all outline-none text-neutral-950 placeholder:text-neutral-400 font-medium tracking-widest"
-                                                        placeholder="e.g. 560001"
+                                                        className="w-full md:w-1/2 px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium tracking-[0.3em] text-lg"
+                                                        placeholder="560001"
                                                     />
                                                 </Field>
 
-                                                {submitError && (
-                                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 text-red-600 px-5 py-4 rounded-xl text-sm font-bold border border-red-100 flex items-start gap-3">
-                                                        <Shield className="w-5 h-5 shrink-0 mt-0.5" />
-                                                        <p>{submitError}</p>
+                                                {assetError && (
+                                                    <motion.div 
+                                                        initial={{ opacity: 0, y: 5 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="p-4 bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase tracking-widest"
+                                                    >
+                                                        {assetError}
                                                     </motion.div>
                                                 )}
                                             </div>
@@ -644,41 +637,54 @@ const Collaborate = () => {
                                     )}
                                 </AnimatePresence>
 
-                                {/* Form Footer / Actions */}
-                                <div className="mt-14 pt-8 border-t border-neutral-200 flex items-center justify-between">
+                                {submitError && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-8 p-4 bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase tracking-widest text-center"
+                                    >
+                                        {submitError}
+                                    </motion.div>
+                                )}
+
+                                {/* Form Footer */}
+                                <div className="mt-16 pt-10 border-t border-neutral-100 flex items-center justify-between">
                                     {step > 1 ? (
-                                        <button 
-                                            type="button" 
-                                            onClick={handleBack} 
-                                            className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-bold text-neutral-500 hover:bg-neutral-100 hover:text-brand-text transition-all active:scale-95 uppercase tracking-widest text-xs"
-                                        >
-                                            <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span>
-                                        </button>
-                                    ) : (
-                                        <div />
-                                    )}
+                                        <MagneticButton>
+                                            <button 
+                                                type="button" 
+                                                onClick={handleBack} 
+                                                className="flex items-center gap-2 px-6 py-4 text-neutral-400 hover:text-neutral-950 transition-all uppercase tracking-[0.2em] text-[10px] font-bold"
+                                            >
+                                                <ArrowLeft size={14} /> Back
+                                            </button>
+                                        </MagneticButton>
+                                    ) : <div />}
                                     
                                     {step < 3 ? (
-                                        <button 
-                                            type="button" 
-                                            onClick={handleNext} 
-                                            className="flex items-center gap-3 px-8 py-4 rounded-xl bg-brand-text text-white font-bold uppercase tracking-widest text-xs hover:bg-neutral-800 transition-all hover:-translate-y-0.5 active:scale-95 ml-auto"
-                                        >
-                                            Continue <ArrowRight size={16} />
-                                        </button>
+                                        <MagneticButton>
+                                            <button 
+                                                type="button" 
+                                                onClick={handleNext} 
+                                                className="flex items-center gap-3 px-10 py-5 bg-neutral-950 text-white font-bold uppercase tracking-[0.2em] text-[10px] hover:bg-neutral-800 transition-all shadow-xl"
+                                            >
+                                                Continue <ArrowRight size={14} />
+                                            </button>
+                                        </MagneticButton>
                                     ) : (
-                                        <button 
-                                            type="submit" 
-                                            disabled={isSubmitting} 
-                                            className="flex items-center gap-3 px-8 py-4 rounded-xl bg-brand-gold text-white font-bold uppercase tracking-widest text-xs shadow-lg shadow-brand-gold/30 hover:bg-brand-gold/90 transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:hover:translate-y-0 disabled:cursor-not-allowed ml-auto relative overflow-hidden group"
-                                        >
-                                            <div className="absolute top-0 -left-[100%] w-1/2 h-full bg-white/20 skew-x-12 group-hover:animate-shine" />
-                                            {isSubmitting ? (
-                                                <><Loader2 size={16} className="animate-spin" /> Submitting...</>
-                                            ) : (
-                                                <>Complete Profile <Send size={16} /></>
-                                            )}
-                                        </button>
+                                        <MagneticButton>
+                                            <button 
+                                                type="submit" 
+                                                disabled={isSubmitting} 
+                                                className="flex items-center gap-3 px-10 py-5 bg-brand-pink text-white font-bold uppercase tracking-[0.2em] text-[10px] shadow-2xl hover:bg-opacity-90 disabled:opacity-50"
+                                            >
+                                                {isSubmitting ? (
+                                                    <><Loader2 size={14} className="animate-spin" /> Processing</>
+                                                ) : (
+                                                    <>Complete Application <Send size={14} /></>
+                                                )}
+                                            </button>
+                                        </MagneticButton>
                                     )}
                                 </div>
                             </form>
@@ -686,67 +692,73 @@ const Collaborate = () => {
                     </div>
                 )}
             </div>
-            
-            <style dangerouslySetInnerHTML={{__html: `
-                @keyframes shine {
-                    100% { left: 200%; }
-                }
-                .animate-shine {
-                    animation: shine 1.5s ease-in-out infinite;
-                }
-            `}} />
         </div>
     );
 };
 
-const Field = ({ label, error, children, icon }: any) => (
-    <div className="space-y-2 group">
-        <label className="text-xs font-bold text-brand-text flex items-center gap-2 tracking-widest uppercase">
-            {icon && <span className="text-neutral-400 group-focus-within:text-brand-text transition-colors">{icon}</span>}
+interface FieldProps {
+    label: string;
+    error?: string;
+    children: React.ReactNode;
+}
+
+const Field = ({ label, error, children }: FieldProps) => (
+    <div className="space-y-4 group">
+        <label className="text-[10px] font-bold text-neutral-400 group-focus-within:text-neutral-950 transition-colors tracking-[0.2em] uppercase">
             {label}
         </label>
         <div className="relative">
             {children}
         </div>
         {error && (
-            <motion.p initial={{opacity:0, y:-5}} animate={{opacity:1, y:0}} className="text-red-500 text-xs mt-1.5 font-bold tracking-wide ml-1">
+            <motion.p initial={{opacity:0}} animate={{opacity:1}} className="text-brand-pink text-[10px] mt-2 font-bold tracking-widest uppercase">
                 {error}
             </motion.p>
         )}
     </div>
 );
 
-const AssetUploader = ({ label, helper, selectedFile, previewUrl, previewClassName, onChange, onRemove, icon: Icon }: any) => (
-    <div className="space-y-2 group">
-        <label className="text-xs font-bold text-brand-text flex items-center gap-2 tracking-widest uppercase">{label}</label>
+interface AssetUploaderProps {
+    label: string;
+    helper: string;
+    selectedFile: File | null;
+    previewUrl: string | null;
+    previewClassName: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemove: () => void;
+    icon: React.ElementType;
+}
+
+const AssetUploader = ({ label, helper, selectedFile, previewUrl, previewClassName, onChange, onRemove, icon: Icon }: AssetUploaderProps) => (
+    <div className="space-y-4 group">
+        <label className="text-[10px] font-bold text-neutral-400 tracking-[0.2em] uppercase">{label}</label>
         {!selectedFile ? (
-            <label className="relative flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-400 transition-all cursor-pointer overflow-hidden group-hover:border-neutral-300">
-                <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-14 h-14 mb-4 rounded-full bg-white shadow-sm border border-neutral-200 flex items-center justify-center text-neutral-400 group-hover:text-brand-text group-hover:scale-110 transition-all duration-300">
-                        <Icon size={28} strokeWidth={1.5} />
+            <label className="relative flex flex-col items-center justify-center p-12 border border-dashed border-neutral-200 bg-[#FBFBFA] hover:bg-white hover:border-neutral-900 transition-all cursor-pointer group/upload">
+                <div className="flex flex-col items-center">
+                    <div className="w-12 h-12 mb-4 bg-white border border-neutral-100 flex items-center justify-center text-neutral-300 group-hover/upload:text-neutral-950 group-hover/upload:scale-110 transition-all duration-500 shadow-sm">
+                        <Icon size={24} strokeWidth={1} />
                     </div>
-                    <p className="text-sm font-bold text-brand-text mb-1">Click to upload</p>
-                    <p className="text-xs text-neutral-500 font-medium">{helper}</p>
+                    <p className="text-[10px] font-bold text-neutral-950 uppercase tracking-[0.2em]">Upload</p>
+                    <p className="text-[9px] text-neutral-400 mt-2 tracking-widest">{helper}</p>
                 </div>
                 <input type="file" accept="image/*" onChange={onChange} className="hidden" />
             </label>
         ) : (
-            <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-sm group/file">
-                <div className={`relative bg-neutral-100 rounded-lg overflow-hidden border border-neutral-100 ${previewClassName}`}>
-                    {previewUrl && <img src={previewUrl} alt="preview" className="w-full h-full object-cover transition-transform duration-700 group-hover/file:scale-105" />}
-                    <div className="absolute inset-0 bg-brand-text/60 opacity-0 group-hover/file:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                        <button type="button" onClick={onRemove} className="px-5 py-2.5 bg-white rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors shadow-lg transform translate-y-4 group-hover/file:translate-y-0 duration-300 ease-out uppercase tracking-widest text-xs">
+            <div className="border border-neutral-100 bg-white p-3 shadow-sm group/file">
+                <div className={`relative bg-neutral-50 overflow-hidden ${previewClassName}`}>
+                    {previewUrl && <img src={previewUrl} alt="preview" className="w-full h-full object-cover transition-transform duration-1000 group-hover/file:scale-105" />}
+                    <div className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover/file:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
+                        <button type="button" onClick={onRemove} className="px-6 py-3 bg-white text-[9px] font-bold text-neutral-950 uppercase tracking-[0.2em] hover:bg-neutral-50 transition-colors shadow-xl">
                             Replace
                         </button>
                     </div>
                 </div>
-                <div className="mt-4 flex items-center justify-between px-2 pb-1">
+                <div className="mt-4 flex items-center justify-between px-2">
                     <div className="min-w-0 pr-4">
-                        <p className="text-sm font-bold text-brand-text truncate">{selectedFile.name}</p>
-                        <p className="text-xs text-neutral-500 font-medium mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                        <p className="text-[10px] font-bold text-neutral-950 truncate uppercase tracking-widest">{selectedFile.name}</p>
                     </div>
-                    <button type="button" onClick={onRemove} className="text-neutral-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors">
-                        <Trash2 size={20} />
+                    <button type="button" onClick={onRemove} className="text-neutral-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={16} />
                     </button>
                 </div>
             </div>
@@ -755,4 +767,5 @@ const AssetUploader = ({ label, helper, selectedFile, previewUrl, previewClassNa
 );
 
 export default Collaborate;
+
 

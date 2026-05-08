@@ -1,70 +1,128 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-@layer base {
-  body {
-    @apply bg-[#F9F9F6] text-neutral-900 font-sans antialiased;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-serif;
-  }
+/* --- Base Styles --- */
+body {
+  background-color: #FAF7F2;
+  color: #171717;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@layer components {
-  .btn-primary {
-    @apply px-8 py-4 bg-neutral-950 text-white rounded-none hover:bg-neutral-800 transition-all duration-500 font-serif tracking-widest uppercase text-sm shadow-xl hover:shadow-2xl hover:-translate-y-1;
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
 
-  .btn-secondary {
-    @apply px-8 py-4 border border-neutral-900 text-neutral-900 rounded-none hover:bg-neutral-900 hover:text-white transition-all duration-500 font-serif tracking-widest uppercase text-sm;
-  }
+/* --- Component Styles --- */
 
+/* Primary Buttons */
+.btn-primary {
+  padding: 1rem 2rem;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  border: none;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #262626;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-4px);
+}
+
+.btn-secondary {
+  padding: 1rem 2rem;
+  border: 1px solid #171717;
+  background-color: transparent;
+  color: #171717;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #171717;
+  color: #ffffff;
+}
+
+/* Layout Helpers */
+.section-padding {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 768px) {
   .section-padding {
-    @apply py-16 md:py-24 px-4 md:px-8 max-w-7xl mx-auto;
-  }
-
-  .form-input {
-    @apply w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all bg-white;
-  }
-}
-
-@layer utilities {
-  .animate-blob {
-    animation: blob 7s infinite;
-  }
-
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-4000 {
-    animation-delay: 4s;
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
+
+/* Form Styles */
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-input:focus {
+  border-color: #D4547A;
+  box-shadow: 0 0 0 2px rgba(212, 84, 122, 0.3);
+}
+
+/* Shimmer accent line */
+.shimmer-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D4547A, transparent);
+  background-size: 200% auto;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* --- Utilities & Keyframes --- */
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.perspective-1000   { perspective: 1000px; }
+.preserve-3d        { transform-style: preserve-3d; }
+.backface-hidden    {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotate-y-180 { transform: rotateY(180deg); }
 
 @keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
 
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }

@@ -25,10 +25,10 @@ const values = [
 
 const About = () => {
     return (
-        <div className="pt-24 min-h-screen bg-transparent">
+        <div className="pt-24 pb-16 min-h-screen bg-transparent">
 
             {/* Hero Header */}
-            <section className="relative py-24 md:py-36 bg-white border-b border-neutral-200 overflow-hidden">
+            <section className="relative py-16 md:py-24 bg-white border-b border-neutral-200 overflow-hidden">
                 <motion.div
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -61,7 +61,7 @@ const About = () => {
                 </motion.div>
             </section>
 
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-24 space-y-32">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-16 space-y-16">
 
                 {/* Chapter I — How it Started */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -138,7 +138,7 @@ const About = () => {
                 </motion.div>
 
                 {/* Vision & Values */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start max-w-6xl mx-auto border-t border-neutral-200 pt-24">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start max-w-6xl mx-auto border-t border-neutral-200 pt-16">
                     <motion.div
                         initial={{ opacity: 0, x: -24 }}
                         whileInView={{ opacity: 1, x: 0 }}

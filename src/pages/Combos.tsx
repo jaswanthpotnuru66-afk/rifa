@@ -3,7 +3,18 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Gift, Check, Sparkles } from 'lucide-react';
 
 const galleryImports = import.meta.glob('../assets/gallery/*.{png,jpg,jpeg,webp}', { eager: true });
-const galleryImages = Object.values(galleryImports).map((img: any) => img.default);
+const galleryImages = Object.entries(galleryImports)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, img]: [string, any]) => img.default);
+
+// Fallback images from public art_forms if gallery is insufficient
+const fallbackImages = [
+    '/art_forms/bouquets.png',
+    '/art_forms/crochet.png',
+    '/art_forms/satin_flowers.png',
+];
+const getImg = (idx: number): string =>
+    (galleryImages[idx] as string | undefined) ?? fallbackImages[idx % fallbackImages.length];
 
 const combos = [
     {
@@ -58,7 +69,7 @@ const combos = [
 
 const Combos = () => {
     return (
-        <div className="pt-32 pb-32 min-h-screen bg-transparent">
+        <div className="pt-24 pb-16 min-h-screen bg-transparent">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-8">
 
                 {/* Header */}
@@ -66,22 +77,24 @@ const Combos = () => {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-center mb-24 max-w-3xl mx-auto"
+                    className="text-center mb-12 max-w-3xl mx-auto"
                 >
                     <h2 className="text-xs font-bold tracking-widest uppercase text-brand-pink mb-4">Curated Sets</h2>
                     <h1 className="text-5xl md:text-6xl font-serif font-bold text-neutral-950 tracking-tighter mb-6">Offers &amp; Combos</h1>
                     <p className="text-xl text-neutral-500 font-light leading-relaxed">
                         Thoughtfully curated combinations for every occasion, every budget — without compromising on quality.
                     </p>
-                    <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 border border-brand-pink/30 bg-brand-pink/5 text-brand-pink text-xs uppercase tracking-widest font-bold">
-                        <Gift size={14} /> A complimentary handmade gift with every order
-                    </div>
+                        <motion.div
+                                className="border-l-2 border-brand-pink pl-4 mt-8 inline-flex items-center gap-2 text-brand-pink text-xs uppercase tracking-widest font-bold"
+                            >
+                            <Gift size={14} /> A complimentary handmade gift with every order
+                        </motion.div>
                 </motion.div>
 
                 {/* Combo Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-28">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
                     {combos.map((combo, idx) => {
-                        const img = galleryImages[combo.imgIdx] as string | undefined;
+                        const img = getImg(combo.imgIdx);
                         return (
                             <motion.div
                                 key={idx}
@@ -93,13 +106,11 @@ const Combos = () => {
                             >
                                 {/* Image */}
                                 <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
-                                    {img && (
-                                        <img
+                                    <img
                                             src={img}
                                             alt={combo.title}
                                             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                                         />
-                                    )}
                                     <div className={`absolute inset-0 ${combo.dark ? 'bg-black/30' : 'bg-black/10'}`} />
 
                                     {/* Tag badge */}
@@ -127,7 +138,7 @@ const Combos = () => {
                                     <ul className={`space-y-2.5 mb-8 pt-6 border-t flex-grow ${combo.dark ? 'border-neutral-800' : 'border-neutral-100'}`}>
                                         {combo.includes.map(item => (
                                             <li key={item} className="flex items-center gap-3 text-sm font-light">
-                                                <Check size={13} className={`flex-shrink-0 ${combo.dark ? 'text-neutral-500' : 'text-neutral-400'}`} />
+                                                <Check size={13} className={`flex-shrink-0 ${combo.dark ? 'text-brand-pink' : 'text-brand-pink'}`} />
                                                 <span className={combo.dark ? 'text-neutral-300' : 'text-neutral-600'}>{item}</span>
                                             </li>
                                         ))}
@@ -160,10 +171,10 @@ const Combos = () => {
                     className="relative overflow-hidden bg-neutral-950 text-white"
                 >
                     {/* Background Image */}
-                    {(galleryImages[26] as string | undefined) && (
+                    {getImg(26) && (
                         <div className="absolute inset-0">
                             <img
-                                src={galleryImages[26] as string}
+                                src={getImg(26)}
                                 alt=""
                                 className="w-full h-full object-cover opacity-15"
                             />
@@ -210,16 +221,15 @@ const Combos = () => {
                         </div>
 
                         {/* Right — Accent Image */}
-                        {(galleryImages[29] as string | undefined) && (
+                        {getImg(29) && (
                             <div className="hidden md:block relative">
                                 <div className="aspect-[3/4] overflow-hidden">
                                     <img
-                                        src={galleryImages[29] as string}
+                                        src={getImg(29)}
                                         alt="Mystery box preview"
                                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
                                     />
                                 </div>
-                                {/* Offset border accent */}
                                 <div className="absolute -bottom-4 -right-4 w-full h-full border border-white/10 pointer-events-none" />
                             </div>
                         )}

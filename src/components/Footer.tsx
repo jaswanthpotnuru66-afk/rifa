@@ -13,13 +13,13 @@ const Footer = () => {
                             Customized handmade gifts, woven with emotions and crafted with heart. From your imagination to reality.
                         </p>
                         <div className="flex space-x-4">
-                            <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-gold transition-colors">
+                            <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
                                 <Instagram size={20} />
                             </a>
-                            <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-gold transition-colors">
+                            <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
                                 <MessageCircle size={20} />
                             </a>
-                            <a href="mailto:contact@rifaarts.com" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-gold transition-colors">
+                            <a href="mailto:contact@rifaarts.com" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
                                 <Mail size={20} />
                             </a>
                         </div>
@@ -29,11 +29,13 @@ const Footer = () => {
                     <div>
                         <h4 className="font-serif font-semibold text-lg mb-4">Quick Links</h4>
                         <ul className="space-y-2 text-gray-600">
-                            <li><Link to="/" className="hover:text-brand-gold transition-colors">Home</Link></li>
-                            <li><Link to="/about" className="hover:text-brand-gold transition-colors">Our Story</Link></li>
-                            <li><Link to="/creations" className="hover:text-brand-gold transition-colors">Creations</Link></li>
-                            <li><Link to="/combos" className="hover:text-brand-gold transition-colors">Combos</Link></li>
-                            <li><Link to="/collaborate" className="hover:text-brand-gold transition-colors">Collaborate</Link></li>
+                            <li><Link to="/" className="hover:text-brand-pink transition-colors">Home</Link></li>
+                            <li><Link to="/about" className="hover:text-brand-pink transition-colors">Our Story</Link></li>
+                            <li><Link to="/marketplace" className="hover:text-brand-pink transition-colors">The Boutique</Link></li>
+                            <li><Link to="/creations" className="hover:text-brand-pink transition-colors">Exhibition</Link></li>
+                            <li><Link to="/combos" className="hover:text-brand-pink transition-colors">Combos</Link></li>
+                            <li><Link to="/custom-order" className="hover:text-brand-pink transition-colors underline decoration-brand-pink/30 underline-offset-4">Custom Order</Link></li>
+                            <li><Link to="/collaborate" className="hover:text-brand-pink transition-colors">Collaborate</Link></li>
                         </ul>
                     </div>
 
@@ -53,7 +55,7 @@ const Footer = () => {
                     <div>
                         <h4 className="font-serif font-semibold text-lg mb-4">Contact Us</h4>
                         <p className="text-gray-600 mb-2">Have an idea?</p>
-                        <Link to="/contact" className="text-brand-gold font-medium hover:underline">
+                        <Link to="/contact" className="text-brand-pink font-medium hover:underline">
                             Get in touch with us
                         </Link>
                     </div>

@@ -13,34 +13,59 @@ export default {
       colors: {
         // Custom Brand Palette — Rifa Arts & Crafts
         'brand': {
-          pink:      '#C17B7B', // Warm dusty rose — primary accent
-          cream:     '#F9F9F6', // Off-white page background
-          beige:     '#F1EDE8', // Warm beige surface
+          // Vibrant primary accent — deep rose
+          pink:      '#D4547A',
+          'pink-light': '#F2A5BE',
+          'pink-dark': '#A83058',
+          // Champagne / off-white backgrounds
+          cream:     '#FAF7F2',
+          beige:     '#F2EBE0',
           rose: {
-            50:  '#FAF3F3',
-            100: '#F3E5E5',
+            50:  '#FFF0F4',
+            100: '#FFD6E4',
           },
-          sage:      '#8A9E8A', // Muted sage green
-          mauve:     '#9E7B8A', // Muted mauve
-          text:      '#0A0A0A', // Near-black
+          // Vivid accent colors
+          gold:      '#E8A020',   // Warm amber-gold
+          'gold-light': '#FFDFA0',
+          sage:      '#4A8C6F',   // Rich emerald-sage
+          'sage-light': '#A8D4BC',
+          mauve:     '#9E5C7A',   // Deep mauve
+          lavender:  '#7C6FCD',   // Indigo-lavender accent
+          terracotta:'#C4603A',   // Warm terracotta
+          // Neutrals
+          text:        '#0A0A0A',
           'menu-text': '#1A1A1A',
-          gold:      '#C4956A', // Warm gold accent
-          chocolate: '#F3E5D8', // Warm cream surface
+          chocolate:   '#F5ECE0',
         }
       },
       animation: {
-        'fade-in': 'fadeIn 0.5s ease-out',
-        'slide-up': 'slideUp 0.5s ease-out',
+        'fade-in':   'fadeIn 0.5s ease-out',
+        'slide-up':  'slideUp 0.5s ease-out',
+        'shimmer':   'shimmer 2.5s infinite',
+        'float':     'float 6s ease-in-out infinite',
+        'glow-pulse':'glowPulse 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
-          '0%': { opacity: '0' },
+          '0%':   { opacity: '0' },
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        }
+          '0%':   { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)',     opacity: '1' },
+        },
+        shimmer: {
+          '0%':   { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition:  '200% center' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%':      { transform: 'translateY(-12px)' },
+        },
+        glowPulse: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(212,84,122,0.3)' },
+          '50%':      { boxShadow: '0 0 40px rgba(212,84,122,0.6)' },
+        },
       }
     },
   },
