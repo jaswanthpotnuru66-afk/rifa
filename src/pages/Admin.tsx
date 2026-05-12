@@ -14,7 +14,7 @@ import {
     Handshake,
     Store
 } from 'lucide-react';
-import type { StoredInquiry } from './CustomOrder';
+import type { StoredInquiry } from './buyer/CustomOrder';
 import type { CreatorApplication } from './Collaborate';
 import { supabase } from '../lib/supabase';
 
@@ -50,25 +50,48 @@ const Admin = () => {
         } else {
             console.log("Fetched inquiries:", data);
 
-            const formattedData: StoredInquiry[] = (data || []).map(item => ({
-                id: item.id,
-                date: item.created_at,
-                name: item.name,
-                contact: item.contact,
-                occasion: item.occasion,
-                artForms: item.art_forms || [],
-                budget: item.budget,
-                description: item.description,
-                address: item.address,
-                neededBy: item.needed_by,
-                fileName: item.file_name,
-                status: item.status,
-                confirmedPrice: item.confirmed_price,
-                finalDeliveryDate: item.final_delivery_date,
-                finalNotes: item.final_notes,
-                paymentStatus: item.payment_status,
-                shippingInfo: item.shipping_info
-            }));
+            interface InquiryRecord {
+                id: string;
+                created_at: string;
+                name: string;
+                contact: string;
+                occasion: string;
+                art_forms?: string[];
+                budget: string;
+                description: string;
+                address: string;
+                needed_by: string;
+                file_name?: string;
+                status: string;
+                confirmed_price?: number;
+                final_delivery_date?: string;
+                final_notes?: string;
+                payment_status?: string;
+                shipping_info?: string;
+            }
+
+            const formattedData: StoredInquiry[] = (data || []).map((item) => {
+                const i = item as unknown as InquiryRecord;
+                return {
+                    id: i.id,
+                    date: i.created_at,
+                    name: i.name,
+                    contact: i.contact,
+                    occasion: i.occasion,
+                    artForms: i.art_forms || [],
+                    budget: i.budget,
+                    description: i.description,
+                    address: i.address,
+                    neededBy: i.needed_by,
+                    fileName: i.file_name,
+                    status: (i.status as StoredInquiry['status']) || 'new',
+                    confirmedPrice: i.confirmed_price,
+                    finalDeliveryDate: i.final_delivery_date,
+                    finalNotes: i.final_notes,
+                    paymentStatus: (i.payment_status as StoredInquiry['paymentStatus']),
+                    shippingInfo: i.shipping_info
+                };
+            });
             setInquiries(formattedData);
         }
         setLoading(false);
@@ -85,34 +108,66 @@ const Admin = () => {
             return;
         }
 
-        const formattedData: CreatorApplication[] = (data || []).map(item => ({
-            id: item.id,
-            date: item.created_at,
-            creatorName: item.creator_name,
-            brandName: item.brand_name || '',
-            contact: item.contact,
-            email: item.email || '',
-            location: item.location || '',
-            collaborationType: item.collaboration_type,
-            productCategories: item.product_categories || [],
-            priceRange: item.price_range || '',
-            productDescription: item.product_description,
-            socialLink: item.social_link || '',
-            imageUrl: item.image_url,
-            status: item.status,
-            dashboardStatus: item.dashboard_status,
-            commissionTerms: item.commission_terms || '',
-            adminNotes: item.admin_notes || '',
-            mobileNumber: item.mobile_number || item.contact || '',
-            shopName: item.shop_name || item.brand_name || item.creator_name || '',
-            shopSlug: item.shop_slug || '',
-            primaryCraftCategory: item.primary_craft_category || item.product_categories?.[0] || '',
-            homeRegion: item.home_region || item.location || '',
-            craftOriginStory: item.craft_origin_story || item.product_description || '',
-            shopBannerUrl: item.shop_banner_url || '',
-            shopLogoUrl: item.shop_logo_url || item.image_url || '',
-            shippingOriginPinCode: item.shipping_origin_pin_code || '',
-        }));
+        interface CreatorRecord {
+            id: string;
+            created_at: string;
+            creator_name?: string;
+            brand_name?: string;
+            contact?: string;
+            email?: string;
+            location?: string;
+            collaboration_type?: string;
+            product_categories?: string[];
+            price_range?: string;
+            product_description?: string;
+            social_link?: string;
+            image_url?: string;
+            status?: string;
+            dashboard_status?: string;
+            commission_terms?: string;
+            admin_notes?: string;
+            mobile_number?: string;
+            shop_name?: string;
+            shop_slug?: string;
+            primary_craft_category?: string;
+            home_region?: string;
+            craft_origin_story?: string;
+            shop_banner_url?: string;
+            shop_logo_url?: string;
+            shipping_origin_pin_code?: string;
+        }
+
+        const formattedData: CreatorApplication[] = (data || []).map((item) => {
+            const i = item as unknown as CreatorRecord;
+            return {
+                id: i.id,
+                date: i.created_at,
+                creatorName: i.creator_name || '',
+                brandName: i.brand_name || '',
+                contact: i.contact || '',
+                email: i.email || '',
+                location: i.location || '',
+                collaborationType: (i.collaboration_type as CreatorApplication['collaborationType']) || 'sell-through-rifa',
+                productCategories: i.product_categories || [],
+                priceRange: i.price_range || '',
+                productDescription: i.product_description || '',
+                socialLink: i.social_link || '',
+                imageUrl: i.image_url,
+                status: (i.status as CreatorApplication['status']) || 'new',
+                dashboardStatus: (i.dashboard_status as CreatorApplication['dashboardStatus']) || 'not-started',
+                commissionTerms: i.commission_terms || '',
+                adminNotes: i.admin_notes || '',
+                mobileNumber: i.mobile_number || i.contact || '',
+                shopName: i.shop_name || i.brand_name || i.creator_name || '',
+                shopSlug: i.shop_slug || '',
+                primaryCraftCategory: i.primary_craft_category || i.product_categories?.[0] || '',
+                homeRegion: i.home_region || i.location || '',
+                craftOriginStory: i.craft_origin_story || i.product_description || '',
+                shopBannerUrl: i.shop_banner_url || '',
+                shopLogoUrl: i.shop_logo_url || i.image_url || '',
+                shippingOriginPinCode: i.shipping_origin_pin_code || '',
+            };
+        });
 
         setCreatorApplications(formattedData);
     }
@@ -165,7 +220,7 @@ const Admin = () => {
         setInquiries(prev => prev.map(inq => inq.id === id ? { ...inq, ...updates } : inq));
 
         // Prepare data for DB (convert camelCase to snake_case)
-        const dbUpdates: Record<string, string> = {};
+        const dbUpdates: Record<string, string | number | boolean | null | undefined> = {};
         if (updates.status) dbUpdates.status = updates.status;
         if (updates.confirmedPrice) dbUpdates.confirmed_price = updates.confirmedPrice;
         if (updates.paymentStatus) dbUpdates.payment_status = updates.paymentStatus;
@@ -544,7 +599,7 @@ const Admin = () => {
                                             <div className="space-y-1">
                                                 <span className="text-xs text-gray-500 font-medium">Art Forms</span>
                                                 <div className="flex flex-wrap gap-1">
-                                                    {selectedInquiry.artForms.map(art => (
+                                                    {selectedInquiry.artForms.map((art: string) => (
                                                         <span key={art} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">{art}</span>
                                                     ))}
                                                 </div>
@@ -876,7 +931,7 @@ const CreatorApplicationsPanel = ({
                                     <div className="space-y-1">
                                         <span className="text-xs text-gray-500 font-medium">Categories</span>
                                         <div className="flex flex-wrap gap-1">
-                                            {selectedCreatorApplication.productCategories.map(category => (
+                                            {selectedCreatorApplication.productCategories.map((category: string) => (
                                                 <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">{category}</span>
                                             ))}
                                         </div>
@@ -977,7 +1032,7 @@ const InfoRow = ({ label, value }: { label: string, value: string }) => (
 );
 
 const StatusBadge = ({ status }: { status: StoredInquiry['status'] }) => {
-    const styles = {
+    const styles: Record<string, string> = {
         new: 'bg-blue-50 text-blue-700 border-blue-100',
         contacted: 'bg-yellow-50 text-yellow-700 border-yellow-100',
         'in-progress': 'bg-purple-50 text-purple-700 border-purple-100',
@@ -992,7 +1047,7 @@ const StatusBadge = ({ status }: { status: StoredInquiry['status'] }) => {
 };
 
 const CreatorStatusBadge = ({ status }: { status: CreatorApplication['status'] }) => {
-    const styles = {
+    const styles: Record<string, string> = {
         new: 'bg-blue-50 text-blue-700 border-blue-100',
         reviewing: 'bg-yellow-50 text-yellow-700 border-yellow-100',
         approved: 'bg-green-50 text-green-700 border-green-100',
@@ -1007,7 +1062,7 @@ const CreatorStatusBadge = ({ status }: { status: CreatorApplication['status'] }
 };
 
 const formatCollaborationType = (type: CreatorApplication['collaborationType']) => {
-    const labels = {
+    const labels: Record<string, string> = {
         'sell-through-rifa': 'Sell through Rifa',
         'merchandise-dashboard': 'Creator dashboard',
         both: 'Both options',

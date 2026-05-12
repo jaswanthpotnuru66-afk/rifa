@@ -234,7 +234,7 @@ const Orders = () => {
                                         <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">
                                             {selectedOrder.type === 'bespoke' ? 'Commission' : 'Acquisition'}
                                         </span>
-                                        <StatusBadge status={selectedOrder.status as any} />
+                                        <StatusBadge status={selectedOrder.status as StoredInquiry['status']} />
                                     </div>
                                 </div>
 
@@ -377,7 +377,7 @@ const Orders = () => {
                                             </div>
                                             <div className="flex items-center gap-8">
                                                 <div className="hidden sm:block text-right">
-                                                    <StatusBadge status={order.status as any} />
+                                                    <StatusBadge status={order.status as StoredInquiry['status']} />
                                                 </div>
                                                 <ChevronRight size={20} className="text-neutral-200 group-hover:text-brand-pink group-hover:translate-x-1 transition-all" />
                                             </div>

@@ -24,7 +24,7 @@ export interface StoredInquiry extends Omit<FormInputs, 'files'> {
     date: string;
     fileName?: string;
     status: 'new' | 'contacted' | 'in-progress' | 'completed';
-    confirmedPrice?: string;
+    confirmedPrice?: number | string;
     finalDeliveryDate?: string;
     finalNotes?: string;
     paymentStatus?: 'pending' | 'partially-paid' | 'paid';

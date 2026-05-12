@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -14,15 +14,29 @@ import {
     Clock,
     Sparkles
 } from 'lucide-react';
-import { products, type Product } from '../lib/products';
+import { products } from '../lib/products';
 
 const BespokePortal = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [product, setProduct] = useState<Product | null>(null);
+    
+    const product = useMemo(() => products.find(p => p.id === id) || null, [id]);
+    
     const [engravingText, setEngravingText] = useState('');
     const [fontStyle, setFontStyle] = useState("'Playfair Display', serif");
     const [isGift, setIsGift] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (product && !selectedImage) {
+            const timer = setTimeout(() => setSelectedImage(product.images[0]), 0);
+            return () => clearTimeout(timer);
+        }
+    }, [product, selectedImage]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [id]);
 
     const handleAddToCart = () => {
         // Navigate to checkout with bespoke state
@@ -37,7 +51,6 @@ const BespokePortal = () => {
             } 
         });
     };
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const fonts = [
         { label: "Elegant Serif (Classic)", value: "'Playfair Display', serif" },
@@ -45,15 +58,6 @@ const BespokePortal = () => {
         { label: "Handwritten Script", value: "'Dancing Script', cursive" },
         { label: "Minimalist Mono", value: "monospace" }
     ];
-
-    useEffect(() => {
-        const found = products.find(p => p.id === id);
-        if (found) {
-            setProduct(found);
-            setSelectedImage(found.images[0]);
-        }
-        window.scrollTo(0, 0);
-    }, [id]);
 
     if (!product) {
         return (

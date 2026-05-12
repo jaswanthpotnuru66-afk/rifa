@@ -14,7 +14,7 @@ const Auth = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     // Get the path to redirect to after login (default to home)
-    const from = (location.state as any)?.from?.pathname || '/';
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

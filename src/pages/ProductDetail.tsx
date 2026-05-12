@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Star, Truck,
@@ -8,28 +8,28 @@ import {
     Zap, ShieldAlert, CheckCircle2, Info, MessageSquare,
     RefreshCw, ThumbsUp
 } from 'lucide-react';
-import { products, type Product } from '../lib/products';
+import { products } from '../lib/products';
 
 const ProductDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [product, setProduct] = useState<Product | null>(null);
-    const [selectedImage, setSelectedImage] = useState<string>('');
-    const [isLoading, setIsLoading] = useState(true);
+    const product = useMemo(() => products.find(p => p.id === id) || null, [id]);
+    
+    const [selectedImage, setSelectedImage] = useState<string>(() => product?.images[0] || '');
     const [isAdded] = useState(false);
     const [pinCode, setPinCode] = useState('');
     const [isPinChecked, setIsPinChecked] = useState(false);
 
     useEffect(() => {
-        setIsLoading(true);
-        const foundProduct = products.find(p => p.id === id);
-        if (foundProduct) {
-            setProduct(foundProduct);
-            setSelectedImage(foundProduct.images[0]);
+        if (product && !selectedImage) {
+            const timer = setTimeout(() => setSelectedImage(product.images[0]), 0);
+            return () => clearTimeout(timer);
         }
+    }, [product, selectedImage]);
+
+    useEffect(() => {
         window.scrollTo(0, 0);
-        setIsLoading(false);
-    }, [id, products, setIsLoading, setProduct, setSelectedImage]);
+    }, [id]);
 
     const handleAddToCart = () => {
         navigate('/cart');
@@ -39,7 +39,6 @@ const ProductDetail = () => {
         navigate('/checkout');
     };
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2]"><div className="w-8 h-8 border-2 border-brand-pink border-t-transparent rounded-full animate-spin" /></div>;
     if (!product) return <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] px-4 text-center"><div><h1 className="text-2xl font-serif font-bold">Piece Not Found</h1></div></div>;
 
     const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;

@@ -99,7 +99,15 @@ const ScrollDotNav = ({ activeId }: { activeId: string }) => {
     );
 };
 
-const GalleryCard = ({ item, index }: { item: any, index: number }) => {
+interface GalleryItem {
+    num: number;
+    title: string;
+    type: string;
+    technique: string;
+    story: string;
+}
+
+const GalleryCard = ({ item, index }: { item: GalleryItem, index: number }) => {
     const [isFlipped, setIsFlipped] = useState(false);
     
     return (
@@ -257,9 +265,12 @@ const Home = () => {
                         className="order-2 lg:order-1 pt-10 lg:pt-0"
                     >
                         <motion.div variants={fadeInUp}>
-                            <span className="inline-block px-4 py-1.5 mb-8 text-xs font-bold tracking-widest uppercase border border-brand-pink text-brand-pink rounded-full">
+                            <Link 
+                                to="/craftmaker/dashboard" 
+                                className="inline-block px-4 py-1.5 mb-8 text-xs font-bold tracking-widest uppercase border border-brand-pink text-brand-pink rounded-full"
+                            >
                                 Bespoke Gifting
-                            </span>
+                            </Link>
                         </motion.div>
                         
                         <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-neutral-950 leading-[0.95] tracking-tighter mb-8">

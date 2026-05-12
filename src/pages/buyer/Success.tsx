@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -7,7 +8,7 @@ import {
 
 const Success = () => {
     const location = useLocation();
-    const orderId = location.state?.orderId || `RIFA-${Math.floor(100000 + Math.random() * 900000)}`;
+    const [orderId] = useState(() => location.state?.orderId || `RIFA-${Math.floor(100000 + Math.random() * 900000)}`);
 
     return (
         <div className="min-h-screen bg-[#FAF7F2] pt-32 pb-20 selection:bg-brand-pink/20 overflow-hidden relative">

@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import PageTransition from './components/PageTransition';
+import {FloatingWidget } from './components/FloatingElements';
 
 // Pages
 import Home       from './pages/Home';
@@ -26,6 +27,42 @@ import Marketplace from './pages/Marketplace';
 import Cart from './pages/buyer/Cart';
 import Success from './pages/buyer/Success';
 import NotFound   from './pages/NotFound';
+
+// CraftMaker Pages (Collaborate acts as the entry/register page)
+import CraftMakerPending from './pages/craftmaker/Pending';
+import CraftMakerDashboard from './pages/craftmaker/Dashboard';
+import CraftMakerListings from './pages/craftmaker/Listings';
+import CraftMakerListingForm from './pages/craftmaker/ListingForm';
+import CraftMakerOrders from './pages/craftmaker/Orders';
+import CraftMakerCustomOrders from './pages/craftmaker/CustomOrders';
+import CraftMakerOrderDetail from './pages/craftmaker/OrderDetail';
+import CraftMakerDisputes from './pages/craftmaker/Disputes';
+import CraftMakerShipping from './pages/craftmaker/Shipping';
+import CraftMakerEarnings from './pages/craftmaker/Earnings';
+import CraftMakerTaxReports from './pages/craftmaker/TaxReports';
+import CraftMakerAnalytics from './pages/craftmaker/Analytics';
+import CraftMakerMarketing from './pages/craftmaker/Marketing';
+import CraftMakerReviews from './pages/craftmaker/Reviews';
+import CraftMakerShopSettings from './pages/craftmaker/ShopSettings';
+import CraftMakerAccountSettings from './pages/craftmaker/AccountSettings';
+
+// Admin Ops Pages
+import AdminOpsDashboard from './pages/admin/ops/AdminOpsDashboard';
+import AdminMakers from './pages/admin/ops/AdminMakers';
+import AdminMakerDetail from './pages/admin/ops/AdminMakerDetail';
+import AdminApplications from './pages/admin/ops/AdminApplications';
+import AdminWeightMismatches from './pages/admin/ops/AdminWeightMismatches';
+import AdminOrders from './pages/admin/ops/AdminOrders';
+import AdminOrderDetail from './pages/admin/ops/AdminOrderDetail';
+import AdminDisputes from './pages/admin/ops/AdminDisputes';
+import AdminDisputeDetail from './pages/admin/ops/AdminDisputeDetail';
+import AdminFlaggedListings from './pages/admin/ops/AdminFlaggedListings';
+import AdminShipping from './pages/admin/ops/AdminShipping';
+import AdminPayouts from './pages/admin/ops/AdminPayouts';
+import AdminTaxReports from './pages/admin/ops/AdminTaxReports';
+import AdminRevenue from './pages/admin/ops/AdminRevenue';
+import AdminSettings from './pages/admin/ops/AdminSettings';
+import { Navigate } from 'react-router-dom';
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -59,10 +96,58 @@ const AnimatedRoutes = () => {
         <Route path="/orders"       element={<PageTransition><Orders /></PageTransition>} />
         <Route path="/profile"      element={<PageTransition><Profile /></PageTransition>} />
         <Route path="/admin"        element={<Admin />} />
+        
+        {/* CraftMaker Portal Routes */}
+        <Route path="/craftmaker/register" element={<PageTransition><Collaborate /></PageTransition>} />
+        <Route path="/craftmaker/pending"  element={<PageTransition><CraftMakerPending /></PageTransition>} />
+        
+        <Route path="/craftmaker/dashboard"       element={<CraftMakerDashboard />} />
+        <Route path="/craftmaker/listings"        element={<CraftMakerListings />} />
+        <Route path="/craftmaker/listings/new"    element={<CraftMakerListingForm />} />
+        <Route path="/craftmaker/listings/:id/edit" element={<CraftMakerListingForm />} />
+        <Route path="/craftmaker/orders"          element={<CraftMakerOrders />} />
+        <Route path="/craftmaker/orders/custom"   element={<CraftMakerCustomOrders />} />
+        <Route path="/craftmaker/orders/:id"      element={<CraftMakerOrderDetail />} />
+        <Route path="/craftmaker/disputes"        element={<CraftMakerDisputes />} />
+        <Route path="/craftmaker/disputes/:id"    element={<CraftMakerDisputes />} />
+        <Route path="/craftmaker/shipping"        element={<CraftMakerShipping />} />
+        <Route path="/craftmaker/earnings"        element={<CraftMakerEarnings />} />
+        <Route path="/craftmaker/tax"             element={<CraftMakerTaxReports />} />
+        <Route path="/craftmaker/analytics"       element={<CraftMakerAnalytics />} />
+        <Route path="/craftmaker/marketing"       element={<CraftMakerMarketing />} />
+        <Route path="/craftmaker/reviews"         element={<CraftMakerReviews />} />
+        <Route path="/craftmaker/shop"            element={<CraftMakerShopSettings />} />
+        <Route path="/craftmaker/settings"        element={<CraftMakerAccountSettings />} />
+
+        {/* Admin Ops Portal Routes */}
+        <Route path="/admin/ops"                      element={<Navigate to="/admin/ops/dashboard" replace />} />
+        <Route path="/admin/ops/dashboard"            element={<AdminOpsDashboard />} />
+        <Route path="/admin/ops/makers"               element={<AdminMakers />} />
+        <Route path="/admin/ops/makers/:id"           element={<AdminMakerDetail />} />
+        <Route path="/admin/ops/makers/applications"  element={<AdminApplications />} />
+        <Route path="/admin/ops/makers/weights"       element={<AdminWeightMismatches />} />
+        <Route path="/admin/ops/orders"               element={<AdminOrders />} />
+        <Route path="/admin/ops/orders/:id"           element={<AdminOrderDetail />} />
+        <Route path="/admin/ops/disputes"             element={<AdminDisputes />} />
+        <Route path="/admin/ops/disputes/:id"         element={<AdminDisputeDetail />} />
+        <Route path="/admin/ops/listings/flagged"     element={<AdminFlaggedListings />} />
+        <Route path="/admin/ops/shipping"             element={<AdminShipping />} />
+        <Route path="/admin/ops/payouts"              element={<AdminPayouts />} />
+        <Route path="/admin/ops/tax"                  element={<AdminTaxReports />} />
+        <Route path="/admin/ops/revenue"              element={<AdminRevenue />} />
+        <Route path="/admin/ops/settings"             element={<AdminSettings />} />
+
         <Route path="*"             element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
   );
+};
+
+// Global elements that only appear on specific routes
+const ConditionalFloatingWidget = () => {
+  const { pathname } = useLocation();
+  if (pathname !== '/') return null;
+  return <FloatingWidget />;
 };
 
 function App() {
@@ -78,6 +163,7 @@ function App() {
         />
         
         <Navbar />
+        <ConditionalFloatingWidget />
         <main className="flex-grow">
           <AnimatedRoutes />
         </main>

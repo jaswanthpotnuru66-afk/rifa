@@ -6,7 +6,9 @@ import {
     ArrowRight, ShieldCheck, Award,
     ChevronRight, X, Clock
 } from 'lucide-react';
-import { products } from '../../lib/products';
+import { products, type Product } from '../../lib/products';
+
+type CartItem = Product & { quantity: number };
 
 const Cart = () => {
     const navigate = useNavigate();
@@ -32,14 +34,14 @@ const Cart = () => {
         setCartItems(items => items.filter(item => item.id !== id));
     };
 
-    const moveToWishlist = (item: any) => {
+    const moveToWishlist = (item: CartItem) => {
         setCartItems(prev => prev.filter(i => i.id !== item.id));
         if (!wishlistItems.find(i => i.id === item.id)) {
             setWishlistItems(prev => [...prev, item]);
         }
     };
 
-    const moveToCart = (item: any) => {
+    const moveToCart = (item: Product) => {
         setWishlistItems(prev => prev.filter(i => i.id !== item.id));
         if (!cartItems.find(i => i.id === item.id)) {
             setCartItems(prev => [...prev, { ...item, quantity: 1 }]);

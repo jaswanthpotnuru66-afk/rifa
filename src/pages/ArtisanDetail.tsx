@@ -1,29 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import { Star, Heart, ArrowRight, CheckCircle2, MessageSquare, UserPlus, Zap, Shield, Sparkles } from 'lucide-react';
-import { artisans, type Artisan } from '../lib/artisans';
-import { products, type Product } from '../lib/products';
+import { artisans } from '../lib/artisans';
+import { products } from '../lib/products';
 
 const ArtisanDetail = () => {
     const { id } = useParams();
-    const [artisan, setArtisan] = useState<Artisan | null>(null);
-    const [displayProducts, setDisplayProducts] = useState<Product[]>([]);
+
+    const artisan = useMemo(() => artisans.find(a => a.id === id) || null, [id]);
+
+    const displayProducts = useMemo(() => {
+        if (!artisan) return [];
+        
+        // Get artisan specific products
+        const specific = products.filter(p => p.artisanId === artisan.id);
+        // Get common top products (first 3 from global list)
+        const common = products.slice(0, 3);
+        
+        // Combine and remove duplicates
+        return [...specific, ...common.filter(c => !specific.find(s => s.id === c.id))];
+    }, [artisan]);
 
     useEffect(() => {
-        const foundArtisan = artisans.find(a => a.id === id);
-        if (foundArtisan) {
-            setArtisan(foundArtisan);
-            
-            // Get artisan specific products
-            const specific = products.filter(p => p.artisanId === foundArtisan.id);
-            // Get common top products (first 3 from global list)
-            const common = products.slice(0, 3);
-            
-            // Combine and remove duplicates
-            const combined = [...specific, ...common.filter(c => !specific.find(s => s.id === c.id))];
-            setDisplayProducts(combined);
-        }
         window.scrollTo(0, 0);
     }, [id]);
 

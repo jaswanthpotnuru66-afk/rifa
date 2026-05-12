@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { products } from '../../lib/products';
 import { supabase } from '../../lib/supabase';
+import type { StoredInquiry } from './CustomOrder';
 
 /* --- Mock User Data --- */
 const MOCK_USER = {
@@ -49,7 +50,7 @@ const Profile = () => {
 
     // Orders state
     const [contact, setContact] = useState('');
-    const [inquiries, setInquiries] = useState<any[]>([]);
+    const [inquiries, setInquiries] = useState<StoredInquiry[]>([]);
     const [isLoadingOrders, setIsLoadingOrders] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
@@ -64,7 +65,11 @@ const Profile = () => {
                 .eq('contact', contact.trim())
                 .order('created_at', { ascending: false });
             if (error) throw error;
-            setInquiries(data || []);
+            setInquiries((data || []).map(d => ({
+                ...d,
+                date: d.created_at,
+                confirmedPrice: d.confirmed_price
+            } as StoredInquiry)));
         } catch (err) {
             console.error('Error syncing orders:', err);
         } finally {
@@ -72,8 +77,23 @@ const Profile = () => {
         }
     };
 
+    const combinedOrders = React.useMemo(() => [
+        { id: 'ORD-8821', name: 'Heritage Jamdani Saree', status: 'completed' as const, date: '2024-04-12', price: '₹8,500', type: 'product', image: '/products/earrings.png' },
+        { id: 'ORD-7742', name: 'Oceanic Resin Frame', status: 'in-progress' as const, date: '2024-03-28', price: '₹899', type: 'product', image: '/products/mandala.png' },
+        ...inquiries.map(i => ({
+            id: i.id,
+            name: `${i.occasion} Custom Order`,
+            status: i.status,
+            date: i.date,
+            price: `₹${i.confirmedPrice || i.budget}`,
+            type: 'bespoke',
+            image: undefined,
+            data: i
+        }))
+    ], [inquiries]);
+
     const StatusBadge = ({ status }: { status: string }) => {
-        const configs: any = {
+        const configs: Record<string, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
             new: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', icon: <Clock size={10} /> },
             contacted: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100', icon: <MessageSquare size={10} /> },
             'in-progress': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', icon: <Sparkles size={10} /> },
@@ -87,7 +107,7 @@ const Profile = () => {
         );
     };
 
-    const DetailRow = ({ label, value, icon }: { label: string; value: any; icon: React.ReactNode }) => (
+    const DetailRow = ({ label, value, icon }: { label: string; value: React.ReactNode; icon: React.ReactNode }) => (
         <div className="flex items-start gap-3">
             <div className="w-6 h-6 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 shrink-0">
                 {icon}
@@ -355,19 +375,7 @@ const Profile = () => {
 
                                                 <div className="space-y-4">
                                                     {/* Combined Mock & Sync Results */}
-                                                    {[
-                                                        { id: 'ORD-8821', name: 'Heritage Jamdani Saree', status: 'completed', date: '2024-04-12', price: '₹8,500', type: 'product', image: '/products/earrings.png' },
-                                                        { id: 'ORD-7742', name: 'Oceanic Resin Frame', status: 'in-progress', date: '2024-03-28', price: '₹899', type: 'product', image: '/products/mandala.png' },
-                                                        ...inquiries.map(i => ({
-                                                            id: i.id,
-                                                            name: `${i.occasion} Custom Order`,
-                                                            status: i.status,
-                                                            date: i.created_at,
-                                                            price: `₹${i.confirmed_price || i.budget}`,
-                                                            type: 'bespoke',
-                                                            data: i
-                                                        }))
-                                                    ].map((order: any) => (
+                                                    {combinedOrders.map((order) => (
                                                         <div 
                                                             key={order.id}
                                                             onClick={() => setSelectedOrderId(order.id)}

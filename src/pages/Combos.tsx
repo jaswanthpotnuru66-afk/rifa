@@ -5,7 +5,7 @@ import { ArrowRight, Gift, Check, Sparkles } from 'lucide-react';
 const galleryImports = import.meta.glob('../assets/gallery/*.{png,jpg,jpeg,webp}', { eager: true });
 const galleryImages = Object.entries(galleryImports)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, img]: [string, any]) => img.default);
+    .map(([, img]) => (img as { default: string }).default);
 
 // Fallback images from public art_forms if gallery is insufficient
 const fallbackImages = [

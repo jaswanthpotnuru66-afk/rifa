@@ -18,8 +18,11 @@ const Navbar = () => {
 
     // Close mobile menu on route change
     useEffect(() => {
-        setIsOpen(false);
-    }, [location]);
+        if (isOpen) {
+            const timer = setTimeout(() => setIsOpen(false), 0);
+            return () => clearTimeout(timer);
+        }
+    }, [location, isOpen]);
 
     const navLinks = [
         { name: 'Home', path: '/' },
