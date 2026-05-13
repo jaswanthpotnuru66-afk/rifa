@@ -1,0 +1,22 @@
+{
+  "name": "rifa-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test:login": "node test_login.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "description": "",
+  "main": "test_login.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
