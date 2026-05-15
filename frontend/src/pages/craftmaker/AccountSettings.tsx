@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { 
     Check, Clock, Shield, CreditCard, ExternalLink, 
-    CheckCircle2, X, ChevronRight, Mail, Smartphone
+    CheckCircle2, X, ChevronRight, Mail, Smartphone,
+    MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
+import { api } from '../../lib/api';
 import { mockMakerProfile } from '../../lib/craftmaker';
 
 const TABS = ['Account', 'KYC & Payout', 'Notifications'];
@@ -31,15 +33,30 @@ const Toggle = ({ defaultOn = false }: { defaultOn?: boolean }) => {
 
 const AccountSettings = () => {
     const [activeTab, setActiveTab] = useState('Account');
+    const [user, setUser] = useState<any>(api.getUser());
+    const [isEditing, setIsEditing] = useState(false);
     const [showBankModal, setShowBankModal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [gstinVal, setGstinVal] = useState('');
     const [gstinSaved, setGstinSaved] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsSaving(true);
-        setTimeout(() => { setIsSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000); }, 1200);
+        // Save to local storage
+        localStorage.setItem('rifa_user', JSON.stringify(user));
+        
+        // Also update artisan profile if it's an artisan (to sync pincode)
+        if (user.role === 'artisan') {
+            await api.updateArtisanProfile({ pincode: user.pincode, name: user.full_name, location: user.location });
+        }
+
+        setTimeout(() => { 
+            setIsSaving(false); 
+            setSaved(true); 
+            setIsEditing(false);
+            setTimeout(() => setSaved(false), 2000); 
+        }, 1000);
     };
 
     return (
@@ -73,22 +90,40 @@ const AccountSettings = () => {
                             <motion.div key="account" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} className="space-y-6">
                                 
                                 <div className="bg-white border border-neutral-100 rounded-sm shadow-sm p-8 space-y-6">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400">Contact Information</h3>
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400">Personal Information</h3>
+                                        {!isEditing && (
+                                            <button onClick={() => setIsEditing(true)} className="text-[9px] font-black uppercase tracking-widest text-brand-pink hover:underline">Edit Profile</button>
+                                        )}
+                                    </div>
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Registered Mobile</label>
-                                            <div className="flex items-center gap-3 bg-neutral-50 border border-neutral-100 px-4 py-3.5 rounded-sm">
-                                                <Smartphone size={15} className="text-neutral-300" />
-                                                <span className="text-sm font-bold text-neutral-400 tracking-wider">{mockMakerProfile.mobileMasked}</span>
-                                                <span className="ml-auto text-[9px] font-black uppercase text-neutral-300">Locked</span>
-                                            </div>
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-950">Full Name</label>
+                                            <input type="text" value={user?.full_name || ''} readOnly={!isEditing} onChange={e => setUser({...user, full_name: e.target.value})}
+                                                className={`w-full bg-neutral-50 border border-neutral-100 px-4 py-3.5 text-sm font-bold outline-none transition-all ${!isEditing ? 'text-neutral-400 cursor-not-allowed' : 'focus:border-brand-pink'}`} />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-neutral-950">Email Address</label>
                                             <div className="relative">
                                                 <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-                                                <input type="email" defaultValue="meera@example.com"
-                                                    className="w-full bg-neutral-50 border border-neutral-100 pl-10 pr-4 py-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all" />
+                                                <input type="email" value={user?.email || ''} readOnly
+                                                    className="w-full bg-neutral-50 border border-neutral-100 pl-10 pr-4 py-3.5 text-sm font-bold text-neutral-400 outline-none cursor-not-allowed" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-950">Mobile Number</label>
+                                            <div className="relative">
+                                                <Smartphone size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
+                                                <input type="text" value={user?.mobile_number || ''} readOnly={!isEditing} onChange={e => setUser({...user, mobile_number: e.target.value})}
+                                                    className={`w-full bg-neutral-50 border border-neutral-100 pl-10 pr-4 py-3.5 text-sm font-bold outline-none transition-all ${!isEditing ? 'text-neutral-400 cursor-not-allowed' : 'focus:border-brand-pink'}`} />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-neutral-950">PIN Code (Shipping Origin)</label>
+                                            <div className="relative">
+                                                <MapPin size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
+                                                <input type="text" value={user?.pincode || ''} maxLength={6} readOnly={!isEditing} onChange={e => setUser({...user, pincode: e.target.value.replace(/\D/g, '')})}
+                                                    className={`w-full bg-neutral-50 border border-neutral-100 pl-10 pr-4 py-3.5 text-sm font-bold outline-none transition-all ${!isEditing ? 'text-neutral-400 cursor-not-allowed' : 'focus:border-brand-pink'}`} />
                                             </div>
                                         </div>
                                     </div>
@@ -100,20 +135,32 @@ const AccountSettings = () => {
                                         {['Current Password', 'New Password', 'Confirm New'].map(label => (
                                             <div key={label} className="space-y-2">
                                                 <label className="text-[9px] font-black uppercase tracking-widest text-neutral-950">{label}</label>
-                                                <input type="password" className="w-full bg-neutral-50 border border-neutral-100 px-4 py-3.5 text-sm outline-none focus:border-brand-pink transition-all" />
+                                                <input type="password" disabled={!isEditing} className={`w-full bg-neutral-50 border border-neutral-100 px-4 py-3.5 text-sm outline-none transition-all ${!isEditing ? 'opacity-40 cursor-not-allowed' : 'focus:border-brand-pink'}`} />
                                             </div>
                                         ))}
                                     </div>
-                                    <button className="flex items-center gap-2 px-8 py-3 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-neutral-950 hover:border-neutral-950 transition-all">
+                                    <button disabled={!isEditing} className="flex items-center gap-2 px-8 py-3 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:text-neutral-950 hover:border-neutral-950 transition-all disabled:opacity-30">
                                         <Shield size={13} /> Update Password
                                     </button>
                                 </div>
 
-                                <button onClick={handleSave} disabled={isSaving}
-                                    className="flex items-center gap-3 px-12 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-brand-pink/20 hover:bg-brand-pink-dark transition-all disabled:opacity-60">
-                                    {isSaving ? <Clock size={14} className="animate-spin" /> : <Check size={14} />}
-                                    {isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save Account Details'}
-                                </button>
+                                <AnimatePresence>
+                                    {isEditing && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
+                                            <div className="flex gap-4">
+                                                <button onClick={handleSave} disabled={isSaving}
+                                                    className="flex items-center gap-3 px-12 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-brand-pink/20 hover:bg-brand-pink-dark transition-all disabled:opacity-60">
+                                                    {isSaving ? <Clock size={14} className="animate-spin" /> : <Check size={14} />}
+                                                    {isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save Account Details'}
+                                                </button>
+                                                <button onClick={() => { setIsEditing(false); setUser(api.getUser()); }} disabled={isSaving}
+                                                    className="px-8 py-4 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-neutral-950 hover:border-neutral-950 transition-all">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </motion.div>
                         )}
 

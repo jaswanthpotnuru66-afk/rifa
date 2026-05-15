@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { api } from '../lib/api';
 import {
     Star, Truck,
     ChevronRight, 
@@ -8,40 +9,166 @@ import {
     Zap, ShieldAlert, CheckCircle2, Info, MessageSquare,
     RefreshCw, ThumbsUp
 } from 'lucide-react';
-import { products } from '../lib/products';
+import { 
+    Loader2
+} from 'lucide-react';
+
+const API_URL = 'http://localhost:3001/api';
 
 const ProductDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const product = useMemo(() => products.find(p => p.id === id) || null, [id]);
+    const location = useLocation();
     
-    const [selectedImage, setSelectedImage] = useState<string>(() => product?.images[0] || '');
-    const [isAdded] = useState(false);
+    const [product, setProduct] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [recommendedProducts, setRecommendedProducts] = useState<any[]>([]);
+    const [selectedImage, setSelectedImage] = useState<string>('');
+    const [isAdded, setIsAdded] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
     const [pinCode, setPinCode] = useState('');
     const [isPinChecked, setIsPinChecked] = useState(false);
 
-    useEffect(() => {
-        if (product && !selectedImage) {
-            const timer = setTimeout(() => setSelectedImage(product.images[0]), 0);
-            return () => clearTimeout(timer);
-        }
-    }, [product, selectedImage]);
+    const [promotions, setPromotions] = useState<any[]>([]);
+    const [isWishlisting, setIsWishlisting] = useState(false);
+    const [isWishlisted, setIsWishlisted] = useState(false);
 
     useEffect(() => {
-        window.scrollTo(0, 0);
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [pRes, promoRes] = await Promise.all([
+                    fetch(`${API_URL}/products/${id}`),
+                    fetch(`${API_URL}/promotions`)
+                ]);
+
+                if (!pRes.ok) throw new Error('Product not found');
+                const data = await pRes.json();
+                setProduct(data);
+                setSelectedImage(data.images[0]);
+
+                if (promoRes.ok) {
+                    setPromotions(await promoRes.json());
+                }
+
+                // Fetch recommendations
+                const recRes = await fetch(`${API_URL}/products?category=${data.category}`);
+                if (recRes.ok) {
+                    const recData = await recRes.json();
+                    // Shuffle the results to make them feel dynamic
+                    const shuffled = recData
+                        .filter((p: any) => p.id !== id)
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 5);
+                    setRecommendedProducts(shuffled);
+                }
+
+                // Check wishlist status
+                const wishlistData = await api.getWishlist();
+                if (Array.isArray(wishlistData)) {
+                    setIsWishlisted(wishlistData.some((w: any) => w.product_id === id));
+                }
+            } catch (err) {
+                console.error('Fetch product error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchData();
+            window.scrollTo(0, 0);
+        }
     }, [id]);
 
-    const handleAddToCart = () => {
-        navigate('/cart');
+    const handleAddToCart = async () => {
+        const user = api.getUser();
+        if (!user) {
+            navigate('/auth', { state: { from: location } });
+            return;
+        }
+
+        setIsAdding(true);
+        try {
+            await api.addToCart({
+                user_id: user.id,
+                product_id: product.id,
+                product_name: product.name,
+                price: product.price,
+                quantity: 1,
+                image_url: product.images[0],
+                artisan_id: product.artisan_id // Ensure artisan_id is sent
+            });
+            setIsAdded(true);
+            setTimeout(() => setIsAdded(false), 3000); // Reset after 3s
+        } catch (err) {
+            console.error('Add to cart error:', err);
+        } finally {
+            setIsAdding(false);
+        }
     };
 
-    const handleBuyNow = () => {
-        navigate('/checkout');
+    const handleAddToWishlist = async () => {
+        const user = api.getUser();
+        if (!user) {
+            navigate('/auth', { state: { from: location } });
+            return;
+        }
+
+        setIsWishlisting(true);
+        try {
+            await api.addToWishlist({
+                product_id: product.id,
+                product_name: product.name,
+                price: product.price,
+                image_url: product.images[0],
+                category: product.category,
+                artisan_id: product.artisan_id
+            });
+            setIsWishlisted(true);
+            // Removed 3s timeout so the icon stays filled/pink
+        } catch (err) {
+            console.error('Add to wishlist error:', err);
+        } finally {
+            setIsWishlisting(false);
+        }
     };
+
+    const handleBuyNow = async () => {
+        const user = api.getUser();
+        if (!user) {
+            navigate('/auth', { state: { from: location } });
+            return;
+        }
+
+        try {
+            await api.addToCart({
+                user_id: user.id,
+                product_id: product.id,
+                product_name: product.name,
+                price: product.price,
+                quantity: 1,
+                image_url: product.image_url || product.images?.[0],
+                artisan_id: product.artisan_id
+            });
+            navigate('/checkout', { state: { productId: product.id } });
+        } catch (err) {
+            console.error('Buy now error:', err);
+            // Even on error, try to navigate if item might be there
+            navigate('/checkout', { state: { productId: product.id } });
+        }
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF7F2] gap-4">
+            <Loader2 size={40} className="text-brand-pink animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Loading Masterpiece...</p>
+        </div>
+    );
 
     if (!product) return <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] px-4 text-center"><div><h1 className="text-2xl font-serif font-bold">Piece Not Found</h1></div></div>;
 
-    const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+    const discount = product.original_price ? Math.round(((product.original_price - product.price) / product.original_price) * 100) : 0;
 
     return (
         <div className="min-h-screen bg-[#F8F5F1] pt-24 pb-12 selection:bg-brand-pink/20">
@@ -54,7 +181,7 @@ const ProductDetail = () => {
                         <div className="bg-white p-4 rounded-sm border border-neutral-200 shadow-sm">
                             <div className="flex gap-4">
                                 <div className="flex flex-col gap-2 w-14 shrink-0">
-                                    {product.images.map((img, idx) => (
+                                    {product.images.map((img: string, idx: number) => (
                                         <button 
                                             key={idx} 
                                             onMouseEnter={() => setSelectedImage(img)}
@@ -67,15 +194,41 @@ const ProductDetail = () => {
                                 <div className="flex-1 aspect-[4/5] bg-neutral-50 overflow-hidden rounded-sm relative group">
                                     <img src={selectedImage} alt={product.name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-700 hover:scale-110" />
                                     <div className="absolute top-4 right-4 flex flex-col gap-2">
-                                        <button className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center text-neutral-400 hover:text-brand-pink transition-all"><Heart size={18} /></button>
+                                        <button 
+                                            onClick={handleAddToWishlist}
+                                            disabled={isWishlisting || isWishlisted}
+                                            className={`w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all ${
+                                                isWishlisted ? 'bg-brand-pink text-white' : 'bg-white text-neutral-400 hover:text-brand-pink'
+                                            }`}
+                                        >
+                                            {isWishlisting ? <Loader2 size={18} className="animate-spin" /> : <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={handleAddToCart} className={`flex items-center justify-center gap-3 py-4 rounded font-black text-[11px] tracking-widest uppercase transition-all shadow-md ${isAdded ? 'bg-green-600 text-white' : 'bg-neutral-950 text-white hover:bg-neutral-800'}`}>
-                                <ShoppingBag size={16} /> {isAdded ? 'Added' : 'Add to Cart'}
+                            <button 
+                                onClick={handleAddToCart} 
+                                disabled={isAdding || isAdded}
+                                className={`flex items-center justify-center gap-3 py-4 rounded font-black text-[11px] tracking-widest uppercase transition-all shadow-md ${
+                                    isAdded 
+                                    ? 'bg-green-600 text-white' 
+                                    : 'bg-neutral-950 text-white hover:bg-neutral-800'
+                                }`}
+                            >
+                                {isAdding ? (
+                                    <Loader2 className="animate-spin" size={16} />
+                                ) : isAdded ? (
+                                    <>
+                                        <CheckCircle2 size={16} /> Added to Cart
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingBag size={16} /> Add to Cart
+                                    </>
+                                )}
                             </button>
                             <button 
                                 onClick={handleBuyNow}
@@ -100,15 +253,15 @@ const ProductDetail = () => {
                                 <div className="flex items-center bg-green-600 text-white px-2 py-0.5 rounded text-[11px] font-bold gap-1">
                                     {product.rating} <Star size={10} fill="currentColor" />
                                 </div>
-                                <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{product.reviewCount} Ratings</span>
+                                <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{product.review_count} Ratings</span>
                                 <div className="h-4 w-[1px] bg-neutral-200" />
                                 <span className="text-[10px] font-black text-brand-pink tracking-[0.2em] uppercase">Rifa Verified</span>
                             </div>
                             <div className="flex items-baseline gap-4 mb-1">
-                                <span className="text-3xl font-serif font-bold text-neutral-900">₹{product.price}</span>
-                                {product.originalPrice && (
+                                <span className="text-3xl font-serif font-bold text-neutral-900">₹{product.price.toLocaleString()}</span>
+                                {product.original_price && (
                                     <>
-                                        <span className="text-lg text-neutral-300 line-through font-light">₹{product.originalPrice}</span>
+                                        <span className="text-lg text-neutral-300 line-through font-light">₹{product.original_price.toLocaleString()}</span>
                                         <span className="text-sm font-bold text-green-600 uppercase tracking-tighter">{discount}% off</span>
                                     </>
                                 )}
@@ -118,12 +271,22 @@ const ProductDetail = () => {
 
                         {/* Offers */}
                         <div className="bg-white p-6 rounded-sm border border-neutral-200 shadow-sm">
-                            <h4 className="text-[10px] font-black tracking-widest uppercase text-neutral-900 mb-4 flex items-center gap-2"><Tag size={14} /> Bank Offers</h4>
+                            <h4 className="text-[10px] font-black tracking-widest uppercase text-neutral-900 mb-4 flex items-center gap-2"><Tag size={14} /> Available Offers</h4>
                             <div className="space-y-3">
-                                <div className="flex items-start gap-3 p-3 bg-neutral-50/50 rounded border border-neutral-100">
-                                    <Zap size={12} className="text-brand-pink mt-0.5" />
-                                    <p className="text-xs text-neutral-600"><span className="font-bold">10% Instant Discount</span> on HDFC Credit Cards. <span className="text-brand-pink font-bold underline cursor-pointer">T&C</span></p>
-                                </div>
+                                {promotions.length > 0 ? promotions.map((promo: any) => (
+                                    <div key={promo.id} className="flex items-start gap-3 p-3 bg-neutral-50/50 rounded border border-neutral-100">
+                                        <Zap size={12} className="text-brand-pink mt-0.5" />
+                                        <p className="text-xs text-neutral-600">
+                                            <span className="font-bold">{promo.title}</span>: {promo.description} 
+                                            {promo.code && <span className="ml-2 font-black text-brand-pink border-b border-dashed border-brand-pink">USE: {promo.code}</span>}
+                                        </p>
+                                    </div>
+                                )) : (
+                                    <div className="flex items-start gap-3 p-3 bg-neutral-50/50 rounded border border-neutral-100">
+                                        <Zap size={12} className="text-neutral-300 mt-0.5" />
+                                        <p className="text-xs text-neutral-400 italic">No exclusive acquisition offers currently active.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -135,9 +298,55 @@ const ProductDetail = () => {
                                     <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                                     <input type="text" placeholder="Enter PIN Code" value={pinCode} onChange={(e) => setPinCode(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-neutral-50 border-b-2 border-neutral-200 focus:border-brand-pink outline-none text-xs font-bold" />
                                 </div>
-                                <button onClick={() => setIsPinChecked(true)} className="px-6 py-2 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all">Check</button>
+                                <button 
+                                    onClick={() => {
+                                        if (pinCode.length === 6 && !isNaN(Number(pinCode))) {
+                                            setIsPinChecked(true);
+                                        } else {
+                                            alert('Please enter a valid 6-digit PIN code.');
+                                            setIsPinChecked(false);
+                                        }
+                                    }} 
+                                    className="px-6 py-2 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all"
+                                >
+                                    Check
+                                </button>
                             </div>
-                            {isPinChecked && <div className="flex items-center gap-3 text-xs text-green-700 font-bold bg-green-50 p-3 rounded border border-green-100"><Truck size={16} /> Fast Delivery by Tomorrow 5 PM</div>}
+                            {isPinChecked && (
+                                <div className="flex items-center gap-3 text-xs text-green-700 font-bold bg-green-50 p-3 rounded border border-green-100 animate-in fade-in slide-in-from-top-1 duration-500">
+                                    <Truck size={16} className="animate-bounce" /> 
+                                    {(() => {
+                                        const artisanPin = product?.artisans?.pincode || '302001'; // Fallback to Rajasthan
+                                        const buyerPin = pinCode;
+                                        
+                                        let days = 4; // Standard
+                                        
+                                        // Simple Zone-based heuristic
+                                        if (artisanPin[0] === buyerPin[0]) {
+                                            days = 2; // Same Zone
+                                            if (artisanPin.substring(0, 2) === buyerPin.substring(0, 2)) {
+                                                days = 1; // Same State/Region
+                                            }
+                                        } else {
+                                            // Calculate absolute difference between first digits as a proxy for distance
+                                            const diff = Math.abs(parseInt(artisanPin[0]) - parseInt(buyerPin[0]));
+                                            days = 3 + diff;
+                                        }
+                                        
+                                        const deliveryDate = new Date();
+                                        deliveryDate.setDate(deliveryDate.getDate() + days);
+                                        
+                                        return (
+                                            <span>
+                                                Delivery by {deliveryDate.toLocaleDateString('en-IN', { day:'numeric', month:'short' })} 
+                                                <span className="ml-2 font-normal text-[10px] text-neutral-400 uppercase italic">
+                                                    ({days === 1 ? 'Next Day' : `${days} Day`} Delivery from {product?.artisans?.location || 'Artisan Hub'})
+                                                </span>
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                            )}
                         </div>
 
                         {/* Ratings & Reviews Section (NEW MARKETPLACE MODULE) */}
@@ -153,7 +362,7 @@ const ProductDetail = () => {
                                         <span className="text-4xl font-serif font-bold text-neutral-950">{product.rating}</span>
                                         <Star size={24} fill="currentColor" className="text-green-600" />
                                     </div>
-                                    <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">{product.reviewCount} Ratings</p>
+                                    <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">{product.review_count} Ratings</p>
                                 </div>
                                 <div className="md:col-span-8 space-y-2">
                                     {[5, 4, 3, 2, 1].map((star) => (
@@ -174,16 +383,16 @@ const ProductDetail = () => {
 
                             {/* Individual Reviews */}
                             <div className="divide-y divide-neutral-50">
-                                {product.reviews.map(review => (
+                                {product.product_reviews?.map((review: any) => (
                                     <div key={review.id} className="p-6 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="flex items-center bg-green-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold gap-1">
                                                     {review.rating} <Star size={8} fill="currentColor" />
                                                 </div>
-                                                <span className="text-xs font-bold text-neutral-900">{review.user}</span>
+                                                <span className="text-xs font-bold text-neutral-900">{review.user_name}</span>
                                             </div>
-                                            <span className="text-[9px] font-black uppercase text-neutral-400">{review.date}</span>
+                                            <span className="text-[9px] font-black uppercase text-neutral-400">{new Date(review.created_at).toLocaleDateString()}</span>
                                         </div>
                                         <p className="text-sm text-neutral-600 font-light leading-relaxed">"{review.comment}"</p>
                                         <div className="flex items-center gap-4 pt-2">
@@ -204,8 +413,8 @@ const ProductDetail = () => {
                             <div className="p-4 border-b border-neutral-50 bg-neutral-50"><h4 className="text-[10px] font-black tracking-widest uppercase text-neutral-950 flex items-center gap-2"><Info size={14} /> Product Specifications</h4></div>
                             <table className="w-full text-xs">
                                 <tbody className="divide-y divide-neutral-50">
-                                    <tr><td className="w-32 p-4 text-neutral-400 font-bold uppercase tracking-tight italic">Material</td><td className="p-4 text-neutral-900 font-medium">Epoxy Resin, Natural Wood</td></tr>
-                                    <tr><td className="w-32 p-4 text-neutral-400 font-bold uppercase tracking-tight italic">Artisan</td><td className="p-4 text-brand-pink font-bold underline cursor-pointer">Sonia's Boutique</td></tr>
+                                    <tr><td className="w-32 p-4 text-neutral-400 font-bold uppercase tracking-tight italic">Material</td><td className="p-4 text-neutral-900 font-medium">{product.details?.[0]?.replace('Material: ', '') || 'Handcrafted'}</td></tr>
+                                    <tr><td className="w-32 p-4 text-neutral-400 font-bold uppercase tracking-tight italic">Artisan</td><td className="p-4 text-brand-pink font-bold underline cursor-pointer">{product.artisans?.name || 'Local Artisan'}</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -230,11 +439,11 @@ const ProductDetail = () => {
                         <Link to="/marketplace" className="text-xs font-black tracking-widest uppercase text-neutral-950 hover:text-brand-pink flex items-center gap-2">View Marketplace <ChevronRight size={14} /></Link>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                        {products.filter(p => p.id !== id).slice(0, 5).map(p => (
+                        {recommendedProducts.map((p: any) => (
                             <Link key={p.id} to={`/product/${p.id}`} className="group block bg-white border border-neutral-100 p-2 rounded hover:border-neutral-300 transition-all shadow-sm">
                                 <div className="aspect-[3/4] bg-neutral-50 overflow-hidden rounded mb-3"><img src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /></div>
                                 <h4 className="text-sm font-bold text-neutral-900 truncate mb-1">{p.name}</h4>
-                                <div className="flex items-center gap-2"><span className="text-sm font-bold">₹{p.price}</span><span className="text-[10px] text-green-600 font-bold uppercase">Free Delivery</span></div>
+                                <div className="flex items-center gap-2"><span className="text-sm font-bold">₹{p.price.toLocaleString()}</span><span className="text-[10px] text-green-600 font-bold uppercase">Free Delivery</span></div>
                             </Link>
                         ))}
                     </div>

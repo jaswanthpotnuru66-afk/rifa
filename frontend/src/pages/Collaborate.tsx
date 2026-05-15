@@ -280,42 +280,44 @@ const Collaborate = () => {
         }
 
         try {
-            const [shopBannerUrl, shopLogoUrl] = await Promise.all([
-                uploadShopAsset(assets.banner, 'banner'),
-                uploadShopAsset(assets.logo, 'logo'),
-            ]);
+        const [shopBannerUrl, shopLogoUrl] = await Promise.all([
+            uploadShopAsset(assets.banner, 'banner'),
+            uploadShopAsset(assets.logo, 'logo'),
+        ]);
 
-            const dbData = {
-                creator_name: data.fullName,
-                brand_name: data.shopName,
-                contact: data.mobileNumber,
-                email: data.email,
-                location: data.homeRegion,
-                collaboration_type: 'sell-through-rifa',
-                product_categories: [data.primaryCraftCategory],
-                product_description: data.craftOriginStory,
-                social_link: `rifa.in/${data.shopSlug}`,
-                image_url: shopLogoUrl || shopBannerUrl,
-                mobile_number: data.mobileNumber,
-                shop_name: data.shopName,
-                shop_slug: data.shopSlug,
-                primary_craft_category: data.primaryCraftCategory,
-                home_region: data.homeRegion,
-                craft_origin_story: data.craftOriginStory,
-                shop_banner_url: shopBannerUrl,
-                shop_logo_url: shopLogoUrl,
-                shipping_origin_pin_code: data.shippingOriginPinCode,
-                processing_time: data.processingTime,
-                digital_proof_enabled: data.digitalProof,
-                pan_number: data.pan,
-                account_holder: data.accountHolder,
-                bank_account: data.bankAccount,
-                ifsc_code: data.ifsc,
-                aadhaar_number: data.aadhaar,
-                gstin: data.gstin,
-                status: 'new',
-                dashboard_status: 'not-started',
-            };
+        // Basic frontend sanitization before sending to backend
+        const dbData = {
+            creator_name: data.fullName,
+            brand_name: data.shopName,
+            contact: data.mobileNumber,
+            email: data.email,
+            location: data.homeRegion,
+            collaboration_type: 'sell-through-rifa',
+            product_categories: [data.primaryCraftCategory],
+            product_description: data.craftOriginStory,
+            social_link: `rifa.in/${data.shopSlug}`,
+            image_url: shopLogoUrl || shopBannerUrl,
+            mobile_number: data.mobileNumber,
+            shop_name: data.shopName,
+            shop_slug: data.shopSlug,
+            primary_craft_category: data.primaryCraftCategory,
+            home_region: data.homeRegion,
+            craft_origin_story: data.craftOriginStory,
+            shop_banner_url: shopBannerUrl,
+            shop_logo_url: shopLogoUrl,
+            shipping_origin_pin_code: data.shippingOriginPinCode,
+            processing_time: data.processingTime,
+            digital_proof_enabled: data.digitalProof,
+            pan_number: data.pan,
+            account_holder: data.accountHolder,
+            bank_account: data.bankAccount,
+            ifsc_code: data.ifsc,
+            aadhaar_number: data.aadhaar,
+            gstin: data.gstin,
+            status: 'new',
+            dashboard_status: 'not-started',
+        };
+
 
             const { error } = await supabase.from('creator_applications').insert([dbData]);
             if (error) throw error;

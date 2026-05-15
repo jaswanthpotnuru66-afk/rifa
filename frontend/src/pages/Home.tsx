@@ -4,7 +4,8 @@ import { Heart, Palette, Gift, ArrowRight, Lightbulb, ScrollText, Star, MapPin, 
 import heroBg from '../assets/hero_banner.png';
 import { useEffect, useRef, useState } from 'react';
 import MagneticButton from '../components/MagneticButton';
-import { products } from '../lib/products';
+
+const API_URL = 'http://localhost:3001/api';
 
 const SECTIONS = [
     { id: 'home-hero',        label: 'Home' },
@@ -183,6 +184,38 @@ const Home = () => {
             setScrollProgress(progress);
         }
     };
+
+    // Dynamic Data States
+    const [products, setProducts] = useState<any[]>([]);
+    const [artisans, setArtisans] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [galleryItems, setGalleryItems] = useState<any[]>([]);
+    const [loadingProducts, setLoadingProducts] = useState(true);
+    const [loadingArtisans, setLoadingArtisans] = useState(true);
+
+    useEffect(() => {
+        const fetchHomeData = async () => {
+            try {
+                const [pRes, aRes, cRes, gRes] = await Promise.all([
+                    fetch(`${API_URL}/products?limit=4`),
+                    fetch(`${API_URL}/artisans?limit=3`),
+                    fetch(`${API_URL}/categories`),
+                    fetch(`${API_URL}/gallery`)
+                ]);
+
+                if (pRes.ok) setProducts(await pRes.json());
+                if (aRes.ok) setArtisans(await aRes.json());
+                if (cRes.ok) setCategories(await cRes.json());
+                if (gRes.ok) setGalleryItems(await gRes.json());
+            } catch (err) {
+                console.error('Home data fetch error:', err);
+            } finally {
+                setLoadingProducts(false);
+                setLoadingArtisans(false);
+            }
+        };
+        fetchHomeData();
+    }, []);
 
     const scroll = (direction: 'left' | 'right') => {
         if (scrollContainerRef.current) {
@@ -388,20 +421,16 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-                        {[
-                            { title: 'Resin Art', img: '/art_forms/resin_art.png', details: ['UV Resistant', 'Custom Embeds', 'Crystal Clear Finish'] },
-                            { title: 'Crochet', img: '/art_forms/crochet.png', details: ['Eco-friendly Yarn', 'Intricate Patterns', 'Washable'] },
-                            { title: 'Satin Flowers', img: '/art_forms/satin_flowers.png', details: ['Premium Satin', 'Hand-pleated', 'Everlasting'] },
-                            { title: 'Pipe Cleaners', img: '/art_forms/pipe_cleaners.png', details: ['Flexible Wire', 'Soft Texture', 'Vibrant Colors'] },
-                            { title: 'Clay Art', img: '/art_forms/clay_art.png', details: ['Air-dry Clay', 'Hand-painted', 'Lightweight'] },
-                            { title: 'Canvas Art', img: '/art_forms/canvas_art.png', details: ['Professional Grade', 'Texture Work', 'Varnished'] },
-                            { title: 'Bouquets', img: '/art_forms/bouquets.png', details: ['Custom Theme', 'Gift Wrapping', 'Scented Options'] },
-                            { title: 'Hampers', img: '/art_forms/hampers.png', details: ['Curated Mix', 'Premium Box', 'Personalized Note'] }
-                        ].map((item, index) => (
+                        {(categories.length > 0 ? categories : [
+                            { name: 'Resin Art', img: '/art_forms/resin_art.png' },
+                            { name: 'Crochet', img: '/art_forms/crochet.png' },
+                            { name: 'Satin Flowers', img: '/art_forms/satin_flowers.png' },
+                            { name: 'Clay Art', img: '/art_forms/clay_art.png' }
+                        ]).map((item, index) => (
                             <Link
-                                key={item.title}
+                                key={item.name}
                                 to="/marketplace"
-                                state={{ category: item.title }}
+                                state={{ category: item.name }}
                                 className="block"
                             >
                                 <motion.div
@@ -411,19 +440,19 @@ const Home = () => {
                                     viewport={{ once: true, margin: '-20px' }}
                                     className="group relative bg-neutral-200 overflow-hidden aspect-[4/5] cursor-pointer"
                                 >
-                                    <img src={item.img} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[20%]" />
+                                    <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[20%]" />
                                     
                                     {/* Bottom Title Overlay (Visible by default) */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-8 z-10 group-hover:opacity-0 transition-opacity duration-300">
-                                        <h3 className="font-serif font-bold text-xl md:text-2xl text-white">{item.title}</h3>
+                                        <h3 className="font-serif font-bold text-xl md:text-2xl text-white">{item.name}</h3>
                                     </div>
 
                                     {/* Glassmorphism Hover Drawer */}
                                     <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1] z-20">
                                         <div className="bg-white/10 backdrop-blur-xl border-t border-white/20 p-6 md:p-8">
-                                            <h3 className="font-serif font-bold text-xl md:text-2xl text-white mb-4">{item.title}</h3>
+                                            <h3 className="font-serif font-bold text-xl md:text-2xl text-white mb-4">{item.name}</h3>
                                             <div className="space-y-3">
-                                                {item.details.map((detail, dIdx) => (
+                                                {item.details?.map((detail: string, dIdx: number) => (
                                                     <div key={dIdx} className="flex items-center gap-3">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-brand-pink/60"></div>
                                                         <span className="text-white/80 text-xs tracking-widest uppercase font-medium">{detail}</span>
@@ -513,7 +542,15 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-                        {products.map((product, idx) => (
+                        {loadingProducts ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="animate-pulse flex flex-col gap-4">
+                                    <div className="aspect-[4/5] bg-neutral-100" />
+                                    <div className="h-4 bg-neutral-100 w-1/2" />
+                                    <div className="h-4 bg-neutral-100 w-full" />
+                                </div>
+                            ))
+                        ) : products.length > 0 ? products.map((product, idx) => (
                             <motion.div 
                                 key={product.id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -550,22 +587,26 @@ const Home = () => {
                                                     </svg>
                                                 ))}
                                             </div>
-                                            <span className="text-[11px] text-neutral-400 font-medium">{product.rating} ({product.reviewCount})</span>
+                                            <span className="text-[11px] text-neutral-400 font-medium">{product.rating} ({product.review_count})</span>
                                         </div>
 
                                         <div className="mt-auto flex items-baseline gap-3">
                                             <span className="text-lg font-bold text-neutral-900">Rs. {product.price.toLocaleString()}</span>
-                                            {product.originalPrice && (
+                                            {product.original_price && (
                                                 <>
-                                                    <span className="text-sm text-neutral-400 line-through">Rs. {product.originalPrice.toLocaleString()}</span>
-                                                    <span className="text-xs font-bold ml-auto px-2 py-0.5 rounded-full text-white" style={{background:'linear-gradient(135deg,#4A8C6F,#2E6A50)'}}>{Math.round((1 - product.price/product.originalPrice)*100)}% off</span>
+                                                    <span className="text-sm text-neutral-400 line-through">Rs. {product.original_price.toLocaleString()}</span>
+                                                    <span className="text-xs font-bold ml-auto px-2 py-0.5 rounded-full text-white" style={{background:'linear-gradient(135deg,#4A8C6F,#2E6A50)'}}>{Math.round((1 - product.price/product.original_price)*100)}% off</span>
                                                 </>
                                             )}
                                         </div>
                                     </div>
                                 </Link>
                             </motion.div>
-                        ))}
+                        )) : (
+                            <div className="col-span-full py-20 text-center text-neutral-400 font-light">
+                                <p className="uppercase tracking-[0.3em] text-[10px] font-black">Collection Offline</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -584,12 +625,11 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            { id: "weavers-of-bengal", name: "Weavers of Bengal", location: "West Bengal", products: "140+", tags: ["Tant Cotton"], img: "/artisans/bengal_weaver.png" },
-                            { id: "rajesh-woodworks", name: "Rajesh Woodworks", location: "Uttar Pradesh", products: "85+", tags: ["Teakwood Inlay"], img: "/artisans/rajesh_woodworks.png" },
-                            { id: "jaipur-collective", name: "Jaipur Collective", location: "Rajasthan", products: "210+", tags: ["Blue Pottery"], img: "/artisans/jaipur_pottery.png" },
-                            { id: "kashmiri-thread-co", name: "Kashmiri Thread Co.", location: "Kashmir", products: "55+", tags: ["Pashmina"], img: "/artisans/kashmir_thread.png" }
-                        ].map((maker, idx) => (
+                        {loadingArtisans ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="animate-pulse aspect-[3/4] bg-neutral-200 rounded-sm" />
+                            ))
+                        ) : artisans.length > 0 ? artisans.map((maker, idx) => (
                             <Link 
                                 key={idx}
                                 to={`/artisan/${maker.id}`}
@@ -612,7 +652,7 @@ const Home = () => {
                                     <div className="absolute inset-0 p-6 flex flex-col justify-between">
                                         <div className="flex justify-between items-start">
                                             <span className="bg-white/10 backdrop-blur-md text-white text-[9px] uppercase tracking-widest px-3 py-1.5 border border-white/20">
-                                                {maker.products} items
+                                                {maker.product_count} items
                                             </span>
                                             <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                                                 <ArrowRight size={14} className="text-white -rotate-45" />
@@ -628,7 +668,7 @@ const Home = () => {
                                             <div className="w-8 h-[1px] bg-brand-pink mb-3 lg:group-hover:w-16 transition-all duration-400"></div>
                                             
                                             <div className="flex flex-wrap gap-2">
-                                                {maker.tags.map(tag => (
+                                                {maker.tags?.map((tag: string) => (
                                                     <span key={tag} className="text-[11px] text-white/90 font-serif italic">
                                                         {tag}
                                                     </span>
@@ -638,7 +678,11 @@ const Home = () => {
                                     </div>
                                 </motion.div>
                             </Link>
-                        ))}
+                        )) : (
+                            <div className="col-span-full py-20 text-center text-neutral-400 font-light">
+                                <p className="uppercase tracking-[0.3em] text-[10px] font-black">Collective Offline</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -672,13 +716,10 @@ const Home = () => {
                             onScroll={handleScroll}
                             className="flex overflow-x-auto pb-8 gap-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 lg:px-8"
                         >
-                            {[
-                                { num: 1, title: "The Resin Bloom", type: "Resin Art", technique: "Hand-poured Epoxy", story: "Capturing the ephemeral beauty of dried spring botanicals in eternal glass-like suspension." },
-                                { num: 2, title: "Midnight Crochet", type: "Textile Art", technique: "Victorian Lace-work", story: "Intricate micro-patterns inspired by vintage lace, reimagined for modern luxury home decor." },
-                                { num: 3, title: "Azure Clay Vessel", type: "Ceramic Art", technique: "Hand-molded Clay", story: "Exploring the textures of the Mediterranean coastline through raw terracotta and turquoise glazing." },
-                                { num: 5, title: "Satin Elegance", type: "Ribbon Art", technique: "Hand-pleated Silk", story: "Everlasting floral arrangements meticulously crafted from heavy Japanese silk and satin ribbons." },
-                                { num: 4, title: "Zen Canvas", type: "Canvas Art", technique: "Abstract Acrylics", story: "A meditative study of silence and space, using layered textures to create depth and serenity." },
-                            ].map((item, index) => (
+                            {(galleryItems.length > 0 ? galleryItems : [
+                                { title: "The Resin Bloom", type: "Resin Art", technique: "Hand-poured Epoxy", story: "Capturing the ephemeral beauty of dried spring botanicals in eternal glass-like suspension." },
+                                { title: "Midnight Crochet", type: "Textile Art", technique: "Victorian Lace-work", story: "Intricate micro-patterns inspired by vintage lace, reimagined for modern luxury home decor." }
+                            ]).map((item, index) => (
                                 <GalleryCard key={index} item={item} index={index} />
                             ))}
                         </div>

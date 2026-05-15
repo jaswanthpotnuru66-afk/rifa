@@ -54,7 +54,7 @@ const MOCK_USER = {
     email: 'sai.sampath@example.com',
     phone: '+91 98765 43210',
     username: 'sai_sampath',
-    avatar: 'https://avatars.githubusercontent.com/u/511394?v=4',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop',
     joined: 'October 2023',
     locations: [
         { id: '1', label: 'Primary Residence', address: '123 Art Lane, Jubilee Hills, Hyderabad, 500033', isDefault: true },
@@ -107,6 +107,18 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setUser({ ...user, avatar_url: reader.result as string });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     // Orders state
     const [contact, setContact] = useState('');
@@ -205,8 +217,9 @@ const Profile = () => {
         e.preventDefault();
         setIsSavingAddress(true);
         try {
-            const res = await api.addAddress({
+            const res = await api.saveAddress({
                 ...addressForm,
+                user_id: user.id,
                 is_default: addresses.length === 0 || addressForm.is_default
             });
             if (!res.error) {
@@ -253,6 +266,51 @@ const Profile = () => {
         }
     };
 
+    const handleAddToCartFromWishlist = async (item: any) => {
+        try {
+            console.log('Adding to cart from wishlist:', item);
+            const res = await api.addToCart({
+                user_id: user.id,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                price: item.price,
+                quantity: 1,
+                image_url: item.image_url,
+                artisan_id: item.artisan_id
+            });
+            
+            if (res && !res.error) {
+                console.log('Successfully added to cart:', res);
+                // Update local cart state immediately so it shows in "Bag" tab
+                const updatedCart = await api.getCart();
+                setCart(updatedCart);
+                
+                // Optional: Remove from wishlist after adding to cart
+                await api.removeFromWishlist(item.id);
+                setWishlist(wishlist.filter(w => w.id !== item.id));
+                
+                // Show "Bag" tab to the user
+                setActiveTab('bag');
+            } else {
+                console.error('Error adding to cart:', res?.error);
+                alert('Failed to add to cart: ' + (res?.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Error moving from wishlist to cart:', err);
+        }
+    };
+
+    const handleRemoveFromWishlist = async (id: string) => {
+        try {
+            const success = await api.removeFromWishlist(id);
+            if (success) {
+                setWishlist(wishlist.filter(w => w.id !== id));
+            }
+        } catch (err) {
+            console.error('Error removing from wishlist:', err);
+        }
+    };
+
     const combinedOrders = React.useMemo(() => [
         ...orders.map(o => ({
             id: o.id,
@@ -277,14 +335,14 @@ const Profile = () => {
 
     const StatusBadge = ({ status }: { status: string }) => {
         const configs: Record<string, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
-            new: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', icon: <Clock size={10} /> },
-            contacted: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100', icon: <MessageSquare size={10} /> },
-            'in-progress': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', icon: <Sparkles size={10} /> },
-            completed: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100', icon: <CheckCircle2 size={10} /> }
+            new: { bg: 'bg-neutral-50', text: 'text-neutral-900', border: 'border-neutral-200', icon: <Clock size={10} /> },
+            contacted: { bg: 'bg-neutral-100', text: 'text-neutral-600', border: 'border-neutral-300', icon: <MessageSquare size={10} /> },
+            'in-progress': { bg: 'bg-brand-pink/10', text: 'text-brand-pink', border: 'border-brand-pink/20', icon: <Sparkles size={10} /> },
+            completed: { bg: 'bg-neutral-950', text: 'text-white', border: 'border-neutral-950', icon: <CheckCircle2 size={10} /> }
         };
         const config = configs[status] || configs.new;
         return (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black tracking-widest uppercase border ${config.bg} ${config.text} ${config.border}`}>
+            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-sm text-[9px] font-black tracking-[0.3em] uppercase border ${config.bg} ${config.text} ${config.border} shadow-sm`}>
                 {config.icon} {status.replace('-', ' ')}
             </span>
         );
@@ -307,7 +365,8 @@ const Profile = () => {
         const res = await api.updateProfile({
             full_name: user.full_name,
             phone: user.phone,
-            location: user.location
+            location: user.location,
+            avatar_url: user.avatar_url
         });
         setIsSaving(false);
         if (!res.error) {
@@ -338,14 +397,14 @@ const Profile = () => {
     };
 
     const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
-        { id: 'general', label: 'General Info', icon: <User size={18} /> },
-        { id: 'orders', label: 'My Orders', icon: <Package size={18} /> },
-        { id: 'bag', label: 'My Bag', icon: <ShoppingBag size={18} /> },
-        { id: 'wishlist', label: 'Wishlist', icon: <Heart size={18} /> },
-        { id: 'security', label: 'Security', icon: <Shield size={18} /> },
-        { id: 'addresses', label: 'Saved Addresses', icon: <MapPin size={18} /> },
-        { id: 'notifications', label: 'Notifications', icon: <Bell size={18} /> },
-        { id: 'billing', label: 'Billing', icon: <CreditCard size={18} /> },
+        { id: 'general', label: 'Collector Identity', icon: <User size={18} strokeWidth={1.5} /> },
+        { id: 'orders', label: 'Acquisitions', icon: <Package size={18} strokeWidth={1.5} /> },
+        { id: 'bag', label: 'Pending Reserves', icon: <ShoppingBag size={18} strokeWidth={1.5} /> },
+        { id: 'wishlist', label: 'Curated Wishlist', icon: <Heart size={18} strokeWidth={1.5} /> },
+        { id: 'addresses', label: 'Destination Vault', icon: <MapPin size={18} strokeWidth={1.5} /> },
+        { id: 'billing', label: 'Member Privileges', icon: <CreditCard size={18} strokeWidth={1.5} /> },
+        { id: 'security', label: 'Security & Access', icon: <Shield size={18} strokeWidth={1.5} /> },
+        { id: 'notifications', label: 'Preferences', icon: <Bell size={18} strokeWidth={1.5} /> },
     ];
 
     if (isLoadingData) {
@@ -378,9 +437,9 @@ const Profile = () => {
                 {/* Header Section */}
                 <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-neutral-100 pb-12">
                     <div className="space-y-4">
-                        <span className="text-xs font-black uppercase tracking-[0.4em] text-neutral-400">Personal Vault</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-neutral-400">Personal Archive</span>
                         <h1 className="text-5xl md:text-6xl font-serif font-bold text-neutral-950 tracking-tighter">
-                            Settings
+                            Collector's Vault
                         </h1>
                     </div>
 
@@ -506,13 +565,29 @@ const Profile = () => {
                                         <div className="flex items-center justify-between pb-4 border-b border-neutral-50">
                                             <div className="flex items-center gap-10">
                                                 <div className="relative group">
-                                                    <div className="w-24 h-24 rounded-full overflow-hidden border border-neutral-100 shadow-xl">
-                                                        <img src={MOCK_USER.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                    <div className="w-24 h-24 rounded-full overflow-hidden border border-neutral-100 shadow-xl bg-neutral-50 flex items-center justify-center">
+                                                        {user?.avatar_url || MOCK_USER.avatar ? (
+                                                            <img src={user?.avatar_url || MOCK_USER.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <User size={32} className="text-neutral-300" />
+                                                        )}
                                                     </div>
                                                     {isEditing && (
-                                                        <button className="absolute bottom-0 right-0 w-8 h-8 bg-neutral-950 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all animate-in zoom-in duration-300">
-                                                            <Camera size={14} />
-                                                        </button>
+                                                        <>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                className="hidden" 
+                                                                ref={fileInputRef} 
+                                                                onChange={handleImageUpload} 
+                                                            />
+                                                            <button 
+                                                                onClick={() => fileInputRef.current?.click()}
+                                                                className="absolute bottom-0 right-0 w-8 h-8 bg-neutral-950 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all animate-in zoom-in duration-300"
+                                                            >
+                                                                <Camera size={14} />
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                                 <div className="space-y-1">
@@ -534,7 +609,7 @@ const Profile = () => {
                                             {[
                                                 { label: 'Legal Name', value: user?.full_name || '', key: 'full_name' },
                                                 { label: 'Email Workspace', value: user?.email || '', key: 'email', disabled: true },
-                                                { label: 'Contact Number', value: user?.phone || '', key: 'phone' },
+                                                { label: 'Contact Number', value: user?.phone || user?.mobile_number || '', key: 'phone' },
                                                 { label: 'Primary Address', value: user?.location || '', key: 'location' }
                                             ].map((field, i) => (
                                                 <div key={i} className="space-y-2">
@@ -743,7 +818,17 @@ const Profile = () => {
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="text-sm font-serif font-bold text-neutral-950">₹{(item.price * item.quantity).toLocaleString()}</p>
-                                                            <button className="text-[11px] font-black uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors mt-2">Remove</button>
+                                                            <button 
+                                                                onClick={async () => {
+                                                                    const success = await api.removeFromCart(item.id);
+                                                                    if (success) {
+                                                                        setCart(cart.filter(c => c.id !== item.id));
+                                                                    }
+                                                                }}
+                                                                className="text-[11px] font-black uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors mt-2"
+                                                            >
+                                                                Remove
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))
@@ -771,10 +856,16 @@ const Profile = () => {
                                                         <Link to={`/product/${item.product_id}`} className="aspect-[4/5] overflow-hidden relative block">
                                                             <img src={item.image_url || 'https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=800'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                                             <div className="absolute inset-0 bg-neutral-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
-                                                                <button className="w-12 h-12 rounded-full bg-white text-neutral-950 flex items-center justify-center hover:bg-brand-pink hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-500">
+                                                                <button 
+                                                                    onClick={(e) => { e.preventDefault(); handleAddToCartFromWishlist(item); }}
+                                                                    className="w-12 h-12 rounded-full bg-white text-neutral-950 flex items-center justify-center hover:bg-brand-pink hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-500"
+                                                                >
                                                                     <ShoppingBag size={20} />
                                                                 </button>
-                                                                <button className="w-12 h-12 rounded-full bg-white text-neutral-950 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-500 delay-75">
+                                                                <button 
+                                                                    onClick={(e) => { e.preventDefault(); handleRemoveFromWishlist(item.id); }}
+                                                                    className="w-12 h-12 rounded-full bg-white text-neutral-950 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-500 delay-75"
+                                                                >
                                                                     <Trash2 size={20} />
                                                                 </button>
                                                             </div>

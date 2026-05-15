@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { 
     Search, Filter, ChevronDown, 
-    Star, ArrowRight, Sparkles, X, User as UserIcon, Gift as GiftIcon
+    Star, ArrowRight, Sparkles, X,
+    Loader2
 } from 'lucide-react';
-import { products } from '../lib/products';
-import { artisans } from '../lib/artisans';
+
+const API_URL = 'http://localhost:3001/api';
 
 const Marketplace = () => {
     const location = useLocation();
@@ -25,7 +26,50 @@ const Marketplace = () => {
         occasion: ''
     });
 
-    const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+    // Dynamic Data States
+    const [products, setProducts] = useState<any[]>([]);
+    const [artisans, setArtisans] = useState<any[]>([]);
+    const [categoriesList, setCategoriesList] = useState<any[]>([]);
+    const [conciergeQuestions, setConciergeQuestions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [productsRes, artisansRes, categoriesRes, conciergeRes] = await Promise.all([
+                    fetch(`${API_URL}/products`),
+                    fetch(`${API_URL}/artisans`),
+                    fetch(`${API_URL}/categories`),
+                    fetch(`${API_URL}/concierge/questions`)
+                ]);
+
+                if (!productsRes.ok || !artisansRes.ok) throw new Error('Failed to fetch data');
+
+                const [productsData, artisansData, categoriesData, conciergeData] = await Promise.all([
+                    productsRes.json(),
+                    artisansRes.json(),
+                    categoriesRes.ok ? categoriesRes.json() : [],
+                    conciergeRes.ok ? conciergeRes.json() : []
+                ]);
+
+                setProducts(productsData);
+                setArtisans(artisansData);
+                setCategoriesList(categoriesData);
+                setConciergeQuestions(conciergeData);
+            } catch (err: any) {
+                console.error('Fetch Error:', err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const categories = ['All', ...(categoriesList.length > 0 ? categoriesList.map(c => c.name) : Array.from(new Set(products.map(p => p.category))))];
 
     const filteredProducts = products.filter(product => {
         const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -163,7 +207,25 @@ const Marketplace = () => {
                     </AnimatePresence>
                 </div>
 
-                {/* Product/Artisan Grid */}
+            {loading ? (
+                <div className="py-40 flex flex-col items-center justify-center gap-4">
+                    <Loader2 size={40} className="text-brand-pink animate-spin" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Curating the collection...</p>
+                </div>
+            ) : error ? (
+                <div className="py-40 text-center">
+                    <p className="text-red-500 font-bold uppercase tracking-widest text-[10px] mb-4">Error loading collection</p>
+                    <p className="text-neutral-400 font-light">{error}</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="mt-8 px-10 py-4 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-all"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            ) : (
+                <>
+                    {/* Product/Artisan Grid */}
                 <AnimatePresence mode="wait">
                     {view === 'products' ? (
                         <motion.div
@@ -321,6 +383,8 @@ const Marketplace = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+                </>
+            )}
 
                 {/* CTA Section */}
                 <motion.section 
@@ -403,43 +467,78 @@ const Marketplace = () => {
                             <div className="flex-1 overflow-y-auto p-8 space-y-12">
                                 {/* Step Indicator */}
                                 <div className="flex gap-2">
-                                    {[1, 2, 3].map(step => (
+                                    {(conciergeQuestions.length > 0 ? conciergeQuestions : [1, 2, 3]).map((_, i) => (
                                         <div 
-                                            key={step}
-                                            className={`h-1 flex-1 rounded-full transition-all duration-500 ${step <= conciergeStep ? 'bg-brand-pink' : 'bg-neutral-100'}`}
+                                            key={i}
+                                            className={`h-1 flex-1 rounded-full transition-all duration-500 ${(i + 1) <= conciergeStep ? 'bg-brand-pink' : 'bg-neutral-100'}`}
                                         />
                                     ))}
                                 </div>
 
-                                {conciergeStep === 1 && (
+                                {conciergeQuestions.length > 0 ? (
                                     <motion.div
+                                        key={conciergeStep}
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         className="space-y-8"
                                     >
                                         <div className="space-y-2">
-                                            <h3 className="text-lg font-serif font-bold text-neutral-900">Who are we celebrating?</h3>
-                                            <p className="text-xs text-neutral-400 font-light">Select the recipient of this artisan treasure.</p>
+                                            <h3 className="text-lg font-serif font-bold text-neutral-900">{conciergeQuestions[conciergeStep - 1]?.question}</h3>
+                                            <p className="text-xs text-neutral-400 font-light">{conciergeQuestions[conciergeStep - 1]?.subtext}</p>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            {['Partner', 'Parents', 'Friends', 'Colleague', 'Self', 'Other'].map(item => (
+                                            {conciergeQuestions[conciergeStep - 1]?.options?.map((opt: any) => (
                                                 <button
-                                                    key={item}
+                                                    key={opt.value}
                                                     onClick={() => {
-                                                        setConciergeData({ ...conciergeData, forWhom: item });
-                                                        setConciergeStep(2);
+                                                        const key = conciergeStep === 1 ? 'forWhom' : 'occasion';
+                                                        setConciergeData({ ...conciergeData, [key]: opt.value });
+                                                        if (conciergeStep < conciergeQuestions.length) {
+                                                            setConciergeStep(conciergeStep + 1);
+                                                        } else {
+                                                            setIsConciergeOpen(false);
+                                                            // Filter logic would go here
+                                                        }
                                                     }}
-                                                    className={`p-6 border text-center transition-all hover:shadow-lg ${
-                                                        conciergeData.forWhom === item 
-                                                        ? 'border-neutral-950 bg-neutral-950 text-white' 
-                                                        : 'border-neutral-100 bg-white text-neutral-600 hover:border-neutral-200'
-                                                    }`}
+                                                    className="p-6 border text-center transition-all hover:shadow-lg border-neutral-100 bg-white text-neutral-600 hover:border-neutral-200"
                                                 >
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{item}</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">{opt.label}</span>
                                                 </button>
                                             ))}
                                         </div>
                                     </motion.div>
+                                ) : (
+                                    /* Fallback UI */
+                                    conciergeStep === 1 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="space-y-8"
+                                        >
+                                            <div className="space-y-2">
+                                                <h3 className="text-lg font-serif font-bold text-neutral-900">Who are we celebrating?</h3>
+                                                <p className="text-xs text-neutral-400 font-light">Select the recipient of this artisan treasure.</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {['Partner', 'Parents', 'Friends', 'Colleague', 'Self', 'Other'].map(item => (
+                                                    <button
+                                                        key={item}
+                                                        onClick={() => {
+                                                            setConciergeData({ ...conciergeData, forWhom: item });
+                                                            setConciergeStep(2);
+                                                        }}
+                                                        className={`p-6 border text-center transition-all hover:shadow-lg ${
+                                                            conciergeData.forWhom === item 
+                                                            ? 'border-neutral-950 bg-neutral-950 text-white' 
+                                                            : 'border-neutral-100 bg-white text-neutral-600 hover:border-neutral-200'
+                                                        }`}
+                                                    >
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">{item}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )
                                 )}
 
                                 {conciergeStep === 2 && (

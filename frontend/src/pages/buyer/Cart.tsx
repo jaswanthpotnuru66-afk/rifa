@@ -1,56 +1,99 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
     ShoppingBag, Heart, Trash2, Plus, Minus, 
     ArrowRight, ShieldCheck, Award,
-    ChevronRight, X, Clock
+    ChevronRight, X, Clock, Loader2
 } from 'lucide-react';
-import { products, type Product } from '../../lib/products';
-
-type CartItem = Product & { quantity: number };
+import { products } from '../../lib/products';
+import { api } from '../../lib/api';
 
 const Cart = () => {
     const navigate = useNavigate();
-    // Using first 2 products as mock cart items
-    const [cartItems, setCartItems] = useState([
-        { ...products[0], quantity: 1 },
-        { ...products[1], quantity: 1 }
-    ]);
-
-    // Using next 2 products as mock wishlist items
+    const [cartItems, setCartItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [wishlistItems, setWishlistItems] = useState([
         products[2],
         products[3]
     ]);
 
-    const updateQuantity = (id: string, delta: number) => {
-        setCartItems(items => items.map(item => 
-            item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-        ));
+    useEffect(() => {
+        const fetchCart = async () => {
+            try {
+                setLoading(true);
+                const data = await api.getCart();
+                setCartItems(data);
+            } catch (err) {
+                console.error('Fetch cart error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCart();
+    }, []);
+
+    const updateQuantity = async (id: string, delta: number) => {
+        const item = cartItems.find(i => i.id === id);
+        if (!item) return;
+
+        const newQty = Math.max(1, item.quantity + delta);
+        if (newQty === item.quantity) return;
+
+        try {
+            // Optimistic update
+            setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
+            
+            // Sync with backend (we use addToCart which handles updates if item exists)
+            await api.addToCart({ ...item, quantity: newQty });
+        } catch (err) {
+            console.error('Update quantity error:', err);
+            // Revert on error
+            setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: item.quantity } : i));
+        }
     };
 
-    const removeItem = (id: string) => {
-        setCartItems(items => items.filter(item => item.id !== id));
+    const removeItem = async (id: string) => {
+        try {
+            const success = await api.removeFromCart(id);
+            if (success) {
+                setCartItems(prev => prev.filter(item => item.id !== id));
+            }
+        } catch (err) {
+            console.error('Remove item error:', err);
+        }
     };
 
-    const moveToWishlist = (item: CartItem) => {
-        setCartItems(prev => prev.filter(i => i.id !== item.id));
+    const moveToWishlist = (item: any) => {
+        removeItem(item.id);
         if (!wishlistItems.find(i => i.id === item.id)) {
             setWishlistItems(prev => [...prev, item]);
         }
     };
 
-    const moveToCart = (item: Product) => {
+    const moveToCart = async (item: any) => {
         setWishlistItems(prev => prev.filter(i => i.id !== item.id));
         if (!cartItems.find(i => i.id === item.id)) {
-            setCartItems(prev => [...prev, { ...item, quantity: 1 }]);
+            try {
+                const newItem = { ...item, quantity: 1, product_id: item.id || item.product_id };
+                await api.addToCart(newItem);
+                setCartItems(prev => [...prev, newItem]);
+            } catch (err) {
+                console.error('Move to cart error:', err);
+            }
         }
     };
 
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const shipping = 49;
+    const shipping = cartItems.length > 0 ? 49 : 0;
     const total = subtotal + shipping;
+
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF7F2] gap-4">
+            <Loader2 size={40} className="text-brand-pink animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Archiving Your Bag...</p>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-[#FAF7F2] pt-32 pb-20 selection:bg-brand-pink/20">
@@ -91,12 +134,7 @@ const Cart = () => {
                                         
                                         {/* Product Image */}
                                         <div className="w-full md:w-40 aspect-[4/5] bg-neutral-50 rounded-sm overflow-hidden shrink-0 border border-neutral-100 shadow-sm relative">
-                                            <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                            {item.isReady && (
-                                                <div className="absolute top-2 left-2 bg-neutral-900 text-white text-[7px] font-black uppercase tracking-widest px-2 py-1 shadow-lg">
-                                                    Ready to Ship
-                                                </div>
-                                            )}
+                                            <img src={item.image_url || item.images?.[0]} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                         </div>
 
                                         {/* Product Details */}

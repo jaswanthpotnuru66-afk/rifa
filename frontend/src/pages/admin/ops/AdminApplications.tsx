@@ -1,42 +1,101 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
-    Search, X, ShieldAlert, 
-    ArrowRight, Clock, MapPin, 
-    Smartphone, Mail, FileText,
-    CheckCircle2, ChevronDown
+    Search, X, ArrowRight, 
+    Loader2, Check, FileText,
+    ChevronDown
 } from 'lucide-react';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
-import { mockMakerApplications } from '../../../lib/adminOps.mock';
+import { api } from '../../../lib/api';
 
 const Applications = () => {
-    const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+    const [applications, setApplications] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'all' | 'new' | 'approved' | 'rejected'>('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedApp, setSelectedApp] = useState<typeof mockMakerApplications[0] | null>(null);
+    const [selectedApp, setSelectedApp] = useState<any | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [adminNotes, setAdminNotes] = useState('');
+
+    useEffect(() => {
+        fetchApplications();
+    }, []);
+
+    const fetchApplications = async () => {
+        setLoading(true);
+        try {
+            const data = await api.getAdminApplications();
+            setApplications(data);
+        } catch (error) {
+            console.error('Failed to fetch applications:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApprove = async () => {
+        if (!selectedApp) return;
+        setIsProcessing(true);
+        try {
+            const res = await api.approveApplication(selectedApp.id, adminNotes);
+            if (res?.success) {
+                await fetchApplications();
+                setSelectedApp(null);
+                setAdminNotes('');
+            } else {
+                alert(res?.error || 'Failed to approve application');
+            }
+        } catch (error) {
+            alert('An error occurred during approval');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!selectedApp || !rejectionReason) return;
+        setIsProcessing(true);
+        try {
+            const res = await api.rejectApplication(selectedApp.id, rejectionReason, adminNotes);
+            if (res?.success) {
+                await fetchApplications();
+                setSelectedApp(null);
+                setIsRejecting(false);
+                setRejectionReason('');
+                setAdminNotes('');
+            } else {
+                alert(res?.error || 'Failed to reject application');
+            }
+        } catch (error) {
+            alert('An error occurred during rejection');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const counts = {
-        all: mockMakerApplications.length,
-        pending: mockMakerApplications.filter(a => a.status === 'pending').length,
-        approved: mockMakerApplications.filter(a => a.status === 'approved').length,
-        rejected: mockMakerApplications.filter(a => a.status === 'rejected').length
+        all: applications.length,
+        new: applications.filter(a => a.status === 'new').length,
+        approved: applications.filter(a => a.status === 'approved').length,
+        rejected: applications.filter(a => a.status === 'rejected').length
     };
 
     const filteredApps = useMemo(() => {
-        let result = [...mockMakerApplications];
+        let result = [...applications];
         if (activeTab !== 'all') {
             result = result.filter(a => a.status === activeTab);
         }
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter(a => 
-                a.applicantName.toLowerCase().includes(q) || 
-                a.shopName.toLowerCase().includes(q) || 
-                a.originState.toLowerCase().includes(q)
+                (a.creator_name || '').toLowerCase().includes(q) || 
+                (a.shop_name || '').toLowerCase().includes(q) || 
+                (a.home_region || '').toLowerCase().includes(q)
             );
         }
         return result;
-    }, [activeTab, searchQuery]);
+    }, [activeTab, searchQuery, applications]);
 
     const calculateDaysAgo = (dateStr: string) => {
         const diff = Date.now() - new Date(dateStr).getTime();
@@ -54,23 +113,29 @@ const Applications = () => {
                     <h1 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight">Maker Applications</h1>
                 </div>
 
-                {/* IMPORTANT NOTE */}
-                <div className="bg-blue-50 border border-blue-200 rounded-sm p-5 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                        <FileText size={20} />
+                {/* PREMIUM INFO BANNER */}
+                <div className="relative group overflow-hidden bg-white border border-neutral-100 p-8 flex items-center gap-8 shadow-sm">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-brand-pink" />
+                    <div className="w-12 h-12 rounded-full bg-[#FAF7F2] flex items-center justify-center text-neutral-950 shrink-0 border border-neutral-100">
+                        <FileText size={20} strokeWidth={1.5} />
                     </div>
-                    <div>
-                        <p className="text-sm font-bold text-blue-950">Self-Registration Review</p>
-                        <p className="text-xs text-blue-700/70 font-medium leading-relaxed mt-1">
-                            These are new CraftMaker portal registrations from /craftmaker/register. 
-                            The existing artisan collaborator applications are managed in the main Admin CRM at /admin.
+                    <div className="flex-1">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-950 mb-1">Queue Intelligence</p>
+                        <p className="text-xs text-neutral-500 font-light leading-relaxed max-w-2xl">
+                            This registry monitors new CraftMaker portal applications. Approved artisans are automatically 
+                            upgraded and granted full access to the marketplace fulfillment engine.
                         </p>
+                    </div>
+                    <div className="hidden md:flex flex-col items-end gap-1">
+                        <p className="text-[8px] font-black text-neutral-300 uppercase tracking-widest">Active System</p>
+                        <div className="w-12 h-[1px] bg-neutral-100" />
                     </div>
                 </div>
 
+
                 {/* Filter Tabs */}
                 <div className="flex items-center gap-8 border-b border-neutral-100 overflow-x-auto no-scrollbar">
-                    {(['all', 'pending', 'approved', 'rejected'] as const).map(tab => (
+                    {(['all', 'new', 'approved', 'rejected'] as const).map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -110,41 +175,46 @@ const Applications = () => {
                         <div />
                     </div>
 
-                    {filteredApps.length > 0 ? filteredApps.map(app => (
+                    {loading ? (
+                        <div className="py-24 text-center">
+                            <Loader2 size={32} className="animate-spin text-brand-pink mx-auto mb-4" />
+                            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest">Loading applications...</p>
+                        </div>
+                    ) : filteredApps.length > 0 ? filteredApps.map(app => (
                         <div key={app.id} className="bg-white border border-neutral-100 rounded-sm hover:border-brand-pink/30 transition-all">
                             <div className="flex flex-col lg:grid lg:grid-cols-[1.5fr_1.5fr_1.2fr_1fr_100px_100px_100px] gap-4 p-4 lg:p-6 items-center">
                                 
                                 <div>
-                                    <p className="text-sm font-bold text-neutral-950">{app.applicantName}</p>
+                                    <p className="text-sm font-bold text-neutral-950">{app.creator_name}</p>
                                     <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">{app.email}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-sm font-bold text-neutral-950 leading-tight">{app.shopName}</p>
-                                    <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">rifacrafts.in/shop/{app.shopSlug}</p>
+                                    <p className="text-sm font-bold text-neutral-950 leading-tight">{app.shop_name}</p>
+                                    <p className="text-[10px] text-neutral-400 font-medium truncate mt-0.5">rifacrafts.in/shop/{app.shop_slug}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-bold text-neutral-700">{app.originState}</p>
-                                    <p className="text-[10px] text-neutral-400 font-medium mt-0.5">{app.craftCategories.slice(0, 2).join(', ')}</p>
+                                    <p className="text-xs font-bold text-neutral-700">{app.home_region}</p>
+                                    <p className="text-[10px] text-neutral-400 font-medium mt-0.5">{(app.product_categories || []).slice(0, 2).join(', ')}</p>
                                 </div>
 
                                 <div className="flex flex-col lg:items-start items-center">
-                                    <p className="text-xs font-medium text-neutral-600">{new Date(app.submittedAt).toLocaleDateString()}</p>
-                                    <p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest mt-0.5">{calculateDaysAgo(app.submittedAt)}</p>
+                                    <p className="text-xs font-medium text-neutral-600">{new Date(app.created_at).toLocaleDateString()}</p>
+                                    <p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest mt-0.5">{calculateDaysAgo(app.created_at)}</p>
                                 </div>
 
                                 <div className="flex justify-center">
                                     <span className={`px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest border ${
-                                        app.kycVerified ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'
+                                        app.pan_number ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'
                                     }`}>
-                                        {app.kycVerified ? 'Verified' : 'Unverified'}
+                                        {app.pan_number ? 'KYC Done' : 'Incomplete'}
                                     </span>
                                 </div>
 
                                 <div className="flex justify-center">
                                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                                        app.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                        app.status === 'new' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                         app.status === 'approved' ? 'bg-green-50 text-green-700 border-green-100' :
                                         'bg-red-50 text-red-700 border-red-100'
                                     }`}>
@@ -153,7 +223,7 @@ const Applications = () => {
                                 </div>
 
                                 <div className="flex justify-center">
-                                    {app.status === 'pending' ? (
+                                    {app.status === 'new' ? (
                                         <button 
                                             onClick={() => setSelectedApp(app)}
                                             className="px-4 py-2 bg-brand-pink text-white text-[9px] font-black uppercase tracking-widest hover:bg-brand-pink-dark transition-all shadow-lg shadow-brand-pink/10"
@@ -180,197 +250,181 @@ const Applications = () => {
 
                 {/* APPLICATION DETAIL PANEL (Slide-over) */}
                 {selectedApp && (
-                    <div className="fixed inset-0 z-[100] flex justify-end">
+                    <div className="fixed inset-0 z-[100] flex justify-end overflow-hidden">
+                        {/* More subtle, stable overlay */}
                         <div 
-                            className="absolute inset-0 bg-neutral-950/60 backdrop-blur-sm animate-in fade-in duration-300" 
-                            onClick={() => { setSelectedApp(null); setIsRejecting(false); }}
+                            className="absolute inset-0 bg-neutral-900/40 backdrop-blur-[1px] animate-in fade-in duration-300" 
+                            onClick={() => { if(!isProcessing) { setSelectedApp(null); setIsRejecting(false); } }}
                         />
-                        <div className="relative w-full max-w-lg bg-[#FAF7F2] h-full shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
+                        <div className="relative w-full max-w-xl bg-white h-full shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col border-l border-neutral-100">
                             
                             {/* Panel Header */}
-                            <div className="px-8 py-6 bg-white border-b border-neutral-100 flex items-center justify-between shrink-0">
+                            <div className="px-10 py-8 bg-white border-b border-neutral-50 flex items-center justify-between shrink-0">
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-brand-pink mb-1">Application Review</p>
-                                    <h2 className="text-xl font-serif font-bold text-neutral-950 tracking-tight">{selectedApp.shopName}</h2>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-pink mb-2">Application Registry</p>
+                                    <h2 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight leading-none">{selectedApp.brand_name || selectedApp.shop_name}</h2>
                                 </div>
                                 <button 
+                                    disabled={isProcessing}
                                     onClick={() => { setSelectedApp(null); setIsRejecting(false); }}
-                                    className="p-2 hover:bg-neutral-50 rounded-full transition-colors text-neutral-400 hover:text-neutral-950"
+                                    className="p-3 hover:bg-neutral-50 transition-colors text-neutral-400 hover:text-neutral-950 disabled:opacity-50"
                                 >
-                                    <X size={20} />
+                                    <X size={24} />
                                 </button>
                             </div>
 
                             {/* Panel Body */}
-                            <div className="flex-1 overflow-y-auto p-8 space-y-10 no-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-10 space-y-12 no-scrollbar">
                                 
-                                {/* Personal Details */}
-                                <section className="space-y-6">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 border-b border-neutral-100 pb-2">Personal Details</h3>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Full Name</p>
-                                            <p className="text-sm font-bold text-neutral-800">{selectedApp.applicantName}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Submitted</p>
-                                            <p className="text-sm font-bold text-neutral-800">{new Date(selectedApp.submittedAt).toLocaleDateString()}</p>
-                                        </div>
-                                        <div className="col-span-2 flex items-center gap-6 py-3 px-4 bg-white border border-neutral-100 rounded-sm">
-                                            <div className="flex items-center gap-2">
-                                                <Smartphone size={14} className="text-brand-pink" />
-                                                <span className="text-xs font-bold text-neutral-700">{selectedApp.mobile.replace(/(\d{2})\d{4}(\d{4})/, '$1****$2')}</span>
-                                            </div>
-                                            <div className="w-px h-4 bg-neutral-100" />
-                                            <div className="flex items-center gap-2">
-                                                <Mail size={14} className="text-brand-pink" />
-                                                <span className="text-xs font-bold text-neutral-700">{selectedApp.email}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* Shop Details */}
-                                <section className="space-y-6">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 border-b border-neutral-100 pb-2">Shop & Fulfillment</h3>
+                                {/* Personal & Studio Summary */}
+                                <div className="grid grid-cols-2 gap-10">
                                     <div className="space-y-4">
-                                        <div className="p-4 bg-white border border-neutral-100 rounded-sm">
-                                            <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Public URL</p>
-                                            <p className="text-xs font-bold text-brand-pink">rifacrafts.in/shop/{selectedApp.shopSlug}</p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-white border border-neutral-100 rounded-sm">
-                                                <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Origin State</p>
-                                                <div className="flex items-center gap-2 text-xs font-bold text-neutral-800">
-                                                    <MapPin size={12} className="text-neutral-400" />
-                                                    {selectedApp.originState}
-                                                </div>
-                                            </div>
-                                            <div className="p-4 bg-white border border-neutral-100 rounded-sm">
-                                                <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Origin PIN</p>
-                                                <div className="flex items-center gap-2 text-xs font-bold text-neutral-800">
-                                                    <Clock size={12} className="text-neutral-400" />
-                                                    {selectedApp.shippingOriginPin}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 bg-white border border-neutral-100 rounded-sm">
-                                            <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Craft Categories</p>
-                                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                                {selectedApp.craftCategories.map(cat => (
-                                                    <span key={cat} className="px-2 py-0.5 bg-neutral-50 text-[9px] font-bold text-neutral-600 border border-neutral-100 uppercase">{cat}</span>
-                                                ))}
-                                            </div>
+                                        <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-1">Applicant</p>
+                                        <div>
+                                            <p className="text-base font-bold text-neutral-950">{selectedApp.creator_name}</p>
+                                            <p className="text-xs text-neutral-500 mt-1">{selectedApp.email}</p>
+                                            <p className="text-xs text-neutral-500">{selectedApp.mobile_number || selectedApp.contact}</p>
                                         </div>
                                     </div>
-                                </section>
-
-                                {/* KYC Details */}
-                                <section className="space-y-6">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 border-b border-neutral-100 pb-2">KYC Verification</h3>
                                     <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-neutral-900 text-white rounded-sm">
-                                                <p className="text-[8px] font-black text-white/40 uppercase mb-1">PAN Number</p>
-                                                <p className="text-xs font-bold tracking-widest">{selectedApp.pan.replace(/(.{5}).*/, '$1****')}</p>
-                                            </div>
-                                            <div className="p-4 bg-neutral-900 text-white rounded-sm">
-                                                <p className="text-[8px] font-black text-white/40 uppercase mb-1">GSTIN</p>
-                                                <p className="text-xs font-bold tracking-widest">{selectedApp.gstin ? selectedApp.gstin.replace(/(.{2}).*/, '$1***********') : 'NOT PROVIDED'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 bg-white border border-neutral-100 rounded-sm flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[8px] font-black text-neutral-300 uppercase mb-1">Bank Account</p>
-                                                <p className="text-xs font-bold text-neutral-800">{selectedApp.bankAccountName}</p>
-                                                <p className="text-[10px] text-neutral-400 font-medium">{selectedApp.ifsc} · ****{selectedApp.bankLast4}</p>
-                                            </div>
-                                            {selectedApp.applicantName === selectedApp.bankAccountName ? (
-                                                <div className="flex items-center gap-1.5 text-green-600">
-                                                    <CheckCircle2 size={16} />
-                                                    <span className="text-[9px] font-black uppercase tracking-widest">Names match</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-1.5 text-red-500">
-                                                    <ShieldAlert size={16} />
-                                                    <span className="text-[9px] font-black uppercase tracking-widest">Mismatch</span>
-                                                </div>
-                                            )}
+                                        <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-1">Origin</p>
+                                        <div>
+                                            <p className="text-base font-bold text-neutral-950">{selectedApp.home_region}</p>
+                                            <p className="text-xs text-neutral-500 mt-1">Pincode: {selectedApp.shipping_origin_pin_code}</p>
                                         </div>
                                     </div>
-                                </section>
+                                </div>
 
-                                {/* Admin Actions Section */}
-                                <section className="space-y-6">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 border-b border-neutral-100 pb-2">Review Notes</h3>
+                                {/* Financials / KYC Grid */}
+                                <div className="bg-[#FAF7F2] border border-neutral-100 p-8 space-y-8">
+                                    <div className="flex justify-between items-center border-b border-neutral-200/50 pb-4">
+                                        <p className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.2em]">Compliance & KYC</p>
+                                        <div className="px-2 py-1 bg-neutral-950 text-white text-[8px] font-bold uppercase tracking-widest">Confidential</div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-10">
+                                        <div>
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase mb-2">PAN Card</p>
+                                            <p className="text-sm font-bold font-inter tracking-widest uppercase">{selectedApp.pan_number || 'NOT PROVIDED'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase mb-2">GSTIN</p>
+                                            <p className="text-sm font-bold font-inter tracking-widest text-neutral-400 uppercase">{selectedApp.gstin || 'EXEMPT'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 pt-4 border-t border-neutral-200/50">
+                                        <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">Bank Settlement</p>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-neutral-400">Account</span>
+                                                <span className="font-bold text-neutral-950 font-inter">{selectedApp.bank_account}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-neutral-400">IFSC Code</span>
+                                                <span className="font-bold text-neutral-950 font-inter uppercase">{selectedApp.ifsc_code}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-neutral-400">Holder</span>
+                                                <span className="font-bold text-neutral-950 uppercase">{selectedApp.account_holder}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Artisan Story / Categories */}
+                                <div className="space-y-6">
+                                    <p className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.2em]">Heritage & Craft</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(selectedApp.product_categories || []).map((cat: string) => (
+                                            <span key={cat} className="px-3 py-1 bg-white border border-neutral-200 text-[9px] font-black uppercase tracking-widest text-neutral-600">{cat}</span>
+                                        ))}
+                                    </div>
+                                    <div className="p-6 bg-white border border-neutral-100 italic text-sm text-neutral-600 leading-relaxed font-serif">
+                                        "{selectedApp.craft_origin_story || 'No story provided'}"
+                                    </div>
+                                </div>
+
+                                {/* Review Actions */}
+                                <div className="space-y-4 pt-4 border-t border-neutral-100">
+                                    <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Admin Verdict Notes</label>
                                     <textarea 
-                                        placeholder="Private notes about this application..."
-                                        className="w-full h-32 p-4 bg-white border border-neutral-100 text-sm font-medium focus:border-brand-pink outline-none transition-all placeholder:text-neutral-300 resize-none"
+                                        value={adminNotes}
+                                        onChange={(e) => setAdminNotes(e.target.value)}
+                                        placeholder="Add context for this approval or reasons for rejection..."
+                                        className="w-full h-32 p-6 bg-white border border-neutral-200 text-sm font-light focus:border-neutral-950 outline-none transition-all placeholder:text-neutral-300 resize-none leading-relaxed"
                                     />
-                                </section>
+                                </div>
                             </div>
 
                             {/* Panel Footer (Actions) */}
-                            <div className="p-8 bg-white border-t border-neutral-100 shrink-0">
-                                {selectedApp.status === 'pending' && !isRejecting && (
+                            <div className="p-10 bg-white border-t border-neutral-100 shrink-0">
+                                {selectedApp.status === 'new' && !isRejecting && (
                                     <div className="flex gap-4">
                                         <button 
+                                            disabled={isProcessing}
                                             onClick={() => setIsRejecting(true)}
-                                            className="flex-1 py-4 border border-red-200 text-red-600 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-red-50 transition-all"
+                                            className="flex-1 py-5 border border-neutral-200 text-neutral-950 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-neutral-50 transition-all disabled:opacity-50"
                                         >
                                             Reject
                                         </button>
                                         <button 
-                                            className="flex-[2] py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-pink-dark transition-all shadow-lg shadow-brand-pink/10"
+                                            disabled={isProcessing}
+                                            onClick={handleApprove}
+                                            className="flex-[2] py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-neutral-800 transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-3"
                                         >
-                                            Approve Shop
+                                            {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                            Confirm Approval
                                         </button>
                                     </div>
                                 )}
 
                                 {isRejecting && (
-                                    <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+                                    <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
                                         <div className="relative">
-                                            <p className="text-[8px] font-black text-neutral-400 uppercase mb-2">Rejection Reason</p>
-                                            <select 
-                                                value={rejectionReason}
-                                                onChange={(e) => setRejectionReason(e.target.value)}
-                                                className="w-full appearance-none px-4 py-3 bg-neutral-50 border border-neutral-100 rounded-sm text-xs font-bold outline-none"
-                                            >
-                                                <option value="">Select a reason...</option>
-                                                <option>KYC incomplete or invalid</option>
-                                                <option>Name mismatch on bank/PAN</option>
-                                                <option>Craft category not eligible</option>
-                                                <option>Duplicate shop account</option>
-                                                <option>Other / Policy violation</option>
-                                            </select>
-                                            <ChevronDown size={14} className="absolute right-4 bottom-3.5 text-neutral-400 pointer-events-none" />
+                                            <p className="text-[8px] font-black text-neutral-400 uppercase mb-3 tracking-[0.2em]">Select Rejection Reason</p>
+                                            <div className="relative">
+                                                <select 
+                                                    value={rejectionReason}
+                                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                                    className="w-full appearance-none px-6 py-4 bg-neutral-50 border border-neutral-100 rounded-sm text-xs font-bold outline-none focus:border-neutral-950 transition-all"
+                                                >
+                                                    <option value="">Choose a reason...</option>
+                                                    <option>KYC incomplete or invalid</option>
+                                                    <option>Name mismatch on bank/PAN</option>
+                                                    <option>Craft category not eligible</option>
+                                                    <option>Duplicate shop account</option>
+                                                    <option>Other / Policy violation</option>
+                                                </select>
+                                                <ChevronDown size={14} className="absolute right-6 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                                            </div>
                                         </div>
                                         <div className="flex gap-4">
                                             <button 
+                                                disabled={isProcessing}
                                                 onClick={() => setIsRejecting(false)}
-                                                className="flex-1 py-3 text-[9px] font-black uppercase tracking-widest text-neutral-400"
+                                                className="flex-1 py-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors"
                                             >
                                                 Cancel
                                             </button>
                                             <button 
-                                                disabled={!rejectionReason}
-                                                className="flex-[2] py-3 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50"
+                                                disabled={!rejectionReason || isProcessing}
+                                                onClick={handleReject}
+                                                className="flex-[2] py-4 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
+                                                {isProcessing && <Loader2 size={14} className="animate-spin" />}
                                                 Confirm Rejection
                                             </button>
                                         </div>
                                     </div>
                                 )}
 
-                                {selectedApp.status !== 'pending' && (
-                                    <div className={`p-4 rounded-sm text-center border ${
+                                {selectedApp.status !== 'new' && (
+                                    <div className={`p-8 border flex flex-col items-center justify-center text-center gap-2 ${
                                         selectedApp.status === 'approved' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'
                                     }`}>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">Application {selectedApp.status}</p>
-                                        {selectedApp.status === 'rejected' && selectedApp.rejectionReason && (
-                                            <p className="text-xs mt-1 font-medium italic">"{selectedApp.rejectionReason}"</p>
-                                        )}
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em]">Application {selectedApp.status}</p>
+                                        <p className="text-xs italic opacity-70">"{selectedApp.admin_notes || 'Processed by Admin'}"</p>
                                     </div>
                                 )}
                             </div>

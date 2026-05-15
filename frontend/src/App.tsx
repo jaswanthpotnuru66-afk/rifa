@@ -19,11 +19,11 @@ import BespokePortal from './pages/BespokePortal';
 import Checkout from './pages/buyer/Checkout';
 import Auth from './pages/buyer/Auth';
 import ArtisanDetail from './pages/ArtisanDetail';
-import Orders from './pages/buyer/Orders';
 import Profile from './pages/buyer/Profile';
 import Marketplace from './pages/Marketplace';
 import Cart from './pages/buyer/Cart';
 import Success from './pages/buyer/Success';
+import BuyerDashboard from './pages/buyer/BuyerDashboard';
 import NotFound   from './pages/NotFound';
 
 // CraftMaker Pages (Collaborate acts as the entry/register page)
@@ -60,6 +60,8 @@ import AdminPayouts from './pages/admin/ops/AdminPayouts';
 import AdminTaxReports from './pages/admin/ops/AdminTaxReports';
 import AdminRevenue from './pages/admin/ops/AdminRevenue';
 import AdminSettings from './pages/admin/ops/AdminSettings';
+import AdminProductReview from './pages/admin/ops/AdminProductReview';
+
 import WhyRifa from './pages/WhyRifa';
 import { Navigate } from 'react-router-dom';
 
@@ -81,7 +83,12 @@ const AnimatedRoutes = () => {
         <Route path="/product/:id"  element={<ProductDetail />} />
         <Route path="/custom-product/:id" element={<PageTransition><BespokePortal /></PageTransition>} />
         <Route path="/checkout"     element={<PageTransition><Checkout /></PageTransition>} />
-        <Route path="/"             element={<PageTransition><Home /></PageTransition>} />
+        <Route path="/"             element={
+          <PageTransition>
+            {localStorage.getItem('rifa_user') ? <BuyerDashboard /> : <Home />}
+          </PageTransition>
+        } />
+        <Route path="/dashboard"    element={<PageTransition><BuyerDashboard /></PageTransition>} />
         <Route path="/about"        element={<PageTransition><About /></PageTransition>} />
         <Route path="/creations"    element={<PageTransition><Creations /></PageTransition>} />
         <Route path="/marketplace"  element={<PageTransition><Marketplace /></PageTransition>} />
@@ -92,7 +99,6 @@ const AnimatedRoutes = () => {
         <Route path="/collaborate"  element={<PageTransition><Collaborate /></PageTransition>} />
         <Route path="/why-rifa"     element={<PageTransition><WhyRifa /></PageTransition>} />
         <Route path="/contact"      element={<PageTransition><Contact /></PageTransition>} />
-        <Route path="/orders"       element={<PageTransition><Orders /></PageTransition>} />
         <Route path="/profile"      element={<PageTransition><Profile /></PageTransition>} />
         <Route path="/admin"        element={<PageTransition><Auth /></PageTransition>} />
         
@@ -130,6 +136,8 @@ const AnimatedRoutes = () => {
         <Route path="/admin/ops/disputes"             element={<AdminDisputes />} />
         <Route path="/admin/ops/disputes/:id"         element={<AdminDisputeDetail />} />
         <Route path="/admin/ops/listings/flagged"     element={<AdminFlaggedListings />} />
+        <Route path="/admin/ops/listings/review"      element={<AdminProductReview />} />
+
         <Route path="/admin/ops/shipping"             element={<AdminShipping />} />
         <Route path="/admin/ops/payouts"              element={<AdminPayouts />} />
         <Route path="/admin/ops/tax"                  element={<AdminTaxReports />} />

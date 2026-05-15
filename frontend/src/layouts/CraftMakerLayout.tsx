@@ -6,7 +6,8 @@ import {
     Settings, Bell, LogOut, Menu, PlusCircle, ChevronRight,
     X, TrendingUp, Megaphone, CheckCircle2, MessageSquare, Info
 } from 'lucide-react';
-import { mockMakerProfile, mockOrders } from '../lib/craftmaker';
+import { mockOrders } from '../lib/craftmaker';
+import { api } from '../lib/api';
 
 interface CraftMakerLayoutProps { children: React.ReactNode; title?: string; }
 
@@ -41,13 +42,33 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+    
+    // Dynamic Profile Data
+    const [profile, setProfile] = React.useState<any>(null);
+    const [stats, setStats] = React.useState<any>(null);
 
     const isActive = (path: string) => location.pathname === path;
     const currentPageName = NAV_ITEMS.find(i => isActive(i.path))?.name || 'Artisan Portal';
 
+    React.useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const data = await api.getArtisanStats();
+                if (data) {
+                    setProfile(data.artisan);
+                    setStats(data.stats);
+                }
+            } catch (err) {
+                console.error('Failed to fetch artisan profile:', err);
+            }
+        };
+        fetchProfile();
+    }, []);
+
     // Live stat counters
-    const activeOrders = mockOrders.filter(o => !['delivered','cancelled','disputed'].includes(o.status)).length;
-    const pendingProofs = mockOrders.filter(o => o.status === 'proof-sent').length;
+    const activeOrders = stats?.activeOrdersCount || 0;
+    const pendingProofs = stats?.pendingProofsCount || 0;
+    const shopRating = stats?.shopRating || '5.0';
 
     return (
         <div className="fixed inset-0 z-50 flex bg-[#FAF7F2] font-sans overflow-hidden">
@@ -83,19 +104,25 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
                 {/* ── Shop identity card ── */}
                 <div className="mx-4 mb-4 rounded-sm overflow-hidden shrink-0" style={{ backgroundColor: '#171717' }}>
                     <div className="relative h-16 overflow-hidden">
-                        <img src={mockMakerProfile.bannerUrl} alt="" className="w-full h-full object-cover opacity-40" />
+                        <img src={profile?.process_img || 'https://images.unsplash.com/photo-1459749411177-042180ce673f?auto=format&fit=crop&q=80'} alt="" className="w-full h-full object-cover opacity-40" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#171717] to-transparent" />
                     </div>
                     <div className="px-4 pt-0 pb-4 -mt-6 relative z-10">
                         <div className="flex items-end gap-3">
-                            <div className="w-10 h-10 rounded-full border-2 border-[#0a0a0a] overflow-hidden shrink-0 shadow-lg">
-                                <img src={mockMakerProfile.logoUrl} alt="" className="w-full h-full object-cover" />
+                            <div className="w-10 h-10 rounded-full border-2 border-[#0a0a0a] bg-neutral-900 overflow-hidden shrink-0 shadow-lg flex items-center justify-center">
+                                {profile?.img ? (
+                                    <img src={profile.img} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-white text-xs font-black">{profile?.name?.substring(0, 2).toUpperCase() || 'CM'}</span>
+                                )}
                             </div>
                             <div className="min-w-0 pb-1">
-                                <p className="text-white text-xs font-bold truncate leading-tight">{mockMakerProfile.shopName}</p>
+                                <p className="text-white text-xs font-bold truncate leading-tight">{profile?.name || 'My Studio'}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                                    <span className="text-[8px] font-black text-green-400 uppercase tracking-[0.15em]">Active Shop</span>
+                                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse shrink-0 ${profile?.status === 'active' || !profile?.status ? 'bg-green-400' : 'bg-amber-400'}`} />
+                                    <span className={`text-[8px] font-black uppercase tracking-[0.15em] ${profile?.status === 'active' || !profile?.status ? 'text-green-400' : 'text-amber-400'}`}>
+                                        {profile?.status || 'Active Shop'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -110,7 +137,7 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
                                 <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Proofs</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-white text-sm font-black font-serif leading-none">4.8</p>
+                                <p className="text-white text-sm font-black font-serif leading-none">{shopRating.toString().split(' ')[0]}</p>
                                 <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Rating</p>
                             </div>
                         </div>

@@ -1,30 +1,48 @@
-import { useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import { Star, Heart, ArrowRight, CheckCircle2, MessageSquare, UserPlus, Zap, Shield, Sparkles } from 'lucide-react';
-import { artisans } from '../lib/artisans';
-import { products } from '../lib/products';
+import { 
+    Loader2
+} from 'lucide-react';
+
+const API_URL = 'http://localhost:3001/api';
 
 const ArtisanDetail = () => {
     const { id } = useParams();
-
-    const artisan = useMemo(() => artisans.find(a => a.id === id) || null, [id]);
-
-    const displayProducts = useMemo(() => {
-        if (!artisan) return [];
-        
-        // Get artisan specific products
-        const specific = products.filter(p => p.artisanId === artisan.id);
-        // Get common top products (first 3 from global list)
-        const common = products.slice(0, 3);
-        
-        // Combine and remove duplicates
-        return [...specific, ...common.filter(c => !specific.find(s => s.id === c.id))];
-    }, [artisan]);
+    
+    const [artisan, setArtisan] = useState<any>(null);
+    const [displayProducts, setDisplayProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        window.scrollTo(0, 0);
+        const fetchArtisan = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`${API_URL}/artisans/${id}`);
+                if (!res.ok) throw new Error('Artisan not found');
+                const data = await res.json();
+                setArtisan(data);
+                setDisplayProducts(data.products || []);
+            } catch (err) {
+                console.error('Fetch artisan error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchArtisan();
+            window.scrollTo(0, 0);
+        }
     }, [id]);
+
+    if (loading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAF7F2] gap-4">
+            <Loader2 size={40} className="text-brand-pink animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Visiting Studio...</p>
+        </div>
+    );
 
     if (!artisan) {
         return (
@@ -91,7 +109,7 @@ const ArtisanDetail = () => {
                     </div>
 
                     <p className="text-neutral-500 font-light leading-relaxed max-w-2xl mx-auto mb-6 text-sm">
-                        {artisan.story.split('.')[0]}. Curating intentional home decor through traditional {artisan.specialty.toLowerCase()} and contemporary aesthetics.
+                        {artisan.story?.split('.')[0]}. Curating intentional home decor through traditional {artisan.specialty?.toLowerCase()} and contemporary aesthetics.
                     </p>
 
                     <div className="flex items-center justify-center gap-3">
@@ -141,7 +159,7 @@ const ArtisanDetail = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {displayProducts.map((product, idx) => (
+                    {displayProducts.map((product: any, idx: number) => (
                         <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 15 }}

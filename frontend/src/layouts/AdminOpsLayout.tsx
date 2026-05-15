@@ -1,13 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     LayoutDashboard, Users, UserPlus, Scale,
     ShoppingCart, AlertCircle, Flag,
     Truck, IndianRupee, FileBarChart, TrendingUp,
     Settings, Bell, LogOut, Menu, ChevronRight,
-    X, Download
+    X, Download, Check
 } from 'lucide-react';
-import { mockShippingAlerts } from '../lib/adminOps.mock';
+import { api } from '../lib/api';
 
 interface AdminOpsLayoutProps { children: React.ReactNode; title?: string; }
 
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 
     { name: 'All Orders', path: '/admin/ops/orders', icon: ShoppingCart, section: 'MARKETPLACE' },
     { name: 'Disputes', path: '/admin/ops/disputes', icon: AlertCircle, section: 'MARKETPLACE' },
+    { name: 'Product Review', path: '/admin/ops/listings/review', icon: Check, section: 'MARKETPLACE' },
     { name: 'Flagged Listings', path: '/admin/ops/listings/flagged', icon: Flag, section: 'MARKETPLACE' },
 
     { name: 'Shipping Oversight', path: '/admin/ops/shipping', icon: Truck, section: 'SHIPPING' },
@@ -38,14 +39,40 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+    const [systemStats, setSystemStats] = React.useState({ modules: NAV_ITEMS.length, alerts: 0, errors: 0 });
+    const [liveAlerts, setLiveAlerts] = React.useState<any[]>([]);
 
     const isActive = (path: string) => location.pathname === path;
+
+    useEffect(() => {
+        fetchSystemHealth();
+    }, []);
+
+    const fetchSystemHealth = async () => {
+        try {
+            const [shippingAlerts, disputes] = await Promise.all([
+                api.getAdminShippingAlerts(),
+                api.getAdminDisputes()
+            ]);
+            
+            const openShipping = shippingAlerts.filter((a: any) => a.status !== 'resolved');
+            const openDisputes = disputes.filter((d: any) => d.status !== 'resolved' && d.status !== 'closed');
+            
+            setLiveAlerts([...openShipping, ...openDisputes]);
+            setSystemStats(prev => ({
+                ...prev,
+                alerts: openShipping.length + openDisputes.length
+            }));
+        } catch (error) {
+            console.error('Failed to fetch system health:', error);
+        }
+    };
 
     // Find current page name based on path
     const activeItem = NAV_ITEMS.find(i => isActive(i.path));
     const currentPageName = activeItem?.name || 'Admin Operations';
 
-    const unresolvedAlerts = mockShippingAlerts.filter(a => !a.resolvedAt).length;
+    const unresolvedAlerts = systemStats.alerts;
 
     return (
         <div className="fixed inset-0 z-50 flex bg-[#FAF7F2] font-sans overflow-hidden">
@@ -80,36 +107,36 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
 
                 {/* ── Admin identity card ── */}
                 <div className="mx-4 mb-4 rounded-sm overflow-hidden shrink-0" style={{ backgroundColor: '#171717' }}>
-                    <div className="relative h-16 overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-900 opacity-40" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#171717] to-transparent" />
-                    </div>
-                    <div className="px-4 pt-0 pb-4 -mt-6 relative z-10">
-                        <div className="flex items-end gap-3">
-                            <div className="w-10 h-10 rounded-full border-2 border-[#0a0a0a] bg-brand-pink/20 flex items-center justify-center text-brand-pink text-sm font-black shrink-0 shadow-lg">
-                                SA
+                    <div className="px-5 pt-8 pb-6 relative z-10">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-14 h-14 rounded-full bg-[#3D252C] flex items-center justify-center text-[#D4547A] text-xl font-bold shrink-0 shadow-2xl relative overflow-hidden">
+                                <div className="absolute inset-0 bg-neutral-900/10" />
+                                <span className="relative z-10">SA</span>
                             </div>
-                            <div className="min-w-0 pb-1">
-                                <p className="text-white text-xs font-bold truncate leading-tight">Super Admin</p>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                                    <span className="text-[8px] font-black text-green-400 uppercase tracking-[0.15em]">System Online</span>
+                            <div className="min-w-0">
+                                <p className="text-white text-base font-bold tracking-tight leading-none mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Super Admin</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-[#4A8C6F] shrink-0" />
+                                    <span className="text-[9px] font-black text-[#4A8C6F] uppercase tracking-[0.2em]">System Online</span>
                                 </div>
                             </div>
                         </div>
-                        {/* Mini stats */}
-                        <div className="grid grid-cols-3 gap-1 mt-3">
-                            <div className="text-center">
-                                <p className="text-white text-sm font-black tracking-tight leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>14</p>
-                                <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Modules</p>
+                        
+                        {/* Status Metrics */}
+                        <div className="flex items-center justify-between border-t border-white/5 pt-6">
+                            <div className="flex-1 text-center">
+                                <p className="text-white text-lg font-black tracking-tighter leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>{systemStats.modules}</p>
+                                <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1.5">Modules</p>
                             </div>
-                            <div className="text-center border-x border-white/5">
-                                <p className="text-amber-400 text-sm font-black tracking-tight leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>{unresolvedAlerts}</p>
-                                <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Alerts</p>
+                            <div className="w-[1px] h-8 bg-white/5" />
+                            <div className="flex-1 text-center">
+                                <p className="text-[#F59E0B] text-lg font-black tracking-tighter leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>{unresolvedAlerts}</p>
+                                <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1.5">Alerts</p>
                             </div>
-                            <div className="text-center">
-                                <p className="text-white text-sm font-black tracking-tight leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>0</p>
-                                <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Errors</p>
+                            <div className="w-[1px] h-8 bg-white/5" />
+                            <div className="flex-1 text-center">
+                                <p className="text-white text-lg font-black tracking-tighter leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>0</p>
+                                <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1.5">Errors</p>
                             </div>
                         </div>
                     </div>
@@ -175,15 +202,18 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
 
                 {/* ── Topbar ── */}
                 <header className="h-16 bg-white border-b border-neutral-100 flex items-center justify-between px-6 lg:px-10 shrink-0 z-40">
-                    <div className="flex items-center gap-5">
-                        <button className="lg:hidden text-neutral-500 hover:text-neutral-950 transition-colors" onClick={() => setIsSidebarOpen(true)}>
-                            <Menu size={24} />
+                    <div className="flex items-center h-full gap-6">
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 -ml-2 text-neutral-400 hover:text-neutral-950 transition-colors"
+                        >
+                            <Menu size={20} />
                         </button>
-                        {/* Title */}
-                        <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em]">
-                            <span className="text-neutral-300 hidden md:block">Operations</span>
-                            <ChevronRight size={12} className="text-neutral-200 hidden md:block" />
-                            <span className="text-neutral-950">{currentPageName}</span>
+                        
+                        <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] h-full">
+                            <span className="text-neutral-400 hidden md:block">Operations</span>
+                            <ChevronRight size={10} className="text-neutral-300 hidden md:block" />
+                            <span className="text-neutral-950 font-bold">{currentPageName}</span>
                         </div>
                     </div>
 
@@ -219,18 +249,22 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                                                 <button className="text-[9px] font-bold text-neutral-400 hover:text-brand-pink uppercase tracking-widest">Mark all read</button>
                                             </div>
                                             <div className="max-h-96 overflow-y-auto no-scrollbar">
-                                                {mockShippingAlerts.filter(a => !a.resolvedAt).map(alert => (
+                                                {liveAlerts.length > 0 ? liveAlerts.map(alert => (
                                                     <div key={alert.id} className="p-5 flex gap-4 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors cursor-pointer">
                                                         <div className="shrink-0 mt-0.5">
                                                             <AlertCircle size={16} className={alert.severity === 'high' ? 'text-red-500' : alert.severity === 'medium' ? 'text-amber-500' : 'text-blue-500'} />
                                                         </div>
                                                         <div>
-                                                            <p className="text-xs font-bold text-neutral-950 mb-0.5">{alert.type.replace('-', ' ').toUpperCase()}</p>
+                                                            <p className="text-xs font-bold text-neutral-950 mb-0.5">{(alert.type || alert.category || 'Dispute').replace('-', ' ').toUpperCase()}</p>
                                                             <p className="text-[11px] font-medium text-neutral-500 leading-snug">{alert.description}</p>
-                                                            <p className="text-[9px] font-black text-neutral-300 mt-2 uppercase tracking-widest">{alert.makerShopName}</p>
+                                                            <p className="text-[9px] font-black text-neutral-300 mt-2 uppercase tracking-widest">{alert.artisans?.brand_name || alert.brand_name || 'System'}</p>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                )) : (
+                                                    <div className="p-12 text-center">
+                                                        <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest italic">All systems clear</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </>

@@ -77,6 +77,12 @@ const CustomCursor = () => {
 const FloatingWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
 
+    useEffect(() => {
+        const handleOpen = () => setIsOpen(true);
+        window.addEventListener('open-bespoke-modal', handleOpen);
+        return () => window.removeEventListener('open-bespoke-modal', handleOpen);
+    }, []);
+
     return (
         <>
             {/* Spinning Widget */}

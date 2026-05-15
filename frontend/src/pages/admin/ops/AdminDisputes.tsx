@@ -1,31 +1,49 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
-    Search, AlertCircle, ChevronDown
+    Search, AlertCircle, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
-import { mockDisputes } from '../../../lib/adminOps.mock';
+import { api } from '../../../lib/api';
 
 const AdminDisputes = () => {
+    const [disputes, setDisputes] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'all' | 'open' | 'under-review' | 'resolved'>('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('Oldest first');
+    const [sortBy] = useState('Newest');
 
-    const counts = {
-        all: mockDisputes.length,
-        open: mockDisputes.filter(d => d.status === 'open').length,
-        'under-review': mockDisputes.filter(d => d.status === 'under-review').length,
-        resolved: mockDisputes.filter(d => d.status === 'resolved').length
+    useEffect(() => {
+        fetchDisputes();
+    }, []);
+
+    const fetchDisputes = async () => {
+        setIsLoading(true);
+        try {
+            const data = await api.getAdminDisputes();
+            setDisputes(data);
+        } catch (error) {
+            console.error('Failed to fetch disputes:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const criticalDisputes = mockDisputes.filter(d => {
-        const diff = Date.now() - new Date(d.dateRaised).getTime();
+    const counts = {
+        all: disputes.length,
+        open: disputes.filter(d => d.status === 'open').length,
+        'under-review': disputes.filter(d => d.status === 'under-review').length,
+        resolved: disputes.filter(d => d.status === 'resolved').length
+    };
+
+    const criticalDisputes = disputes.filter(d => {
+        const diff = Date.now() - new Date(d.created_at).getTime();
         const days = diff / (1000 * 60 * 60 * 24);
         return d.status !== 'resolved' && days > 2;
     }).length;
 
     const filteredDisputes = useMemo(() => {
-        let result = [...mockDisputes];
+        let result = [...disputes];
         if (activeTab !== 'all') {
             result = result.filter(d => d.status === activeTab);
         }
@@ -33,17 +51,16 @@ const AdminDisputes = () => {
             const q = searchQuery.toLowerCase();
             result = result.filter(d =>
                 d.id.toLowerCase().includes(q) ||
-                d.orderId.toLowerCase().includes(q) ||
-                d.buyerName.toLowerCase().includes(q) ||
-                d.makerShopName.toLowerCase().includes(q)
+                (d.order_id || '').toLowerCase().includes(q) ||
+                (d.artisans?.brand_name || '').toLowerCase().includes(q)
             );
         }
 
-        if (sortBy === 'Oldest first') result.sort((a, b) => a.dateRaised.localeCompare(b.dateRaised));
-        if (sortBy === 'Newest') result.sort((a, b) => b.dateRaised.localeCompare(a.dateRaised));
+        if (sortBy === 'Oldest first') result.sort((a, b) => a.created_at.localeCompare(b.created_at));
+        if (sortBy === 'Newest') result.sort((a, b) => b.created_at.localeCompare(a.created_at));
 
         return result;
-    }, [activeTab, searchQuery, sortBy]);
+    }, [activeTab, searchQuery, sortBy, disputes]);
 
     const getDaysOpen = (dateStr: string) => {
         const diff = Date.now() - new Date(dateStr).getTime();
@@ -116,138 +133,106 @@ const AdminDisputes = () => {
                                 className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-100 rounded-sm focus:border-brand-pink outline-none text-xs font-bold transition-all placeholder:text-neutral-300"
                             />
                         </div>
-                        <div className="relative">
-                            <select
-                                value={sortBy}
-                                onChange={e => setSortBy(e.target.value)}
-                                className="appearance-none pl-4 pr-10 py-2 bg-white border border-neutral-100 rounded-sm text-[9px] font-black uppercase tracking-widest outline-none cursor-pointer hover:border-brand-pink/30 transition-all"
-                            >
-                                <option>Oldest first</option>
-                                <option>Newest</option>
-                            </select>
-                            <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                        </div>
                     </div>
                 </div>
 
                 {/* Disputes Table */}
                 <div className="space-y-3">
-                    <div className="hidden lg:grid grid-cols-[100px_100px_1.2fr_1.2fr_1fr_100px_80px_100px_100px_80px] gap-4 px-6 text-[9px] font-black uppercase tracking-widest text-neutral-400">
-                        <div>Dispute ID</div>
-                        <div>Order ID</div>
-                        <div>Buyer</div>
-                        <div>Maker</div>
-                        <div>Category</div>
-                        <div>Raised</div>
-                        <div className="text-center">Days</div>
-                        <div className="text-center">Status</div>
-                        <div className="text-center">Outcome</div>
-                        <div />
-                    </div>
-
-                    {filteredDisputes.length > 0 ? filteredDisputes.map(dispute => {
-                        const daysOpen = getDaysOpen(dispute.dateRaised);
-                        const isUrgent = dispute.status !== 'resolved' && daysOpen > 3;
-                        const isWarning = dispute.status !== 'resolved' && daysOpen <= 3;
-                        const isResolvedMaker = dispute.status === 'resolved' && dispute.outcome === 'maker-favour';
-
-                        return (
-                            <div key={dispute.id} className={`bg-white border rounded-sm transition-all shadow-sm ${isUrgent ? 'bg-red-50/50 border-red-100' :
-                                    isWarning ? 'bg-amber-50/30 border-amber-50' :
-                                        isResolvedMaker ? 'bg-green-50/30 border-green-50' :
-                                            'border-neutral-100'
-                                }`}>
-                                <div className="flex flex-col lg:grid lg:grid-cols-[100px_100px_1.2fr_1.2fr_1fr_100px_80px_100px_100px_80px] gap-4 p-4 lg:p-6 items-center">
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Dispute ID</span>
-                                        <div className="text-xs font-black text-neutral-950 font-inter">{dispute.id}</div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Order ID</span>
-                                        <Link to={`/admin/ops/orders/${dispute.orderId}`} className="text-xs font-bold text-brand-pink hover:underline font-inter">{dispute.orderId}</Link>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Buyer</span>
-                                        <div className="text-right lg:text-left">
-                                            <p className="text-xs font-bold text-neutral-900">{dispute.buyerName}</p>
-                                            <p className="text-[10px] text-neutral-400 font-medium">{dispute.buyerCity}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Maker</span>
-                                        <div className="text-right lg:text-left">
-                                            <p className="text-xs font-bold text-neutral-900">{dispute.makerShopName}</p>
-                                            <Link to={`/admin/ops/makers/${dispute.makerId}`} className="text-[9px] font-black uppercase tracking-widest text-neutral-300 hover:text-brand-pink">View Maker</Link>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Category</span>
-                                        <div className="text-right lg:text-left">
-                                            <span className="text-[10px] font-bold text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded-sm uppercase tracking-tight">{dispute.category.replace('-', ' ')}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Raised</span>
-                                        <div className="text-[10px] font-medium text-neutral-500 font-inter">{new Date(dispute.dateRaised).toLocaleDateString()}</div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Days</span>
-                                        <div className="lg:text-center">
-                                            <span className={`text-xs font-black font-inter ${isUrgent ? 'text-red-600' : 'text-neutral-950'}`}>{daysOpen}d</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Status</span>
-                                        <div className="lg:flex lg:justify-center">
-                                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                                                dispute.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                dispute.status === 'under-review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                                'bg-red-50 text-red-700 border-red-100'
-                                            }`}>
-                                                {dispute.status.replace('-', ' ')}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Outcome</span>
-                                        <div className="lg:text-center">
-                                            {dispute.outcome ? (
-                                                <span className={`text-[9px] font-black uppercase tracking-widest ${dispute.outcome === 'maker-favour' ? 'text-green-600' : 'text-blue-600'}`}>
-                                                    {dispute.outcome.replace('-', ' ')}
-                                                </span>
-                                            ) : (
-                                                <span className="text-neutral-200">−</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between lg:block w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-0 border-neutral-50 mt-2 lg:mt-0 items-center">
-                                        <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Actions</span>
-                                        <div className="lg:flex lg:justify-center">
-                                            <Link 
-                                                to={`/admin/ops/disputes/${dispute.id}`} 
-                                                className="px-4 py-2 bg-brand-pink text-white text-[9px] font-black uppercase tracking-widest hover:bg-brand-pink-dark transition-all shadow-lg shadow-brand-pink/10"
-                                            >
-                                                Resolve
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    }) : (
-                        <div className="py-24 border-2 border-dashed border-neutral-100 rounded-sm text-center">
-                            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest">No disputes found</p>
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-24">
+                            <Loader2 size={40} className="text-brand-pink animate-spin mb-4" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Synchronizing Complaints...</p>
                         </div>
+                    ) : (
+                        <>
+                            <div className="hidden lg:grid grid-cols-[120px_1fr_1fr_100px_80px_100px_100px_80px] gap-4 px-6 text-[9px] font-black uppercase tracking-widest text-neutral-400">
+                                <div>Dispute ID</div>
+                                <div>Order ID</div>
+                                <div>Maker</div>
+                                <div>Category</div>
+                                <div>Raised</div>
+                                <div className="text-center">Days</div>
+                                <div className="text-center">Status</div>
+                                <div />
+                            </div>
+
+                            {filteredDisputes.length > 0 ? filteredDisputes.map(dispute => {
+                                const daysOpen = getDaysOpen(dispute.created_at);
+                                const isUrgent = dispute.status !== 'resolved' && daysOpen > 3;
+
+                                return (
+                                    <div key={dispute.id} className={`bg-white border rounded-sm transition-all shadow-sm ${isUrgent ? 'bg-red-50/50 border-red-100' : 'border-neutral-100'}`}>
+                                        <div className="flex flex-col lg:grid lg:grid-cols-[120px_1fr_1fr_100px_80px_100px_100px_80px] gap-4 p-4 lg:p-6 items-center">
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">ID</span>
+                                                <div className="text-xs font-black text-neutral-950 font-inter">{dispute.id.slice(0, 8)}</div>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Order</span>
+                                                <Link to={`/admin/ops/orders/${dispute.order_id}`} className="text-xs font-bold text-brand-pink hover:underline font-inter truncate block">{dispute.order_id}</Link>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Maker</span>
+                                                <div className="text-right lg:text-left">
+                                                    <p className="text-xs font-bold text-neutral-900">{dispute.artisans?.brand_name || 'Individual'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Category</span>
+                                                <div className="text-right lg:text-left">
+                                                    <span className="text-[10px] font-bold text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded-sm uppercase tracking-tight">{dispute.category}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Raised</span>
+                                                <div className="text-[10px] font-medium text-neutral-500 font-inter">{new Date(dispute.created_at).toLocaleDateString()}</div>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Days</span>
+                                                <div className="lg:text-center">
+                                                    <span className={`text-xs font-black font-inter ${isUrgent ? 'text-red-600' : 'text-neutral-950'}`}>{daysOpen}d</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Status</span>
+                                                <div className="lg:flex lg:justify-center">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                                                        dispute.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                        dispute.status === 'under-review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                                        'bg-red-50 text-red-700 border-red-100'
+                                                    }`}>
+                                                        {dispute.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-0 border-neutral-50 mt-2 lg:mt-0 items-center">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Actions</span>
+                                                <div className="lg:flex lg:justify-center">
+                                                    <Link 
+                                                        to={`/admin/ops/disputes/${dispute.id}`} 
+                                                        className="px-4 py-2 bg-brand-pink text-white text-[9px] font-black uppercase tracking-widest hover:bg-brand-pink-dark transition-all shadow-lg shadow-brand-pink/10"
+                                                    >
+                                                        Resolve
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }) : (
+                                <div className="py-24 border-2 border-dashed border-neutral-100 rounded-sm text-center">
+                                    <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest">No disputes found</p>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

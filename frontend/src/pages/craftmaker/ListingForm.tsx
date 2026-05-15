@@ -1,16 +1,17 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useForm, useFieldArray, type UseFormRegister, type UseFormWatch, type UseFormSetValue, type FieldArrayWithId } from 'react-hook-form';
+import { useState, useMemo, useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useForm, useFieldArray, type FieldArrayWithId, type UseFormRegister, type UseFormWatch, type UseFormSetValue } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     ArrowLeft, Image as ImageIcon, Plus, 
     Trash2, X, AlertTriangle, Info, ChevronDown, 
     GripVertical, Palette, Type, List, Upload, 
-    Eye, Star
+    Eye, Star, Loader2, CheckCircle, ShieldCheck
 } from 'lucide-react';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
-import { mockListings, type CraftMakerListing } from '../../lib/craftmaker';
+import { api } from '../../lib/api';
 import MagneticButton from '../../components/MagneticButton';
+import { type CraftMakerListing } from '../../lib/craftmaker';
 
 const categories = [
     'Wood', 'Pottery', 'Leather', 'Textiles', 'Resin Art', 'Crochet',
@@ -30,31 +31,33 @@ type FormInputs = Omit<CraftMakerListing, 'id' | 'createdAt' | 'views' | 'orders
 
 const ListingForm = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
     const isEditMode = Boolean(id);
-    const existingListing = isEditMode ? mockListings.find(l => l.id === id) : null;
+    const existingListing: CraftMakerListing | null = null; // We will implement real fetch for edit mode later if needed
 
     const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormInputs>({
         defaultValues: existingListing ? {
-            title: existingListing.title,
-            category: existingListing.category,
-            subCategory: existingListing.subCategory || '',
-            description: existingListing.description,
-            tags: existingListing.tags,
-            stateOfOrigin: existingListing.stateOfOrigin,
-            images: existingListing.images,
-            basePrice: existingListing.basePrice,
-            compareAtPrice: existingListing.compareAtPrice,
-            stock: existingListing.stock,
-            isUnlimited: existingListing.isUnlimited,
-            isCustomisable: existingListing.isCustomisable,
-            processingTime: existingListing.processingTime || 7,
-            specFields: existingListing.specFields || [],
-            packageWeight: existingListing.packageWeight,
-            dimensions: existingListing.dimensions,
-            returnWindow: existingListing.returnWindow,
-            exchangeAccepted: existingListing.exchangeAccepted,
-            status: existingListing.status
+            title: (existingListing as any).title,
+            category: (existingListing as any).category,
+            subCategory: (existingListing as any).subCategory || '',
+            description: (existingListing as any).description,
+            tags: (existingListing as any).tags,
+            stateOfOrigin: (existingListing as any).stateOfOrigin,
+            images: (existingListing as any).images,
+            basePrice: (existingListing as any).basePrice,
+            compareAtPrice: (existingListing as any).compareAtPrice,
+            stock: (existingListing as any).stock,
+            isUnlimited: (existingListing as any).isUnlimited,
+            isCustomisable: (existingListing as any).isCustomisable,
+            processingTime: (existingListing as any).processingTime || 7,
+            specFields: (existingListing as any).specFields || [],
+            packageWeight: (existingListing as any).packageWeight,
+            dimensions: (existingListing as any).dimensions,
+            returnWindow: (existingListing as any).returnWindow,
+            exchangeAccepted: (existingListing as any).exchangeAccepted,
+            status: (existingListing as any).status
         } : {
             title: '',
             category: 'Pottery',
@@ -120,20 +123,127 @@ const ListingForm = () => {
     };
 
     const handlePhotoUpload = () => {
-        // Mock upload - add a placeholder
-        if (images.length < 8) {
-            setValue('images', [...images, '/products/pottery.png']);
+        fileInputRef.current?.click();
+    };
+
+    const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const currentImages = watch('images') || [];
+        const remainingSlots = 8 - currentImages.length;
+        const filesToProcess = files.slice(0, remainingSlots);
+
+        const uploadPromises = filesToProcess.map(file => {
+            return new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(file);
+            });
+        });
+
+        const newBase64Images = await Promise.all(uploadPromises);
+        setValue('images', [...currentImages, ...newBase64Images]);
+        
+        // Clear input to allow re-upload of same file
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const onSubmit = async (data: FormInputs) => {
+        console.log('Submitting listing data:', data);
+        setIsLoading(true);
+        try {
+            const mappedData = {
+                name: data.title,
+                price: Number(data.basePrice),
+                original_price: data.compareAtPrice ? Number(data.compareAtPrice) : null,
+                description: data.description,
+                category: data.category,
+                images: data.images,
+                is_custom: data.isCustomisable,
+                tag: data.tags[0] || data.category,
+                details: {
+                    specFields: data.specFields,
+                    processingTime: data.processingTime,
+                    dimensions: data.dimensions,
+                    weight: data.packageWeight,
+                    stateOfOrigin: data.stateOfOrigin
+                },
+                is_ready: false,
+                is_natural: isMaterialNoticeOn,
+                status: 'pending'
+            };
+
+            const result = await api.createProduct(mappedData);
+            if (result.error) {
+                alert('Failed to publish listing: ' + result.error);
+            } else {
+                setIsSuccess(true);
+            }
+        } catch (err: any) {
+            console.error('Failed to create product:', err);
+            alert('Failed to publish listing: ' + (err.message || 'Unknown server error'));
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const onSubmit = (data: FormInputs) => {
-        console.log('Publishing listing:', data);
-        // Toast logic would go here
-        navigate('/craftmaker/listings');
-    };
+    if (isSuccess) {
+        return (
+            <CraftMakerLayout title="Masterpiece Sent">
+                <div className="min-h-[70vh] flex items-center justify-center p-4">
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white border border-neutral-100 p-12 rounded-sm shadow-2xl text-center max-w-md w-full relative overflow-hidden"
+                    >
+                        {/* Premium Decor */}
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-brand-pink" />
+                        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center text-green-500 mx-auto mb-8">
+                            <CheckCircle size={40} strokeWidth={1.5} />
+                        </div>
+                        
+                        <h2 className="text-3xl font-serif font-bold text-neutral-950 mb-4">Masterpiece Sent!</h2>
+                        <p className="text-neutral-500 text-sm font-light leading-relaxed mb-10">
+                            Your listing has been successfully queued for administrative review. You'll see it in your dashboard under <span className="text-brand-pink font-bold">"Under Review"</span> until approved.
+                        </p>
+
+                        <div className="space-y-4">
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="w-full py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-opacity-90 transition-all shadow-xl"
+                            >
+                                Add Another Listing
+                            </button>
+                            <Link 
+                                to="/craftmaker/dashboard"
+                                className="w-full py-4 border border-neutral-100 text-neutral-400 text-[10px] font-black uppercase tracking-[0.3em] hover:text-neutral-950 hover:border-neutral-950 transition-all block"
+                            >
+                                Back to Dashboard
+                            </Link>
+                        </div>
+                        
+                        <div className="mt-12 flex items-center justify-center gap-2 opacity-30">
+                            <ShieldCheck size={14} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">Rifa Quality Governance</span>
+                        </div>
+                    </motion.div>
+                </div>
+            </CraftMakerLayout>
+        );
+    }
+
 
     return (
-        <CraftMakerLayout title={isEditMode ? `Edit Listing — ${existingListing?.title}` : 'New Listing'}>
+        <CraftMakerLayout title={isEditMode ? `Edit Listing — ${(existingListing as any)?.title}` : 'New Listing'}>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={onFileChange} 
+                multiple 
+                accept="image/*" 
+                className="hidden" 
+            />
             <form onSubmit={handleSubmit(onSubmit)} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 {/* Header Actions */}
@@ -146,8 +256,17 @@ const ListingForm = () => {
                             Save as Draft
                         </button>
                         <MagneticButton>
-                            <button type="submit" className="px-10 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-opacity-90 transition-all">
-                                Publish Listing
+                            <button 
+                                type="submit" 
+                                disabled={isLoading}
+                                className="px-10 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-opacity-90 transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={14} />
+                                        Processing...
+                                    </>
+                                ) : 'Publish Listing'}
                             </button>
                         </MagneticButton>
                     </div>
@@ -446,7 +565,7 @@ const ListingForm = () => {
                         {/* SECTION 4: SHIPPING */}
                         <Card title="Logistics & Packaging">
                             <div className="space-y-10">
-                                <Field label="Actual Weight (grams)">
+                                <Field label="Actual Weight (grams)" error={errors.packageWeight && 'Weight is required'}>
                                     <input 
                                         type="number"
                                         {...register('packageWeight', { required: true, min: 0 })}

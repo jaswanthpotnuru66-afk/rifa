@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -6,22 +6,51 @@ import {
     Clock, Check,
     Download, Send, Camera,
     Truck, Info,
-    X, ClipboardList, Upload, AlertTriangle, Plus
+    X, ClipboardList, Upload, AlertTriangle, Plus, Loader2
 } from 'lucide-react';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
-import { mockOrders, type CraftMakerOrder } from '../../lib/craftmaker';
+import { api } from '../../lib/api';
 import { maskContactInfo } from '../../lib/security';
 
 const OrderDetail = () => {
     const { id } = useParams<{ id: string }>();
-    const order = mockOrders.find(o => o.id === id);
-
+    const [data, setData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [messageInput, setMessageInput] = useState('');
     const [isRequestingPickup, setIsRequestingPickup] = useState(false);
 
-    if (!order) {
+    useEffect(() => {
+        if (id) loadDetail();
+    }, [id]);
+
+    const loadDetail = async () => {
+        setIsLoading(true);
+        try {
+            const res = await api.getArtisanOrderDetail(id!);
+            setData(res);
+        } catch (err) {
+            console.error('Error loading order detail:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <CraftMakerLayout>
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <Loader2 className="animate-spin text-brand-pink" size={32} />
+                </div>
+            </CraftMakerLayout>
+        );
+    }
+
+    if (!data) {
         return <CraftMakerLayout><div className="text-center py-40">Order not found.</div></CraftMakerLayout>;
     }
+
+    const { order, items } = data;
+    const shipping = order.shipping_address || {};
 
     const steps = [
         { label: 'Confirmed', status: 'confirmed' },
@@ -52,8 +81,8 @@ const OrderDetail = () => {
                         {/* Order Header */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div>
-                                <h1 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight">Order #{order.id}</h1>
-                                <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest mt-1 font-inter">Placed on {order.date}</p>
+                                <h1 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight">Order #{order.id.split('-')[0]}</h1>
+                                <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest mt-1 font-inter">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
@@ -95,24 +124,24 @@ const OrderDetail = () => {
 
                         {/* Order Items */}
                         <Card title="Order Items">
-                            <div className="flex items-center gap-6 p-4 hover:bg-neutral-50 transition-all rounded-sm group">
-                                <img src={order.productThumbnail} alt="" className="w-20 h-20 rounded-sm object-cover border border-neutral-100 group-hover:scale-105 transition-transform" />
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-lg font-serif font-bold text-neutral-950 mb-1">{order.productName}</h3>
-                                    {order.isCustom && order.specs && (
-                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                            {Object.entries(order.specs).map(([key, value]) => (
-                                                <span key={key} className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
-                                                    {key}: <span className="text-neutral-600">{value}</span>
+                            <div className="space-y-4">
+                                {items.map((item: any) => (
+                                    <div key={item.id} className="flex items-center gap-6 p-4 hover:bg-neutral-50 transition-all rounded-sm group">
+                                        <img src={item.image_url} alt="" className="w-20 h-20 rounded-sm object-cover border border-neutral-100 group-hover:scale-105 transition-transform" />
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-lg font-serif font-bold text-neutral-950 mb-1">{item.product_name}</h3>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+                                                    Quantity: <span className="text-neutral-600">{item.quantity}</span>
                                                 </span>
-                                            ))}
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Total</div>
-                                    <div className="text-xl font-bold text-neutral-950 font-inter">₹{order.amount.toLocaleString()}</div>
-                                </div>
+                                        <div className="text-right">
+                                            <div className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Total</div>
+                                            <div className="text-xl font-bold text-neutral-950 font-inter">₹{(item.price * item.quantity).toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </Card>
 
@@ -124,10 +153,10 @@ const OrderDetail = () => {
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-950">Buyer Specifications</h3>
                                 </div>
                                 <div className="grid sm:grid-cols-2 gap-8">
-                                    {Object.entries(order.specs).map(([key, value]) => (
+                                    {order.specs && Object.entries(order.specs as any).map(([key, value]: [string, any]) => (
                                         <div key={key} className="space-y-1">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">{key}</p>
-                                            <p className="text-sm font-bold text-neutral-950">{value}</p>
+                                            <p className="text-sm font-bold text-neutral-950">{String(value)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -196,7 +225,7 @@ const OrderDetail = () => {
                                             <button className="text-[9px] font-black uppercase tracking-widest text-brand-pink hover:underline">+ Share Progress Update</button>
                                         </div>
                                         <div className="space-y-4">
-                                            {order.progressUpdates.length > 0 ? order.progressUpdates.map(update => (
+                                            {order.progressUpdates && order.progressUpdates.length > 0 ? order.progressUpdates.map((update: any) => (
                                                 <div key={update.id} className="flex gap-4 p-4 bg-neutral-50 rounded-sm">
                                                     {update.photoUrl && <div className="w-12 h-12 bg-neutral-200 rounded-sm overflow-hidden flex-shrink-0" />}
                                                     <div>
@@ -222,7 +251,7 @@ const OrderDetail = () => {
                                 </div>
 
                                 <div className="min-h-[300px] max-h-[400px] overflow-y-auto space-y-4 px-2 no-scrollbar">
-                                    {order.messages.map(msg => (
+                                    {order.messages && order.messages.map((msg: any) => (
                                         <div key={msg.id} className={`flex ${msg.sender === 'maker' ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[80%] p-4 rounded-sm shadow-sm ${
                                                 msg.sender === 'maker' ? 'bg-brand-pink text-white' : 'bg-neutral-100 text-neutral-950'
@@ -279,13 +308,17 @@ const OrderDetail = () => {
                         <div className="bg-white border border-neutral-100 rounded-sm p-8 shadow-sm">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-8 border-b border-neutral-50 pb-4">Financial Summary</h3>
                             <div className="space-y-6">
-                                <div className="flex items-center gap-4">
-                                    <img src={order.productThumbnail} alt="" className="w-12 h-12 rounded-sm object-cover grayscale" />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-950 truncate">{order.productName}</p>
-                                        <p className="text-[10px] text-neutral-400 font-bold uppercase mt-0.5 tracking-tight">Qty: 1</p>
-                                    </div>
-                                    <span className="text-xs font-bold text-neutral-950 font-inter">₹{order.amount.toLocaleString()}</span>
+                                <div className="space-y-4">
+                                    {items.map((item: any) => (
+                                        <div key={item.id} className="flex items-center gap-4">
+                                            <img src={item.image_url} alt="" className="w-12 h-12 rounded-sm object-cover grayscale" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-950 truncate">{item.product_name}</p>
+                                                <p className="text-[10px] text-neutral-400 font-bold uppercase mt-0.5 tracking-tight">Qty: {item.quantity}</p>
+                                            </div>
+                                            <span className="text-xs font-bold text-neutral-950 font-inter">₹{(item.price * item.quantity).toLocaleString()}</span>
+                                        </div>
+                                    ))}
                                 </div>
                                 <div className="space-y-4 pt-6 border-t border-neutral-50">
                                     <div className="flex justify-between text-[10px] font-bold text-neutral-500 uppercase tracking-widest font-inter">
@@ -294,51 +327,35 @@ const OrderDetail = () => {
                                     </div>
                                     <div className="flex justify-between text-[10px] font-bold text-red-400 uppercase tracking-widest font-inter">
                                         <span className="flex items-center gap-2">Platform Fee (5%) <Info size={12} /></span>
-                                        <span>-₹{(order.amount * 0.05).toFixed(0)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-[10px] font-bold text-red-400 uppercase tracking-widest font-inter">
-                                        <span>TCS (1%)</span>
-                                        <span>-₹{(order.amount * 0.01).toFixed(0)}</span>
+                                        <span>-₹{(items.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0) * 0.05).toFixed(0)}</span>
                                     </div>
                                     <div className="pt-6 border-t border-neutral-100 flex justify-between items-baseline font-inter">
                                         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-950">Net Payout</span>
-                                        <span className="text-2xl font-bold text-brand-pink">₹{(order.amount * 0.94).toFixed(0)}</span>
+                                        <span className="text-2xl font-bold text-brand-pink">₹{(items.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0) * 0.94).toFixed(0)}</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Payout Status */}
-                        <div className="bg-white border border-neutral-100 rounded-sm p-8 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Payout Status</h4>
-                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                    order.status === 'delivered' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-                                }`}>
-                                    {order.status === 'delivered' ? 'Released' : 'Pending'}
-                                </span>
-                            </div>
-                            <p className="text-[10px] text-neutral-400 font-bold uppercase leading-relaxed tracking-tight">
-                                {order.status === 'delivered' 
-                                    ? 'Funds have been added to your next settlement cycle.'
-                                    : 'Payout is released 48 hours after delivery confirmation.'}
-                            </p>
                         </div>
 
                         {/* Buyer Location */}
                         <div className="bg-white border border-neutral-100 rounded-sm p-8 shadow-sm">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-6">Delivery Destination</h4>
                             <div className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-neutral-50 rounded-full flex items-center justify-center text-neutral-300"><MapPin size={20} /></div>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 bg-neutral-50 rounded-full flex items-center justify-center text-neutral-300 shrink-0"><MapPin size={20} /></div>
                                     <div>
-                                        <p className="text-sm font-bold text-neutral-950 leading-tight">{order.buyerCity}</p>
-                                        <p className="text-[10px] text-neutral-400 font-black uppercase tracking-widest mt-1">India · {order.shippingZone}</p>
+                                        <p className="text-sm font-bold text-neutral-950 leading-tight">{shipping.full_name}</p>
+                                        <p className="text-xs text-neutral-500 mt-1">{shipping.address_line1}, {shipping.address_line2}</p>
+                                        <p className="text-sm font-bold text-neutral-950 mt-1">{shipping.city}, {shipping.state}</p>
                                     </div>
                                 </div>
                                 <div className="p-3 bg-neutral-50 rounded-sm flex items-center justify-between text-[10px] font-black uppercase tracking-widest font-inter">
                                     <span className="text-neutral-300">PIN Code</span>
-                                    <span className="text-neutral-950">302***</span>
+                                    <span className="text-neutral-950">{shipping.pincode}</span>
+                                </div>
+                                <div className="p-3 bg-neutral-50 rounded-sm flex items-center justify-between text-[10px] font-black uppercase tracking-widest font-inter">
+                                    <span className="text-neutral-300">Phone</span>
+                                    <span className="text-neutral-950">{maskContactInfo(shipping.phone || '')}</span>
                                 </div>
                             </div>
                         </div>
@@ -393,7 +410,7 @@ const OrderDetail = () => {
 };
 
 // COMPONENT: Proof Workflow states
-const ProofWorkflow = ({ order }: { order: CraftMakerOrder }) => {
+const ProofWorkflow = ({ order }: { order: any }) => {
     const proofStatus = order.proofStatus || 'none';
 
     return (

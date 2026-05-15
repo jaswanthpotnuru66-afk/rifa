@@ -1,49 +1,72 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     Search, ChevronDown,
-    AlertCircle, ArrowRight,
-    Calendar, MapPin
+    ArrowRight,
+    Calendar, MapPin, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
-import { mockAllOrders } from '../../../lib/adminOps.mock';
+import { api } from '../../../lib/api';
 
 const AdminOrders = () => {
+    const [orders, setOrders] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'all' | 'new' | 'awaiting-proof' | 'in-production' | 'shipped' | 'delivered' | 'disputed' | 'cancelled'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('Newest');
 
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const fetchOrders = async () => {
+        setIsLoading(true);
+        try {
+            const data = await api.getAdminOrders();
+            setOrders(data);
+        } catch (error) {
+            console.error('Failed to fetch admin orders:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const counts = {
-        all: mockAllOrders.length,
-        new: mockAllOrders.filter(o => o.status === 'new').length,
-        'awaiting-proof': mockAllOrders.filter(o => o.status === 'awaiting-proof').length,
-        'in-production': mockAllOrders.filter(o => o.status === 'in-production').length,
-        shipped: mockAllOrders.filter(o => o.status === 'shipped').length,
-        delivered: mockAllOrders.filter(o => o.status === 'delivered').length,
-        disputed: mockAllOrders.filter(o => o.status === 'disputed').length,
-        cancelled: mockAllOrders.filter(o => o.status === 'cancelled').length
+        all: orders.length,
+        new: orders.filter(o => o.status === 'confirmed' || o.status === 'new' || o.status === 'pending').length,
+        'awaiting-proof': orders.filter(o => o.status === 'awaiting-proof').length,
+        'in-production': orders.filter(o => o.status === 'processing').length,
+        shipped: orders.filter(o => o.status === 'shipped').length,
+        delivered: orders.filter(o => o.status === 'delivered').length,
+        disputed: orders.filter(o => o.status === 'disputed').length,
+        cancelled: orders.filter(o => o.status === 'cancelled').length
     };
 
     const filteredOrders = useMemo(() => {
-        let result = [...mockAllOrders];
+        let result = [...orders];
         if (activeTab !== 'all') {
-            result = result.filter(o => o.status === activeTab);
+            if (activeTab === 'new') {
+                result = result.filter(o => ['confirmed', 'new', 'pending'].includes(o.status));
+            } else if (activeTab === 'in-production') {
+                result = result.filter(o => o.status === 'processing');
+            } else {
+                result = result.filter(o => o.status === activeTab);
+            }
         }
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter(o =>
                 o.id.toLowerCase().includes(q) ||
-                o.buyerName.toLowerCase().includes(q) ||
-                o.makerShopName.toLowerCase().includes(q)
+                o.shipping_address?.full_name?.toLowerCase().includes(q) ||
+                o.artisans?.brand_name?.toLowerCase().includes(q)
             );
         }
 
-        if (sortBy === 'Newest') result.sort((a, b) => b.date.localeCompare(a.date));
-        if (sortBy === 'Amount High to Low') result.sort((a, b) => b.amount - a.amount);
-        if (sortBy === 'Disputed first') result.sort((a, b) => (a.status === 'disputed' ? -1 : 1) - (b.status === 'disputed' ? -1 : 1));
-
+        if (sortBy === 'Newest') result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        if (sortBy === 'Amount High to Low') result.sort((a, b) => (b.total_amount || 0) - (a.total_amount || 0));
+        
         return result;
-    }, [activeTab, searchQuery, sortBy]);
+    }, [orders, activeTab, searchQuery, sortBy]);
 
     return (
         <AdminOpsLayout>
@@ -117,30 +140,35 @@ const AdminOrders = () => {
                         <div />
                     </div>
 
-                    {filteredOrders.length > 0 ? filteredOrders.map(order => (
+                    {isLoading ? (
+                         <div className="py-24 flex flex-col items-center justify-center bg-white border border-dashed border-neutral-100">
+                             <Loader2 size={32} className="text-brand-pink animate-spin mb-4" />
+                             <p className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Synchronizing Logistics...</p>
+                         </div>
+                    ) : filteredOrders.length > 0 ? filteredOrders.map(order => (
                         <div key={order.id} className="bg-white border border-neutral-100 rounded-sm hover:border-brand-pink/30 transition-all group shadow-sm">
                             <div className="flex flex-col lg:grid lg:grid-cols-[120px_1fr_1.2fr_1.2fr_1fr_100px_100px_120px_100px_40px] gap-4 p-4 lg:p-6 items-center">
 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Order ID</span>
-                                    <div className="text-xs font-bold text-neutral-950 font-inter">{order.id}</div>
+                                    <div className="text-xs font-bold text-neutral-950 font-inter">#{order.id.slice(0, 8)}</div>
                                 </div>
                                 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Date</span>
                                     <div className="flex items-center gap-2 text-neutral-500 font-inter">
                                         <Calendar size={12} />
-                                        <span className="text-[10px] font-medium">{new Date(order.date).toLocaleDateString()}</span>
+                                        <span className="text-[10px] font-medium">{new Date(order.created_at).toLocaleDateString()}</span>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Buyer</span>
                                     <div className="text-right lg:text-left">
-                                        <p className="text-xs font-bold text-neutral-900">{order.buyerName}</p>
+                                        <p className="text-xs font-bold text-neutral-900">{order.shipping_address?.full_name || 'Buyer'}</p>
                                         <div className="flex items-center justify-end lg:justify-start gap-1.5 mt-0.5 text-neutral-400">
                                             <MapPin size={10} />
-                                            <span className="text-[10px] font-medium">{order.buyerCity}</span>
+                                            <span className="text-[10px] font-medium">{order.shipping_address?.city || 'India'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -148,29 +176,29 @@ const AdminOrders = () => {
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Maker</span>
                                     <div className="text-right lg:text-left min-w-0">
-                                        <p className="text-xs font-bold text-neutral-700 truncate">{order.makerShopName}</p>
-                                        <Link to={`/admin/ops/makers/${order.makerId}`} className="text-[9px] font-black uppercase tracking-widest text-neutral-300 hover:text-brand-pink">View Maker</Link>
+                                        <p className="text-xs font-bold text-neutral-700 truncate">{order.artisans?.brand_name || 'Individual'}</p>
+                                        <Link to={`/admin/ops/makers/${order.artisan_id}`} className="text-[9px] font-black uppercase tracking-widest text-neutral-300 hover:text-brand-pink">View Maker</Link>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Product</span>
                                     <div className="text-right lg:text-left min-w-0">
-                                        <p className="text-xs font-medium text-neutral-600 truncate">{order.productName}</p>
-                                        {order.isCustom && <span className="text-[8px] font-black uppercase tracking-widest text-brand-pink">Custom</span>}
+                                        <p className="text-xs font-medium text-neutral-600 truncate">{order.order_items?.[0]?.product_name || 'Multiple Items'}</p>
+                                        {order.order_items?.length > 1 && <span className="text-[8px] font-black uppercase tracking-widest text-neutral-300">+{order.order_items.length - 1} more</span>}
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Amount</span>
                                     <div className="lg:text-right">
-                                        <p className="text-xs font-black text-neutral-950 font-inter">₹{order.amount.toLocaleString()}</p>
+                                        <p className="text-xs font-black text-neutral-950 font-inter">₹{(order.total_amount || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Zone</span>
-                                    <div className="lg:text-center text-[10px] font-bold text-neutral-400">{order.shippingZone}</div>
+                                    <div className="lg:text-center text-[10px] font-bold text-neutral-400">{order.shipping_address?.state?.slice(0, 3).toUpperCase() || 'DOM'}</div>
                                 </div>
 
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
@@ -190,11 +218,7 @@ const AdminOrders = () => {
                                 <div className="flex justify-between lg:block w-full lg:w-auto">
                                     <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Weight Adj</span>
                                     <div className="lg:text-center">
-                                        {order.weightAdjustment && order.weightAdjustment < 0 ? (
-                                            <span className="text-[10px] font-black text-red-600 font-inter">−₹{Math.abs(order.weightAdjustment)}</span>
-                                        ) : (
-                                            <span className="text-neutral-200">−</span>
-                                        )}
+                                        <span className="text-neutral-200">−</span>
                                     </div>
                                 </div>
 
@@ -205,11 +229,6 @@ const AdminOrders = () => {
                                             <Link to={`/admin/ops/orders/${order.id}`} className="p-2 hover:bg-neutral-50 rounded-sm transition-colors text-neutral-300 hover:text-brand-pink">
                                                 <ArrowRight size={16} />
                                             </Link>
-                                            {order.status === 'disputed' && (
-                                                <Link to={`/admin/ops/disputes/${order.disputeId}`} className="p-2 hover:bg-red-50 rounded-sm transition-colors text-red-400 hover:text-red-600">
-                                                    <AlertCircle size={16} />
-                                                </Link>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -217,7 +236,7 @@ const AdminOrders = () => {
                         </div>
                     )) : (
                         <div className="py-24 border-2 border-dashed border-neutral-100 rounded-sm text-center">
-                            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest">No orders found</p>
+                            <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest">No platform orders found</p>
                         </div>
                     )}
                 </div>
