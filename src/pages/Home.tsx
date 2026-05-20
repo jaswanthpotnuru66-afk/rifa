@@ -265,12 +265,11 @@ const Home = () => {
                         className="order-2 lg:order-1 pt-10 lg:pt-0"
                     >
                         <motion.div variants={fadeInUp}>
-                            <Link 
-                                to="/craftmaker/dashboard" 
+                            <span 
                                 className="inline-block px-4 py-1.5 mb-8 text-xs font-bold tracking-widest uppercase border border-brand-pink text-brand-pink rounded-full"
                             >
                                 Bespoke Gifting
-                            </Link>
+                            </span>
                         </motion.div>
                         
                         <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-neutral-950 leading-[0.95] tracking-tighter mb-8">
@@ -288,8 +287,8 @@ const Home = () => {
                                     Shop the Collection <ArrowRight size={16} />
                                 </Link>
                             </MagneticButton>
-                            <Link to="/custom-order" className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 hover:text-neutral-950 transition-all border-b border-transparent hover:border-neutral-950 pb-1">
-                                Bespoke Commissions
+                            <Link to="/marketplace" state={{ openConcierge: true }} className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 hover:text-neutral-950 transition-all border-b border-transparent hover:border-neutral-950 pb-1">
+                                Gifting Concierge
                             </Link>
                         </motion.div>
                     </motion.div>

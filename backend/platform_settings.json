@@ -1,0 +1,18 @@
+{
+  "commissionRate": 10,
+  "listingFee": 0,
+  "proofResponseDeadlineHours": 24,
+  "maxProofRevisionRounds": 3,
+  "maxDispatchWindowDays": 10,
+  "shippingWeightBufferPercent": 10,
+  "activeCouriers": [
+    "Delhivery",
+    "Blue Dart",
+    "DHL Express"
+  ],
+  "minPayoutThreshold": 500,
+  "taxServiceRate": 18,
+  "autoCancelGraceHours": 12,
+  "enableInsurance": true,
+  "insuranceMinAmount": 2000
+}
