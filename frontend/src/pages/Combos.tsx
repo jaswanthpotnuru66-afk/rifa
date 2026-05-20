@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Gift, Check, Sparkles } from 'lucide-react';
+import { ArrowRight, Gift, Check, Sparkles, Ticket, Copy, CheckSquare } from 'lucide-react';
+import { api } from '../lib/api';
 
 const galleryImports = import.meta.glob('../assets/gallery/*.{png,jpg,jpeg,webp}', { eager: true });
 const galleryImages = Object.entries(galleryImports)
@@ -68,6 +70,30 @@ const combos = [
 ];
 
 const Combos = () => {
+    const [promotions, setPromotions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchPromotions = async () => {
+            try {
+                const data = await api.getPromotions();
+                setPromotions(data || []);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPromotions();
+    }, []);
+
+    const copyToClipboard = (code: string) => {
+        navigator.clipboard.writeText(code);
+        setCopiedCode(code);
+        setTimeout(() => setCopiedCode(null), 2000);
+    };
+
     return (
         <div className="pt-24 pb-16 min-h-screen bg-transparent">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-8">
@@ -84,12 +110,69 @@ const Combos = () => {
                     <p className="text-xl text-neutral-500 font-light leading-relaxed">
                         Thoughtfully curated combinations for every occasion, every budget — without compromising on quality.
                     </p>
-                        <motion.div
-                                className="border-l-2 border-brand-pink pl-4 mt-8 inline-flex items-center gap-2 text-brand-pink text-xs uppercase tracking-widest font-bold"
-                            >
-                            <Gift size={14} /> A complimentary handmade gift with every order
-                        </motion.div>
+                    <motion.div
+                        className="border-l-2 border-brand-pink pl-4 mt-8 inline-flex items-center gap-2 text-brand-pink text-xs uppercase tracking-widest font-bold"
+                    >
+                        <Gift size={14} /> A complimentary handmade gift with every order
+                    </motion.div>
                 </motion.div>
+
+                {/* Active Artisan Promotions Section */}
+                <div className="mb-20">
+                    <div className="flex items-center gap-3 mb-8">
+                        <Ticket className="text-brand-pink" size={20} />
+                        <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-neutral-950">Active Artisan Offers &amp; Promo Codes</h2>
+                    </div>
+
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[1, 2, 3].map(n => (
+                                <div key={n} className="border border-neutral-100 p-6 rounded-sm space-y-4 bg-white animate-pulse">
+                                    <div className="h-4 bg-neutral-100 rounded w-1/3" />
+                                    <div className="h-6 bg-neutral-100 rounded w-2/3" />
+                                    <div className="h-4 bg-neutral-100 rounded w-full" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : promotions.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {promotions.map((promo) => (
+                                <div key={promo.id} className="border border-neutral-200/80 p-6 rounded-sm bg-white relative overflow-hidden group shadow-sm hover:shadow-md hover:border-brand-pink/30 transition-all">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-brand-pink" />
+                                    
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="px-2.5 py-1 bg-brand-pink/5 text-brand-pink text-[8px] font-black uppercase tracking-widest rounded-sm border border-brand-pink/10">
+                                            {promo.type === 'percentage' ? `${promo.value}% Off` : promo.type === 'fixed' ? `₹${promo.value} Off` : 'Free Shipping'}
+                                        </span>
+                                        <button 
+                                            onClick={() => copyToClipboard(promo.code)}
+                                            className="text-neutral-400 hover:text-neutral-900 transition-colors"
+                                            title="Copy Code"
+                                        >
+                                            {copiedCode === promo.code ? <CheckSquare size={14} className="text-green-600" /> : <Copy size={14} />}
+                                        </button>
+                                    </div>
+                                    
+                                    <h3 className="text-lg font-serif font-bold text-neutral-900 mb-1">{promo.title}</h3>
+                                    <p className="text-xs text-neutral-500 font-light mb-5">{promo.description || 'Valid on artisan store purchases.'}</p>
+                                    
+                                    <div className="flex justify-between items-center pt-4 border-t border-neutral-50 bg-neutral-50/50 -mx-6 -mb-6 px-6 py-3.5">
+                                        <div className="text-[10px] font-bold text-neutral-900 uppercase tracking-widest bg-neutral-100 border border-neutral-200 px-3 py-1.5 rounded-sm select-all">
+                                            {promo.code}
+                                        </div>
+                                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
+                                            Ends: {new Date(promo.end_date).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-neutral-50 border border-neutral-100 p-8 text-center text-sm text-neutral-500 italic rounded-sm">
+                            No shop promotions are running at the moment. Check back soon for exclusive deals!
+                        </div>
+                    )}
+                </div>
 
                 {/* Combo Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
@@ -107,10 +190,10 @@ const Combos = () => {
                                 {/* Image */}
                                 <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
                                     <img
-                                            src={img}
-                                            alt={combo.title}
-                                            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                                        />
+                                        src={img}
+                                        alt={combo.title}
+                                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                                    />
                                     <div className={`absolute inset-0 ${combo.dark ? 'bg-black/30' : 'bg-black/10'}`} />
 
                                     {/* Tag badge */}

@@ -21,6 +21,7 @@ import Auth from './pages/buyer/Auth';
 import ArtisanDetail from './pages/ArtisanDetail';
 import Profile from './pages/buyer/Profile';
 import Marketplace from './pages/Marketplace';
+import SearchPage from './pages/Search';
 import Cart from './pages/buyer/Cart';
 import Success from './pages/buyer/Success';
 import BuyerDashboard from './pages/buyer/BuyerDashboard';
@@ -79,7 +80,7 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/auth"         element={<PageTransition><Auth /></PageTransition>} />
-        <Route path="/artisan/:id"  element={<PageTransition><ArtisanDetail /></PageTransition>} />
+        <Route path="/rifa/:id"     element={<PageTransition><ArtisanDetail /></PageTransition>} />
         <Route path="/product/:id"  element={<ProductDetail />} />
         <Route path="/custom-product/:id" element={<PageTransition><BespokePortal /></PageTransition>} />
         <Route path="/checkout"     element={<PageTransition><Checkout /></PageTransition>} />
@@ -92,6 +93,7 @@ const AnimatedRoutes = () => {
         <Route path="/about"        element={<PageTransition><About /></PageTransition>} />
         <Route path="/creations"    element={<PageTransition><Creations /></PageTransition>} />
         <Route path="/marketplace"  element={<PageTransition><Marketplace /></PageTransition>} />
+        <Route path="/search"       element={<PageTransition><SearchPage /></PageTransition>} />
         <Route path="/cart"         element={<PageTransition><Cart /></PageTransition>} />
         <Route path="/success"      element={<PageTransition><Success /></PageTransition>} />
         <Route path="/combos"       element={<PageTransition><Combos /></PageTransition>} />
@@ -165,7 +167,9 @@ const ConditionalFooter = () => {
 
 const ConditionalFloatingWidget = () => {
   const { pathname } = useLocation();
-  if (pathname !== '/') return null;
+  // Show on buyer-facing discovery pages: home, marketplace, search, artisan profiles
+  const shouldShow = pathname === '/' || pathname === '/marketplace' || pathname === '/search' || pathname.startsWith('/rifa/');
+  if (!shouldShow) return null;
   return <FloatingWidget />;
 };
 

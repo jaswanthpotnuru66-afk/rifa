@@ -8,35 +8,53 @@ import {
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
 import { api } from '../../../lib/api';
 
-const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = false, loading = false }: { title: string; value: string | number; subText?: string; sub?: string; subColor?: string; alert?: boolean; loading?: boolean }) => (
-    <div className={`bg-white p-8 flex flex-col justify-between transition-all hover:shadow-2xl relative group overflow-hidden border border-neutral-100 ${alert ? 'ring-1 ring-red-100' : ''}`}>
-        {/* Editorial Frame Markers */}
-        <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-neutral-200 group-hover:border-brand-pink transition-colors" />
-        <div className="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-neutral-200 group-hover:border-brand-pink transition-colors" />
-        
-        <div className="relative z-10">
-            <p className="text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-8">{title}</p>
-            {loading ? (
-                <Loader2 className="w-8 h-8 animate-spin text-neutral-200 mb-4" />
-            ) : (
-                <h3 
-                    className="text-5xl font-extrabold text-neutral-950 tracking-tighter leading-none mb-4 group-hover:scale-[1.02] transition-transform origin-left font-inter"
+const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = false, loading = false, to }: { title: string; value: string | number; subText?: string; sub?: string; subColor?: string; alert?: boolean; loading?: boolean; to?: string }) => {
+    const content = (
+        <>
+            {/* Editorial Frame Markers */}
+            <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-neutral-200 group-hover:border-brand-pink transition-colors" />
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-neutral-200 group-hover:border-brand-pink transition-colors" />
+            
+            <div className="relative z-10">
+                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-8">{title}</p>
+                {loading ? (
+                    <Loader2 className="w-8 h-8 animate-spin text-neutral-200 mb-4" />
+                ) : (
+                    <h3 
+                        className="text-5xl font-extrabold text-neutral-950 tracking-tighter leading-none mb-4 group-hover:scale-[1.02] transition-transform origin-left font-inter"
+                    >
+                        {value}
+                    </h3>
+                )}
+            </div>
+            
+            <div className="flex items-center gap-2 relative z-10">
+                <div className={`h-[1px] w-4 ${subColor.replace('text-', 'bg-')} opacity-30`} />
+                <p 
+                    className={`text-[10px] font-bold uppercase tracking-widest ${subColor} font-inter`}
                 >
-                    {value}
-                </h3>
-            )}
+                    {sub}
+                </p>
+            </div>
+        </>
+    );
+
+    const className = `bg-white p-8 flex flex-col justify-between transition-all hover:shadow-2xl relative group overflow-hidden border border-neutral-100 block ${alert ? 'ring-1 ring-red-100' : ''}`;
+
+    if (to) {
+        return (
+            <Link to={to} className={className}>
+                {content}
+            </Link>
+        );
+    }
+
+    return (
+        <div className={className}>
+            {content}
         </div>
-        
-        <div className="flex items-center gap-2 relative z-10">
-            <div className={`h-[1px] w-4 ${subColor.replace('text-', 'bg-')} opacity-30`} />
-            <p 
-                className={`text-[10px] font-bold uppercase tracking-widest ${subColor} font-inter`}
-            >
-                {sub}
-            </p>
-        </div>
-    </div>
-);
+    );
+};
 
 const AdminOpsDashboard = () => {
     const [stats, setStats] = useState<any>(null);
@@ -102,6 +120,7 @@ const AdminOpsDashboard = () => {
                         sub="Live Platform Volume" 
                         subColor="text-neutral-400"
                         loading={loading}
+                        to="/admin/ops/revenue"
                     />
                     <StatCard 
                         title="Total Orders" 
@@ -109,6 +128,7 @@ const AdminOpsDashboard = () => {
                         sub="Across all artisans" 
                         subColor="text-neutral-400"
                         loading={loading}
+                        to="/admin/ops/orders"
                     />
                     <StatCard 
                         title="Active Makers" 
@@ -116,12 +136,14 @@ const AdminOpsDashboard = () => {
                         sub={`${pendingCount} pending`} 
                         subColor={pendingCount > 0 ? "text-amber-600" : "text-neutral-400"}
                         loading={loading}
+                        to="/admin/ops/makers"
                     />
                     <StatCard 
                         title="Commission" 
                         value={`₹${(stats?.commission || 0).toLocaleString()}`} 
-                        sub="5% platform fee" 
+                        sub={`${stats?.commissionRate || 5}% platform fee`} 
                         loading={loading}
+                        to="/admin/ops/payouts"
                     />
                 </div>
 

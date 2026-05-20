@@ -98,6 +98,19 @@ export const api = {
         return res.json();
     },
 
+    async updateOrder(id: string, data: any) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/orders/${id}`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(data),
+        });
+        return res.ok ? res.json() : null;
+    },
+
     async getOrders() {
         const token = localStorage.getItem('rifa_token');
         if (!token) return [];
@@ -223,6 +236,91 @@ export const api = {
             headers: { 'Authorization': `Bearer ${token}` },
         });
         return res.ok;
+    },
+
+    async raiseDispute(orderId: string, payload: { category: string; description: string; evidenceUrls?: string[] }) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/orders/${orderId}/dispute`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(payload),
+        });
+        return res.json();
+    },
+
+    async submitReview(orderId: string, payload: { rating: number; comment: string }) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/orders/${orderId}/review`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        return res.json();
+    },
+
+    async cancelOrder(orderId: string) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        return res.json();
+    },
+
+    async acceptArtisanOrder(orderId: string) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/artisan/orders/${orderId}/accept`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        return res.json();
+    },
+
+    async rejectArtisanOrder(orderId: string, reason?: string) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/artisan/orders/${orderId}/reject`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ reason }),
+        });
+        return res.json();
+    },
+
+    async getAdminDisputeDetail(disputeId: string) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/disputes/${disputeId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        return res.json();
+    },
+
+    async ruleOnDispute(disputeId: string, payload: { verdict: string; admin_notes?: string }) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/disputes/${disputeId}/rule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        return res.json();
+    },
+
+    async updateArtisanProduct(productId: string, payload: any) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/artisan/products/${productId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(payload),
+        });
+        return res.json();
     },
 
     async deleteAccount() {
@@ -492,6 +590,312 @@ export const api = {
             body: JSON.stringify({ status, admin_notes })
         });
         return res.ok;
+    },
+
+    async getArtisanDisputes() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/disputes`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async respondToDispute(id: string, response: string) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/disputes/${id}/respond`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ response })
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getArtisanPayouts() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/payouts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async getArtisanEarningsStats() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/earnings/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getArtisanShippingAlerts() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/shipping-alerts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async getArtisanReviews() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/reviews`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async replyToReview(id: string, reply: string) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/reviews/${id}/reply`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reply })
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getArtisanPromotions() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/promotions`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async createPromotion(data: any) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/promotions`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async deletePromotion(id: string) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/promotions/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok;
+    },
+
+    async getArtisanAnalytics() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/analytics`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getArtisanTaxReports() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/tax-reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : { gstin: null, reports: [] };
+    },
+
+    async saveArtisanGSTIN(gstin: string) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/tax-reports/gstin`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ gstin })
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getAdminSettings() {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/settings`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async updateAdminSettings(data: any) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/settings`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getAdminFlaggedListings() {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/flagged-listings`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async resolveFlaggedListing(id: string, action: string) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/flagged-listings/${id}/resolve`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ action, status: action })
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async getAdminTaxReports() {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/tax-reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async getCombos() {
+        const res = await fetch(`${API_URL}/combos`);
+        return res.ok ? res.json() : [];
+    },
+
+    async getPromotions() {
+        const res = await fetch(`${API_URL}/promotions`);
+        return res.ok ? res.json() : [];
+    },
+
+    // --- ADMIN PROMOTIONS MANAGEMENT ---
+    async getAdminPromotions() {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/promotions`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok ? res.json() : [];
+    },
+
+    async createAdminPromotion(data: any) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/promotions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async toggleAdminPromotion(id: string, is_active: boolean) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/promotions/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active })
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    async deleteAdminPromotion(id: string) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/promotions/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return res.ok;
+    },
+
+    // --- ADMIN PAYOUT RELEASE ---
+    async updateAdminPayout(id: string, status: string, admin_notes?: string) {
+        const token = localStorage.getItem('rifa_admin_token');
+        const res = await fetch(`${API_URL}/admin/payouts/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status, admin_notes })
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    // --- PRODUCT EDIT ---
+    async updateProduct(id: string, data: any) {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/artisan/products/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: 'Unknown server error' }));
+            return { error: errorData.error || res.statusText };
+        }
+        return res.json();
+    },
+
+    // --- CART QUANTITY UPDATE ---
+    async updateCartItemQuantity(id: string, quantity: number) {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return { error: 'Unauthorized' };
+        const res = await fetch(`${API_URL}/cart/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ quantity }),
+        });
+        return res.ok ? res.json() : null;
+    },
+
+    // --- AUTH DELETE ---
+    async deleteAuthAccount() {
+        const token = localStorage.getItem('rifa_token');
+        const res = await fetch(`${API_URL}/auth/me`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (res.ok) {
+            this.logout();
+        }
+        return res.json();
+    },
+
+    // --- GLOBAL TOKEN EXPIRY GUARD ---
+    checkTokenExpiry() {
+        const token = localStorage.getItem('rifa_token');
+        if (!token) return false;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const isExpired = payload.exp && (Date.now() / 1000) > payload.exp;
+            if (isExpired) {
+                this.logout();
+                window.location.href = '/auth';
+                return false;
+            }
+            return true;
+        } catch {
+            return true; // Don't disrupt on parse failure
+        }
     }
 };
-

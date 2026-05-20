@@ -161,10 +161,11 @@ const ListingForm = () => {
                 category: data.category,
                 images: data.images,
                 is_custom: data.isCustomisable,
+                is_customizable: data.isCustomisable,
                 tag: data.tags[0] || data.category,
                 details: {
                     specFields: data.specFields,
-                    processingTime: data.processingTime,
+                    processingTime: data.processingTime ? Number(data.processingTime) : undefined,
                     dimensions: data.dimensions,
                     weight: data.packageWeight,
                     stateOfOrigin: data.stateOfOrigin
@@ -174,19 +175,28 @@ const ListingForm = () => {
                 status: 'pending'
             };
 
-            const result = await api.createProduct(mappedData);
-            if (result.error) {
-                alert('Failed to publish listing: ' + result.error);
+            let result;
+            if (isEditMode && id) {
+                // EDIT MODE: Update existing product
+                result = await api.updateProduct(id, mappedData);
+            } else {
+                // CREATE MODE: Create new product
+                result = await api.createProduct(mappedData);
+            }
+
+            if (result?.error) {
+                alert(`Failed to ${isEditMode ? 'update' : 'publish'} listing: ` + result.error);
             } else {
                 setIsSuccess(true);
             }
         } catch (err: any) {
-            console.error('Failed to create product:', err);
-            alert('Failed to publish listing: ' + (err.message || 'Unknown server error'));
+            console.error('Failed to submit product:', err);
+            alert('Failed to submit listing: ' + (err.message || 'Unknown server error'));
         } finally {
             setIsLoading(false);
         }
     };
+
 
     if (isSuccess) {
         return (
@@ -203,9 +213,12 @@ const ListingForm = () => {
                             <CheckCircle size={40} strokeWidth={1.5} />
                         </div>
                         
-                        <h2 className="text-3xl font-serif font-bold text-neutral-950 mb-4">Masterpiece Sent!</h2>
+                        <h2 className="text-3xl font-serif font-bold text-neutral-950 mb-4">{isEditMode ? 'Listing Updated!' : 'Masterpiece Sent!'}</h2>
                         <p className="text-neutral-500 text-sm font-light leading-relaxed mb-10">
-                            Your listing has been successfully queued for administrative review. You'll see it in your dashboard under <span className="text-brand-pink font-bold">"Under Review"</span> until approved.
+                            {isEditMode
+                                ? <>Your listing has been updated and queued for re-review. Changes will go live once approved by the admin.</>
+                                : <>Your listing has been successfully queued for administrative review. You'll see it in your dashboard under <span className="text-brand-pink font-bold">"Under Review"</span> until approved.</>
+                            }
                         </p>
 
                         <div className="space-y-4">

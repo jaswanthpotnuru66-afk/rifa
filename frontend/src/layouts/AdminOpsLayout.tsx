@@ -42,10 +42,19 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
     const [systemStats, setSystemStats] = React.useState({ modules: NAV_ITEMS.length, alerts: 0, errors: 0 });
     const [liveAlerts, setLiveAlerts] = React.useState<any[]>([]);
 
+    const navContainerRef = React.useRef<HTMLDivElement>(null);
+
     const isActive = (path: string) => location.pathname === path;
 
     useEffect(() => {
         fetchSystemHealth();
+        // Restore scroll position on mount
+        if (navContainerRef.current) {
+            const savedScroll = sessionStorage.getItem('admin_sidebar_scroll');
+            if (savedScroll) {
+                navContainerRef.current.scrollTop = parseInt(savedScroll, 10);
+            }
+        }
     }, []);
 
     const fetchSystemHealth = async () => {
@@ -66,6 +75,13 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
         } catch (error) {
             console.error('Failed to fetch system health:', error);
         }
+    };
+
+    const handleNavLinkClick = () => {
+        if (navContainerRef.current) {
+            sessionStorage.setItem('admin_sidebar_scroll', navContainerRef.current.scrollTop.toString());
+        }
+        setIsSidebarOpen(false);
     };
 
     // Find current page name based on path
@@ -89,7 +105,7 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
             >
                 {/* ── Top: Brand + Close ── */}
                 <div className="flex items-center justify-between px-5 pt-6 pb-5 shrink-0">
-                    <Link to="/" className="flex items-center gap-2.5 group">
+                    <Link to="/" className="flex items-center gap-2.5 group" onClick={handleNavLinkClick}>
                         {/* Logo mark */}
                         <div className="relative w-8 h-8 shrink-0">
                             <div className="absolute inset-0 bg-brand-pink rounded-sm" />
@@ -143,14 +159,18 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                 </div>
 
                 {/* ── Navigation ── */}
-                <div className="flex-1 overflow-y-auto px-3 pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
+                <div 
+                    ref={navContainerRef}
+                    className="flex-1 overflow-y-auto px-3 pb-4" 
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+                >
 
                     {/* Dashboard — always first, standalone */}
                     {(() => {
                         const item = NAV_ITEMS[0];
                         const active = isActive(item.path);
                         return (
-                            <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}
+                            <Link key={item.path} to={item.path} onClick={handleNavLinkClick}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-[11px] font-bold tracking-wide transition-all group mb-4 ${active ? 'bg-brand-pink text-white' : 'text-white/50 hover:text-white hover:bg-white/5'
                                     }`}
                             >
@@ -171,7 +191,7 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                                     {items.map(item => {
                                         const active = isActive(item.path);
                                         return (
-                                            <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}
+                                            <Link key={item.path} to={item.path} onClick={handleNavLinkClick}
                                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-[11px] font-bold tracking-wide transition-all group ${active
                                                         ? 'bg-white/10 text-white'
                                                         : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -190,7 +210,7 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
 
                 {/* ── Bottom Info Card (Just Logout now) ── */}
                 <div className="px-4 pb-6 shrink-0 pt-4 border-t border-white/5">
-                    <button onClick={() => navigate('/')}
+                    <button onClick={() => { sessionStorage.removeItem('admin_sidebar_scroll'); navigate('/'); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-white/25 hover:text-red-400 text-[10px] font-bold tracking-wide transition-colors rounded-sm hover:bg-white/5">
                         <LogOut size={13} /> Sign Out
                     </button>
@@ -211,7 +231,7 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                         </button>
                         
                         <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] h-full">
-                            <span className="text-neutral-400 hidden md:block">Operations</span>
+                            <Link to="/admin/ops/dashboard" className="text-neutral-400 hover:text-brand-pink transition-colors hidden md:block cursor-pointer">Operations</Link>
                             <ChevronRight size={10} className="text-neutral-300 hidden md:block" />
                             <span className="text-neutral-950 font-bold">{currentPageName}</span>
                         </div>
@@ -246,17 +266,36 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                                         <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-sm shadow-2xl border border-neutral-100 z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
                                             <div className="px-5 py-4 border-b border-neutral-50 flex justify-between items-center bg-neutral-50/50">
                                                 <span className="text-[10px] font-black uppercase tracking-widest text-neutral-950">System Alerts</span>
-                                                <button className="text-[9px] font-bold text-neutral-400 hover:text-brand-pink uppercase tracking-widest">Mark all read</button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setLiveAlerts([]);
+                                                        setSystemStats(prev => ({ ...prev, alerts: 0 }));
+                                                    }}
+                                                    className="text-[9px] font-bold text-neutral-400 hover:text-brand-pink uppercase tracking-widest cursor-pointer"
+                                                >
+                                                    Mark all read
+                                                </button>
                                             </div>
                                             <div className="max-h-96 overflow-y-auto no-scrollbar">
                                                 {liveAlerts.length > 0 ? liveAlerts.map(alert => (
-                                                    <div key={alert.id} className="p-5 flex gap-4 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors cursor-pointer">
+                                                    <div 
+                                                        key={alert.id} 
+                                                        onClick={() => {
+                                                            setIsNotificationsOpen(false);
+                                                            if (alert.order_id || alert.reason) {
+                                                                navigate('/admin/ops/disputes');
+                                                            } else {
+                                                                navigate('/admin/ops/shipping');
+                                                            }
+                                                        }}
+                                                        className="p-5 flex gap-4 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors cursor-pointer"
+                                                    >
                                                         <div className="shrink-0 mt-0.5">
                                                             <AlertCircle size={16} className={alert.severity === 'high' ? 'text-red-500' : alert.severity === 'medium' ? 'text-amber-500' : 'text-blue-500'} />
                                                         </div>
                                                         <div>
                                                             <p className="text-xs font-bold text-neutral-950 mb-0.5">{(alert.type || alert.category || 'Dispute').replace('-', ' ').toUpperCase()}</p>
-                                                            <p className="text-[11px] font-medium text-neutral-500 leading-snug">{alert.description}</p>
+                                                            <p className="text-[11px] font-medium text-neutral-500 leading-snug">{alert.description || alert.reason || 'Pending action item'}</p>
                                                             <p className="text-[9px] font-black text-neutral-300 mt-2 uppercase tracking-widest">{alert.artisans?.brand_name || alert.brand_name || 'System'}</p>
                                                         </div>
                                                     </div>

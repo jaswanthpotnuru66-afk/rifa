@@ -14,6 +14,7 @@ const statusConfig: any = {
     'awaiting-proof':  { label: 'Awaiting',     classes: 'bg-amber-50 text-amber-700 border-amber-100' },
     'proof-sent':      { label: 'Proof Sent',   classes: 'bg-teal-50 text-teal-700 border-teal-100' },
     'in-production':   { label: 'In Prod.',     classes: 'bg-brand-pink/10 text-brand-pink border-brand-pink/20' },
+    'processing':      { label: 'In Prod.',     classes: 'bg-brand-pink/10 text-brand-pink border-brand-pink/20' },
     'shipped':         { label: 'Shipped',      classes: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
     'delivered':       { label: 'Delivered',    classes: 'bg-green-50 text-green-700 border-green-100' },
     'cancelled':       { label: 'Cancelled',    classes: 'bg-neutral-50 text-neutral-400 border-neutral-100' },
@@ -69,7 +70,12 @@ const Dashboard = () => {
             {/* ── Page hero strip ── */}
             <div className="relative rounded-sm overflow-hidden mb-10 bg-[#0a0a0a] px-10 py-10">
                 {stats?.artisan?.process_img && (
-                    <img src={stats.artisan.process_img} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+                    <img 
+                        src={stats.artisan.process_img} 
+                        alt="" 
+                        className="absolute inset-0 w-full h-full object-cover opacity-30" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -87,7 +93,7 @@ const Dashboard = () => {
                         <Link to="/craftmaker/settings" className="flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white text-[10px] font-black uppercase tracking-[0.3em] px-6 py-3 transition-all">
                             <Settings size={14} /> Edit Profile
                         </Link>
-                        <Link to={`/artisan/${stats?.artisan?.id}`} className="flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white text-[10px] font-black uppercase tracking-[0.3em] px-6 py-3 transition-all">
+                        <Link to={`/rifa/${stats?.artisan?.id}`} className="flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white text-[10px] font-black uppercase tracking-[0.3em] px-6 py-3 transition-all">
                             <ArrowRight size={14} /> View Studio
                         </Link>
                     </div>
@@ -147,7 +153,7 @@ const Dashboard = () => {
                                     {orders.slice(0, 8).map(order => (
                                         <tr key={order.id} className="group hover:bg-neutral-50/80 transition-colors">
                                             <td className="px-6 py-4">
-                                                <span className="text-xs font-black text-neutral-900 group-hover:text-brand-pink transition-colors">#{order.id.slice(0, 8)}</span>
+                                                <span className="text-xs font-black text-neutral-900 group-hover:text-brand-pink transition-colors">#{order.order_id.slice(0, 8)}</span>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -162,12 +168,12 @@ const Dashboard = () => {
                                             </td>
                                             <td className="px-6 py-4 text-xs font-black text-neutral-950 font-inter">₹{(order.price * order.quantity).toLocaleString()}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${statusConfig[order.orders?.status || 'pending'].classes}`}>
-                                                    {statusConfig[order.orders?.status || 'pending'].label}
+                                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${statusConfig[order.orders?.status || 'pending']?.classes || 'bg-neutral-50 text-neutral-400 border-neutral-100'}`}>
+                                                    {statusConfig[order.orders?.status || 'pending']?.label || order.orders?.status || 'Pending'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Link to={`/craftmaker/orders/${order.id}`} className="text-neutral-300 hover:text-brand-pink transition-colors p-1 block">
+                                                <Link to={`/craftmaker/orders/${order.order_id}`} className="text-neutral-300 hover:text-brand-pink transition-colors p-1 block">
                                                     <ArrowRight size={16} />
                                                 </Link>
                                             </td>

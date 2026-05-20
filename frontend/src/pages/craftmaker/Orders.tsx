@@ -56,8 +56,8 @@ const Orders = () => {
                 o.product_name.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
-        if (sortBy === 'Newest') r.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        if (sortBy === 'Oldest') r.sort((a,b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        if (sortBy === 'Newest') r.sort((a,b) => new Date(b.orders?.created_at || b.created_at).getTime() - new Date(a.orders?.created_at || a.created_at).getTime());
+        if (sortBy === 'Oldest') r.sort((a,b) => new Date(a.orders?.created_at || a.created_at).getTime() - new Date(b.orders?.created_at || b.created_at).getTime());
         return r;
     }, [orders, activeTab, searchQuery, sortBy]);
 
@@ -168,7 +168,7 @@ const Orders = () => {
 
                                     {/* Date */}
                                     <div className="w-[160px]">
-                                        <p className="text-xs font-medium text-neutral-500">{new Date(item.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</p>
+                                        <p className="text-xs font-medium text-neutral-500">{new Date(item.orders?.created_at || item.created_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</p>
                                     </div>
 
                                     {/* Product */}

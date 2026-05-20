@@ -19,12 +19,24 @@ const Marketplace = () => {
     const [sortBy, setSortBy] = useState('Featured');
     const [showFilters, setShowFilters] = useState(false);
     const [view, setView] = useState<'products' | 'artisans'>('products');
-    const [isConciergeOpen, setIsConciergeOpen] = useState(false);
+    const [isConciergeOpen, setIsConciergeOpen] = useState(() => {
+        const state = location.state as { openConcierge?: boolean } | null;
+        return !!state?.openConcierge;
+    });
     const [conciergeStep, setConciergeStep] = useState(1);
     const [conciergeData, setConciergeData] = useState({
         forWhom: '',
         occasion: ''
     });
+
+    useEffect(() => {
+        const state = location.state as { openConcierge?: boolean } | null;
+        if (state?.openConcierge) {
+            setIsConciergeOpen(true);
+            // Clean state to avoid re-opening on subsequent navigations
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // Dynamic Data States
     const [products, setProducts] = useState<any[]>([]);
@@ -342,7 +354,7 @@ const Marketplace = () => {
                                         viewport={{ once: true }}
                                         className="group"
                                     >
-                                        <Link to={`/artisan/${artisan.id}`} className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 border border-neutral-100 hover:border-brand-pink/30 transition-all duration-500">
+                                        <Link to={`/rifa/${artisan.id}`} className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 border border-neutral-100 hover:border-brand-pink/30 transition-all duration-500">
                                             <div className="aspect-[4/5] overflow-hidden">
                                                 <img 
                                                     src={artisan.img} 

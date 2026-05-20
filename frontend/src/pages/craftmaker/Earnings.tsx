@@ -1,22 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     TrendingUp, Clock, AlertCircle, ChevronDown, ChevronUp,
-    Download, HelpCircle, ArrowUpRight, Banknote
+    Download, HelpCircle, Banknote, Loader
 } from 'lucide-react';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
-import { mockPayouts } from '../../lib/craftmaker';
+import { api } from '../../lib/api';
 
 const DATE_TABS = ['This Month', 'Last 3 Months', 'This Year', 'Custom'];
 
 const STATUS_LABELS: Record<string, string> = {
-    paid: 'Received',
+    released: 'Received',
     pending: 'Pending',
     held: 'On Hold',
 };
 
 const statusPill: Record<string, string> = {
-    paid: 'bg-green-50 text-green-700 border-green-100',
+    released: 'bg-green-50 text-green-700 border-green-100',
     pending: 'bg-amber-50 text-amber-700 border-amber-100',
     held: 'bg-red-50 text-red-700 border-red-100',
 };
@@ -25,12 +25,31 @@ const Earnings = () => {
     const [activeTab, setActiveTab] = useState('This Month');
     const [expandedPayout, setExpandedPayout] = useState<string | null>(null);
     const [showShippingInfo, setShowShippingInfo] = useState(false);
+    
+    // Dynamic states
+    const [payouts, setPayouts] = useState<any[]>([]);
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            const [payoutsData, statsData] = await Promise.all([
+                api.getArtisanPayouts(),
+                api.getArtisanEarningsStats()
+            ]);
+            setPayouts(payoutsData || []);
+            setStats(statsData);
+            setLoading(false);
+        };
+        loadData();
+    }, []);
 
     const kpis = [
-        { label: 'Total Earned', value: '₹1,24,580', icon: Banknote, color: 'text-neutral-950', accent: false },
-        { label: 'This Month', value: '₹18,340', icon: TrendingUp, color: 'text-neutral-950', accent: false, trend: '+12%' },
-        { label: 'Pending', value: '₹6,200', icon: Clock, color: 'text-amber-600', accent: false },
-        { label: 'On Hold', value: '₹1,128', icon: AlertCircle, color: 'text-red-600', accent: true },
+        { label: 'Total Earned', value: `₹${(stats?.netPaid || 0).toLocaleString()}`, icon: Banknote, color: 'text-neutral-950', accent: false },
+        { label: 'Gross Sales', value: `₹${(stats?.grossSales || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-neutral-950', accent: false, trend: 'Gross' },
+        { label: 'Pending', value: `₹${(stats?.pending || 0).toLocaleString()}`, icon: Clock, color: 'text-amber-600', accent: false },
+        { label: 'On Hold', value: `₹${(stats?.held || 0).toLocaleString()}`, icon: AlertCircle, color: 'text-red-600', accent: true },
     ];
 
     return (
@@ -51,29 +70,35 @@ const Earnings = () => {
 
                 {/* ── KPI Cards ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    {kpis.map((kpi, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.07 }}
-                            className={`relative bg-white border rounded-sm p-6 shadow-sm group overflow-hidden hover:shadow-md transition-all ${kpi.accent ? 'border-red-200' : 'border-neutral-100 hover:border-brand-pink/20'}`}
-                        >
-                            <div className="flex justify-between items-start mb-5">
-                                <div className={`w-10 h-10 rounded-sm flex items-center justify-center ${kpi.accent ? 'bg-red-50 text-red-500' : 'bg-neutral-50 text-neutral-400 group-hover:bg-brand-pink/5 group-hover:text-brand-pink'} transition-all`}>
-                                    <kpi.icon size={20} />
+                    {loading ? (
+                        Array(4).fill(0).map((_, i) => (
+                            <div key={i} className="bg-neutral-50 border border-neutral-100 rounded-sm h-36 animate-pulse" />
+                        ))
+                    ) : (
+                        kpis.map((kpi, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.07 }}
+                                className={`relative bg-white border rounded-sm p-6 shadow-sm group overflow-hidden hover:shadow-md transition-all ${kpi.accent ? 'border-red-200' : 'border-neutral-100 hover:border-brand-pink/20'}`}
+                            >
+                                <div className="flex justify-between items-start mb-5">
+                                    <div className={`w-10 h-10 rounded-sm flex items-center justify-center ${kpi.accent ? 'bg-red-50 text-red-500' : 'bg-neutral-50 text-neutral-400 group-hover:bg-brand-pink/5 group-hover:text-brand-pink'} transition-all`}>
+                                        <kpi.icon size={20} />
+                                    </div>
+                                    {kpi.trend && (
+                                        <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+                                            {kpi.trend}
+                                        </span>
+                                    )}
                                 </div>
-                                {kpi.trend && (
-                                    <span className="flex items-center gap-1 text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                                        <ArrowUpRight size={10} /> {kpi.trend}
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">{kpi.label}</p>
-                            <p className={`text-2xl font-inter font-bold mt-1 tracking-tight ${kpi.color}`}>{kpi.value}</p>
-                            <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full bg-brand-pink transition-all duration-500" />
-                        </motion.div>
-                    ))}
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">{kpi.label}</p>
+                                <p className={`text-2xl font-inter font-bold mt-1 tracking-tight ${kpi.color}`}>{kpi.value}</p>
+                                <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full bg-brand-pink transition-all duration-500" />
+                            </motion.div>
+                        ))
+                    )}
                 </div>
 
                 {/* ── Date Filter ── */}
@@ -123,64 +148,69 @@ const Earnings = () => {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-400">Payout History</h2>
-                        <span className="text-[10px] font-black text-neutral-400">{mockPayouts.length} payouts</span>
+                        <span className="text-[10px] font-black text-neutral-400">{payouts.length} payouts</span>
                     </div>
 
-                    {mockPayouts.length > 0 ? (
-                        mockPayouts.map(payout => (
+                    {loading ? (
+                        <div className="py-24 flex flex-col items-center justify-center text-neutral-400 bg-white border border-neutral-100">
+                            <Loader className="animate-spin mb-4" size={24} />
+                            <p className="text-xs uppercase tracking-widest font-black">Loading payout records...</p>
+                        </div>
+                    ) : payouts.length > 0 ? (
+                        payouts.map(payout => (
                             <div key={payout.id} className="bg-white border border-neutral-100 rounded-sm overflow-hidden shadow-sm hover:border-brand-pink/20 transition-all">
                                 <div className="flex flex-col md:flex-row md:items-center gap-4 px-6 py-5">
                                     <div className="flex items-center justify-between md:hidden pb-4 border-b border-neutral-50 mb-2">
-                                        <p className="text-sm font-black text-neutral-900">{payout.id}</p>
+                                        <p className="text-sm font-black text-neutral-900">#{payout.id.slice(0, 8)}</p>
                                         <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${statusPill[payout.status] || 'bg-neutral-50 text-neutral-500 border-neutral-100'}`}>
                                             {STATUS_LABELS[payout.status] || payout.status}
                                         </span>
                                     </div>
                                     <div className="hidden md:block min-w-[80px]">
                                         <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Payout ID</p>
-                                        <p className="text-xs font-black text-neutral-900">{payout.id}</p>
+                                        <p className="text-xs font-black text-neutral-900">#{payout.id.slice(0, 8)}</p>
                                     </div>
                                     <div className="flex justify-between md:block min-w-[90px]">
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">Date</p>
                                         <div>
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Date</p>
-                                            <p className="text-xs font-medium text-neutral-500 text-right md:text-left">{payout.date}</p>
+                                            <p className="text-xs font-medium text-neutral-500 text-right md:text-left">{new Date(payout.created_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-between md:block min-w-[60px]">
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">Orders</p>
                                         <div>
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Orders</p>
-                                            <p className="text-xs font-black text-neutral-900 text-right md:text-left">{payout.orderCount}</p>
+                                            <p className="text-xs font-black text-neutral-900 text-right md:text-left">{payout.order_ids?.length || 0}</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-between md:block min-w-[80px]">
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">Gross</p>
                                         <div>
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Gross</p>
-                                            <p className="text-xs font-bold text-neutral-950 text-right md:text-left font-inter">₹{payout.grossAmount.toLocaleString()}</p>
+                                            <p className="text-xs font-bold text-neutral-950 text-right md:text-left font-inter font-bold">₹{(Number(payout.gross_amount) || 0).toLocaleString()}</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-between md:block min-w-[80px]">
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">Commission</p>
                                         <div>
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Commission</p>
-                                            <p className="text-xs font-bold text-red-500 text-right md:text-left font-inter">−₹{payout.commission}</p>
+                                            <p className="text-xs font-bold text-red-500 text-right md:text-left font-inter font-bold">−₹{(Number(payout.commission_amount) || 0).toLocaleString()}</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-between md:block min-w-[60px]">
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">TCS</p>
                                         <div>
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">TCS</p>
-                                            <p className="text-xs font-bold text-red-500 text-right md:text-left font-inter">−₹{payout.tcs}</p>
+                                            <p className="text-xs font-bold text-red-500 text-right md:text-left font-inter font-bold">−₹{(Number(payout.tcs_amount) || 0).toLocaleString()}</p>
                                         </div>
                                     </div>
                                     <div className="flex justify-between md:block min-w-[80px]">
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">Ship Adj.</p>
                                         <div>
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Ship Adj.</p>
-                                            <p className={`text-xs font-bold text-right md:text-left font-inter ${payout.shippingAdj < 0 ? 'text-red-500' : 'text-neutral-300'}`}>
-                                                {payout.shippingAdj < 0 ? `−₹${Math.abs(payout.shippingAdj)}` : '—'}
+                                            <p className={`text-xs font-bold text-right md:text-left font-inter font-bold ${Number(payout.shipping_adjustment) < 0 ? 'text-red-500' : 'text-neutral-300'}`}>
+                                                {Number(payout.shipping_adjustment) < 0 ? `−₹${Math.abs(Number(payout.shipping_adjustment))}` : '—'}
                                             </p>
                                         </div>
                                     </div>
@@ -188,7 +218,7 @@ const Earnings = () => {
                                         <p className="md:hidden text-[10px] font-black uppercase text-neutral-400">Net Received</p>
                                         <div className="text-right md:text-left">
                                             <p className="hidden md:block text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-0.5">Net Received</p>
-                                            <p className="text-lg md:text-base font-inter font-black text-neutral-950">₹{payout.netPaid.toLocaleString()}</p>
+                                            <p className="text-lg md:text-base font-inter font-black text-neutral-950 font-bold">₹{(Number(payout.net_amount) || 0).toLocaleString()}</p>
                                         </div>
                                     </div>
                                     <div className="flex-1 flex items-center justify-between md:justify-end gap-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-neutral-50">
@@ -212,19 +242,19 @@ const Earnings = () => {
                                     {expandedPayout === payout.id && (
                                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                             <div className="bg-neutral-50 border-t border-neutral-100 px-4 md:px-8 py-6">
-                                                <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-4">Order Breakdown</p>
-                                                {payout.orders.length > 0 ? (
+                                                <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-4">Included Order Breakdown</p>
+                                                {payout.order_ids && payout.order_ids.length > 0 ? (
                                                     <div className="space-y-2">
                                                         <div className="hidden md:grid grid-cols-5 text-[9px] font-black uppercase tracking-widest text-neutral-300 pb-2 border-b border-neutral-100">
                                                             <span>Order ID</span><span>Amount</span><span>Commission</span><span>TCS</span><span className="text-right">Net</span>
                                                         </div>
-                                                        {payout.orders.map(o => (
-                                                            <div key={o.id} className="flex flex-col md:grid md:grid-cols-5 py-3 border-b border-neutral-100 last:border-0 text-xs gap-1 md:gap-0">
-                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">Order ID</span><span className="font-black text-neutral-900">{o.id}</span></div>
-                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">Amount</span><span className="font-bold text-neutral-950 font-inter">₹{o.amount.toLocaleString()}</span></div>
-                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">Commission</span><span className="font-bold text-red-500 font-inter">−₹{o.commission}</span></div>
-                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">TCS</span><span className="font-bold text-red-400 font-inter">−₹{o.tcs}</span></div>
-                                                                <div className="flex justify-between md:block pt-2 border-t border-neutral-200/50 md:pt-0 md:border-0 mt-1 md:mt-0"><span className="md:hidden text-[10px] font-black text-neutral-900">Net</span><span className="font-black text-brand-pink md:text-neutral-950 text-right font-inter">₹{(o.amount - o.commission - o.tcs).toLocaleString()}</span></div>
+                                                        {payout.order_ids.map((oid: string) => (
+                                                            <div key={oid} className="flex flex-col md:grid md:grid-cols-5 py-3 border-b border-neutral-100 last:border-0 text-xs gap-1 md:gap-0">
+                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">Order ID</span><span className="font-black text-neutral-900">#{oid.slice(0, 8)}</span></div>
+                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">Amount</span><span className="font-bold text-neutral-950 font-inter font-bold">₹{(Number(payout.gross_amount) / payout.order_ids.length).toFixed(2)}</span></div>
+                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">Commission</span><span className="font-bold text-red-500 font-inter font-bold">−₹{(Number(payout.commission_amount) / payout.order_ids.length).toFixed(2)}</span></div>
+                                                                <div className="flex justify-between md:block"><span className="md:hidden text-[10px] text-neutral-400">TCS</span><span className="font-bold text-red-400 font-inter font-bold">−₹{(Number(payout.tcs_amount) / payout.order_ids.length).toFixed(2)}</span></div>
+                                                                <div className="flex justify-between md:block pt-2 border-t border-neutral-200/50 md:pt-0 md:border-0 mt-1 md:mt-0"><span className="md:hidden text-[10px] font-black text-neutral-900 font-bold">Net</span><span className="font-black text-brand-pink md:text-neutral-950 text-right font-inter font-bold">₹{(Number(payout.net_amount) / payout.order_ids.length).toFixed(2)}</span></div>
                                                             </div>
                                                         ))}
                                                     </div>

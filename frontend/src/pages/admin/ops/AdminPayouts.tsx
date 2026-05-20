@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
-    Search, ChevronDown, Loader2
+    Search, ChevronDown, Loader2, CheckCircle2, Clock, PauseCircle, Send, X, FileText
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
 import { api } from '../../../lib/api';
 
@@ -12,6 +13,9 @@ const AdminPayouts = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy] = useState('Newest');
     const [expandedPayout, setExpandedPayout] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [notesMap, setNotesMap] = useState<Record<string, string>>({});
 
     useEffect(() => {
         fetchPayouts();
@@ -26,6 +30,25 @@ const AdminPayouts = () => {
             console.error('Failed to fetch payouts:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
+
+    const handleUpdatePayout = async (id: string, status: string) => {
+        setActionLoading(id + status);
+        const notes = notesMap[id] || '';
+        const res = await api.updateAdminPayout(id, status, notes);
+        setActionLoading(null);
+        if (res) {
+            setPayouts(prev => prev.map(p => p.id === id ? { ...p, ...res } : p));
+            showToast(`Payout ${status === 'released' ? 'released' : status === 'held' ? 'placed on hold' : 'reset to pending'} successfully.`, 'success');
+            setExpandedPayout(null);
+        } else {
+            showToast('Failed to update payout status.', 'error');
         }
     };
 
@@ -48,10 +71,8 @@ const AdminPayouts = () => {
                 (p.artisans?.brand_name || '').toLowerCase().includes(q)
             );
         }
-
         if (sortBy === 'Newest') result.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
         if (sortBy === 'Amount High to Low') result.sort((a, b) => Number(b.net_amount) - Number(a.net_amount));
-
         return result;
     }, [activeTab, searchQuery, sortBy, payouts]);
 
@@ -62,8 +83,32 @@ const AdminPayouts = () => {
         </div>
     );
 
+    const statusBadge = (status: string) => {
+        const map: Record<string, string> = {
+            released: 'bg-green-50 text-green-700 border-green-100',
+            pending: 'bg-blue-50 text-blue-700 border-blue-100',
+            held: 'bg-amber-50 text-amber-700 border-amber-100',
+        };
+        return map[status] || 'bg-neutral-50 text-neutral-400 border-neutral-100';
+    };
+
     return (
         <AdminOpsLayout>
+            {/* Toast */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className={`fixed top-6 right-6 z-[200] px-6 py-4 rounded-sm shadow-xl text-white text-xs font-black uppercase tracking-widest flex items-center gap-3 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}
+                    >
+                        {toast.type === 'success' ? <CheckCircle2 size={16} /> : <X size={16} />}
+                        {toast.message}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="space-y-8 animate-in fade-in duration-500 pb-24">
 
                 {/* Header */}
@@ -71,6 +116,7 @@ const AdminPayouts = () => {
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-pink mb-2">Financial Treasury</p>
                         <h1 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight">Maker Payouts</h1>
+                        <p className="text-sm text-neutral-400 mt-1 font-medium">Review and release artisan settlement disbursals</p>
                     </div>
                 </div>
 
@@ -114,7 +160,7 @@ const AdminPayouts = () => {
                 </div>
 
                 {/* Table */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-24">
                             <Loader2 size={40} className="text-brand-pink animate-spin mb-4" />
@@ -136,9 +182,9 @@ const AdminPayouts = () => {
                             </div>
 
                             {filteredPayouts.length > 0 ? filteredPayouts.map(payout => (
-                                <div key={payout.id} className="space-y-1">
-                                    <div 
-                                        className={`bg-white border border-neutral-100 rounded-sm hover:border-brand-pink/30 transition-all group shadow-sm cursor-pointer ${expandedPayout === payout.id ? 'border-brand-pink/30 ring-1 ring-brand-pink/10' : ''}`}
+                                <div key={payout.id} className="space-y-0">
+                                    <div
+                                        className={`bg-white border rounded-sm transition-all group shadow-sm cursor-pointer ${expandedPayout === payout.id ? 'border-brand-pink/40 rounded-b-none' : 'border-neutral-100 hover:border-brand-pink/30'}`}
                                         onClick={() => setExpandedPayout(expandedPayout === payout.id ? null : payout.id)}
                                     >
                                         <div className="flex flex-col lg:grid lg:grid-cols-[100px_1fr_100px_100px_100px_100px_120px_100px_40px] gap-4 p-4 lg:p-6 items-center">
@@ -147,11 +193,12 @@ const AdminPayouts = () => {
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">ID</span>
                                                 <div className="text-[10px] font-black text-neutral-400 font-inter">{payout.id.slice(0, 8)}</div>
                                             </div>
-                                            
+
                                             <div className="flex justify-between lg:block w-full lg:w-auto">
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Maker</span>
                                                 <div className="text-right lg:text-left">
                                                     <p className="text-xs font-bold text-neutral-900">{payout.artisans?.brand_name || 'Individual'}</p>
+                                                    <p className="text-[9px] text-neutral-400 font-medium mt-0.5">{payout.artisan_id}</p>
                                                 </div>
                                             </div>
 
@@ -164,12 +211,12 @@ const AdminPayouts = () => {
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Gross</span>
                                                 <div className="text-xs font-bold text-neutral-950 font-inter">₹{Number(payout.gross_amount).toLocaleString()}</div>
                                             </div>
-                                            
+
                                             <div className="flex justify-between lg:flex lg:justify-end w-full">
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Comm.</span>
                                                 <div className="text-xs font-medium text-neutral-400 italic font-inter">−₹{Number(payout.commission_amount).toLocaleString()}</div>
                                             </div>
-                                            
+
                                             <div className="flex justify-between lg:flex lg:justify-end w-full">
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">TCS</span>
                                                 <div className="text-xs font-medium text-neutral-400 italic font-inter">−₹{Number(payout.tcs_amount).toLocaleString()}</div>
@@ -183,11 +230,7 @@ const AdminPayouts = () => {
                                             <div className="flex justify-between lg:block items-center w-full lg:w-auto">
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Status</span>
                                                 <div className="lg:text-center">
-                                                    <span className={`inline-block px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                                                        payout.status === 'released' ? 'bg-green-50 text-green-700 border-green-100' :
-                                                        payout.status === 'pending' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                        'bg-amber-50 text-amber-700 border-amber-100'
-                                                    }`}>
+                                                    <span className={`inline-block px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${statusBadge(payout.status)}`}>
                                                         {payout.status}
                                                     </span>
                                                 </div>
@@ -200,6 +243,100 @@ const AdminPayouts = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* EXPANDED PANEL */}
+                                    <AnimatePresence>
+                                        {expandedPayout === payout.id && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.25 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="bg-neutral-50 border border-t-0 border-brand-pink/40 rounded-b-sm p-6 space-y-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        {/* Payout Detail */}
+                                                        <div className="md:col-span-2 space-y-4">
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Settlement Detail</p>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div className="bg-white border border-neutral-100 p-4 rounded-sm">
+                                                                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-300 mb-1">Gross Revenue</p>
+                                                                    <p className="text-lg font-bold text-neutral-950 font-inter">₹{Number(payout.gross_amount).toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="bg-white border border-neutral-100 p-4 rounded-sm">
+                                                                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-300 mb-1">Platform Commission</p>
+                                                                    <p className="text-lg font-bold text-red-500 font-inter">−₹{Number(payout.commission_amount).toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="bg-white border border-neutral-100 p-4 rounded-sm">
+                                                                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-300 mb-1">TCS Deducted</p>
+                                                                    <p className="text-lg font-bold text-red-400 font-inter">−₹{Number(payout.tcs_amount).toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="bg-brand-pink/5 border border-brand-pink/20 p-4 rounded-sm">
+                                                                    <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink/60 mb-1">Net Settlement</p>
+                                                                    <p className="text-lg font-black text-brand-pink font-inter">₹{Number(payout.net_amount).toLocaleString()}</p>
+                                                                </div>
+                                                            </div>
+                                                            {payout.released_at && (
+                                                                <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest">
+                                                                    Released on: {new Date(payout.released_at).toLocaleString()}
+                                                                </p>
+                                                            )}
+                                                            {payout.admin_notes && (
+                                                                <div className="flex items-start gap-2 bg-white border border-neutral-100 p-4 rounded-sm">
+                                                                    <FileText size={14} className="text-neutral-400 mt-0.5 shrink-0" />
+                                                                    <p className="text-xs text-neutral-600 font-medium">{payout.admin_notes}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Action Panel */}
+                                                        <div className="space-y-4">
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Admin Actions</p>
+                                                            <textarea
+                                                                placeholder="Optional release note or hold reason..."
+                                                                value={notesMap[payout.id] || ''}
+                                                                onChange={e => setNotesMap(prev => ({ ...prev, [payout.id]: e.target.value }))}
+                                                                className="w-full bg-white border border-neutral-200 rounded-sm p-3 text-xs text-neutral-700 placeholder:text-neutral-300 focus:outline-none focus:border-brand-pink resize-none min-h-[80px] transition-all"
+                                                            />
+                                                            <div className="space-y-2">
+                                                                {payout.status !== 'released' && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handleUpdatePayout(payout.id, 'released'); }}
+                                                                        disabled={actionLoading === payout.id + 'released'}
+                                                                        className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-all disabled:opacity-50"
+                                                                    >
+                                                                        {actionLoading === payout.id + 'released' ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                                                                        Release to Artisan
+                                                                    </button>
+                                                                )}
+                                                                {payout.status !== 'held' && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handleUpdatePayout(payout.id, 'held'); }}
+                                                                        disabled={actionLoading === payout.id + 'held'}
+                                                                        className="w-full flex items-center justify-center gap-2 py-3 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-all disabled:opacity-50"
+                                                                    >
+                                                                        {actionLoading === payout.id + 'held' ? <Loader2 size={14} className="animate-spin" /> : <PauseCircle size={14} />}
+                                                                        Place on Hold
+                                                                    </button>
+                                                                )}
+                                                                {payout.status !== 'pending' && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handleUpdatePayout(payout.id, 'pending'); }}
+                                                                        disabled={actionLoading === payout.id + 'pending'}
+                                                                        className="w-full flex items-center justify-center gap-2 py-3 border border-neutral-200 text-neutral-600 text-[10px] font-black uppercase tracking-widest rounded-sm hover:border-neutral-400 transition-all disabled:opacity-50"
+                                                                    >
+                                                                        {actionLoading === payout.id + 'pending' ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
+                                                                        Reset to Pending
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             )) : (
                                 <div className="py-24 border-2 border-dashed border-neutral-100 rounded-sm text-center">

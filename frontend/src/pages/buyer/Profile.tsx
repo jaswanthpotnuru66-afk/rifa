@@ -7,8 +7,8 @@ import {
     Smartphone, Lock, Plus, Trash2,
     Globe, Clock, Heart, ShoppingBag, PenLine,
     ArrowRight, Package, Search, MessageSquare,
-    Sparkles, Truck,
-    ChevronRight, ArrowLeft, Loader2, CheckCircle2, X, Navigation
+    Sparkles, Truck, AlertTriangle, RefreshCw,
+    ChevronRight, ArrowLeft, Loader2, CheckCircle2, X, Navigation, Download
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
@@ -68,6 +68,157 @@ const MOCK_USER = {
 
 type SettingsTab = 'general' | 'security' | 'addresses' | 'notifications' | 'billing' | 'wishlist' | 'bag' | 'orders';
 
+// COMPONENT: Buyer Proof Details Review Workflow
+const BuyerProofDetails = ({ order, onUpdate }: { order: any; onUpdate: () => void }) => {
+    const [comment, setComment] = React.useState('');
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [showSuccessMsg, setShowSuccessMsg] = React.useState('');
+
+    const handleAccept = async () => {
+        setIsLoading(true);
+        try {
+            await api.updateOrder(order.id, {
+                proofStatus: 'approved',
+                buyerResponseAt: new Date().toISOString(),
+                status: 'processing'
+            });
+            setShowSuccessMsg('Design approved successfully! The artisan has been notified to start handcrafting your custom masterpiece.');
+            onUpdate();
+        } catch (err) {
+            console.error('Accept proof error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!comment.trim()) {
+            alert('Please provide some details on the changes you want.');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await api.updateOrder(order.id, {
+                proofStatus: 'revision-requested',
+                buyerRevisionComment: comment,
+                buyerResponseAt: new Date().toISOString(),
+                revisionRound: (order.revisionRound || 0) + 1
+            });
+            setShowSuccessMsg('Revision requests submitted successfully. The artisan has been notified to modify your design.');
+            onUpdate();
+        } catch (err) {
+            console.error('Reject proof error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const proofStatus = order.proofStatus || 'none';
+
+    if (proofStatus === 'none') return null;
+
+    return (
+        <div className="mt-8 border-t border-neutral-100 pt-8 space-y-6">
+            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-brand-pink/10 flex items-center justify-center text-brand-pink"><Sparkles size={16} /></div>
+                <div>
+                    <h4 className="text-sm font-serif font-bold text-neutral-950">🎨 Digital Design & Mockup Review</h4>
+                    <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest mt-0.5">Bespoke Production Milestone</p>
+                </div>
+            </div>
+
+            {showSuccessMsg ? (
+                <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-sm text-emerald-800 text-xs font-light leading-relaxed animate-in fade-in zoom-in-95">
+                    <span className="font-bold block mb-1">🎉 Confirmation</span>
+                    {showSuccessMsg}
+                </div>
+            ) : (
+                <div className="space-y-6 bg-neutral-50/50 border border-neutral-100 p-6 rounded-sm">
+                    {order.proofUrl ? (
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">Submitted Design Proof</span>
+                            <div className="relative group aspect-video rounded-sm overflow-hidden border border-neutral-200 bg-white">
+                                <img src={order.proofUrl} className="w-full h-full object-contain" alt="Bespoke Proof" />
+                                <a 
+                                    href={order.proofUrl} 
+                                    download={`proof-${order.id.slice(0, 8)}.png`}
+                                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-full text-neutral-900 shadow-md hover:bg-neutral-950 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                    <Download size={14} />
+                                </a>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-8 text-center text-neutral-400 text-xs font-light italic">No visual mockup uploaded yet. Awaiting design.</div>
+                    )}
+
+                    {proofStatus === 'sent' && (
+                        <div className="space-y-4">
+                            <div className="p-4 bg-brand-pink/5 border border-brand-pink/10 rounded-sm text-[11px] text-neutral-600 leading-relaxed">
+                                ✨ <span className="font-bold text-brand-pink">Action Required:</span> Carefully review the mockup design proof above. If it meets your vision, approve it to let the artisan start handcrafting your order. If you want changes, describe them below and request revisions.
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Revision Comments (Required for rejection)</label>
+                                <textarea 
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    placeholder="E.g., Can we make the font size slightly larger, or use a darker blue tone for the resin base..."
+                                    className="w-full min-h-[80px] p-3 text-xs bg-white border border-neutral-200 focus:border-brand-pink focus:outline-none placeholder:text-neutral-300 resize-none font-light leading-relaxed text-neutral-900"
+                                />
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button 
+                                    onClick={handleAccept}
+                                    disabled={isLoading}
+                                    className="flex-1 py-4 bg-brand-pink hover:bg-brand-pink/90 disabled:bg-neutral-200 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-2 transition-all"
+                                >
+                                    {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                    Approve & Start Handcrafting
+                                </button>
+                                <button 
+                                    onClick={handleReject}
+                                    disabled={isLoading}
+                                    className="flex-1 py-4 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all"
+                                >
+                                    {isLoading ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                                    Request Revision
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {proofStatus === 'approved' && (
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-light leading-relaxed rounded-sm flex items-start gap-3">
+                            <CheckCircle2 size={18} className="shrink-0 text-emerald-600 mt-0.5" />
+                            <div>
+                                <span className="font-bold block mb-1">Approved for Handcrafting</span>
+                                Your approval was logged on {order.buyerResponseAt ? new Date(order.buyerResponseAt).toLocaleString() : 'recently'}. The artisan has begun crafting your physical masterpiece!
+                            </div>
+                        </div>
+                    )}
+
+                    {proofStatus === 'revision-requested' && (
+                        <div className="p-4 bg-amber-50 border border-amber-100 text-amber-800 text-xs font-light leading-relaxed rounded-sm space-y-2">
+                            <div className="flex items-start gap-3">
+                                <Clock size={18} className="shrink-0 text-amber-600 mt-0.5" />
+                                <div>
+                                    <span className="font-bold block mb-1">Revision Requested (Round {order.revisionRound || 1})</span>
+                                    Awaiting updated mockup designs from the artisan. They have been notified with your requirements:
+                                </div>
+                            </div>
+                            <div className="p-3 bg-white/80 border border-amber-100 italic rounded-sm text-neutral-600 mt-2 font-mono text-[11px] leading-relaxed break-all">
+                                "{order.buyerRevisionComment || 'No additional comments provided.'}"
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const Profile = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -103,6 +254,19 @@ const Profile = () => {
             setActiveTab(location.state.activeTab as SettingsTab);
         }
     }, [location]);
+
+    React.useEffect(() => {
+        const sessTab = sessionStorage.getItem('active_tab');
+        const sessOrder = sessionStorage.getItem('selected_order_id');
+        if (sessTab) {
+            setActiveTab(sessTab as SettingsTab);
+            sessionStorage.removeItem('active_tab');
+        }
+        if (sessOrder) {
+            setSelectedOrderId(sessOrder);
+            sessionStorage.removeItem('selected_order_id');
+        }
+    }, [orders]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -142,6 +306,72 @@ const Profile = () => {
     const [mapCenter, setMapCenter] = useState<[number, number]>(DEFAULT_CENTER);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+
+    // --- Dispute/Ticket Modal State ---
+    const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
+    const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
+    const [isReordering, setIsReordering] = useState(false);
+    const [disputeSuccess, setDisputeSuccess] = useState(false);
+    const [disputeForm, setDisputeForm] = useState({
+        category: 'quality-issue',
+        description: '',
+        evidenceUrl: ''
+    });
+
+    // --- Dispute / Reorder Handlers ---
+    const handleReorder = async (rawOrder: any) => {
+        if (!rawOrder?.order_items?.length) return;
+        setIsReordering(true);
+        try {
+            for (const item of rawOrder.order_items) {
+                await api.addToCart({
+                    product_id: item.product_id,
+                    product_name: item.product_name,
+                    price: item.price,
+                    quantity: item.quantity || 1,
+                    image_url: item.image_url,
+                    artisan_id: item.artisan_id
+                });
+            }
+            const updatedCart = await api.getCart();
+            setCart(updatedCart);
+            alert('Items re-added to your Acquisition Bag! Head to your cart to checkout.');
+        } catch (err) {
+            console.error('Reorder error:', err);
+            alert('Failed to reorder. Please try again.');
+        } finally {
+            setIsReordering(false);
+        }
+    };
+
+    const handleRaiseDispute = async () => {
+        if (!selectedOrderId || !disputeForm.category) return;
+        setIsSubmittingDispute(true);
+        try {
+            const res = await api.raiseDispute(selectedOrderId, {
+                category: disputeForm.category,
+                description: disputeForm.description,
+                evidenceUrls: disputeForm.evidenceUrl ? [disputeForm.evidenceUrl] : []
+            });
+            if (res?.error) {
+                alert('Error: ' + res.error);
+            } else {
+                setDisputeSuccess(true);
+                const updatedOrders = await api.getOrders();
+                setOrders(updatedOrders);
+                setTimeout(() => {
+                    setIsDisputeModalOpen(false);
+                    setDisputeSuccess(false);
+                    setDisputeForm({ category: 'quality-issue', description: '', evidenceUrl: '' });
+                }, 2000);
+            }
+        } catch (err) {
+            console.error('Dispute error:', err);
+            alert('Failed to raise ticket. Please try again.');
+        } finally {
+            setIsSubmittingDispute(false);
+        }
+    };
 
     const handleSearchAddress = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -319,7 +549,8 @@ const Profile = () => {
             date: o.created_at,
             price: `₹${o.total_amount.toLocaleString()}`,
             type: 'product',
-            image: o.order_items?.[0]?.image_url
+            image: o.order_items?.[0]?.image_url,
+            rawOrder: o
         })),
         ...inquiries.map(i => ({
             id: i.id,
@@ -338,7 +569,17 @@ const Profile = () => {
             new: { bg: 'bg-neutral-50', text: 'text-neutral-900', border: 'border-neutral-200', icon: <Clock size={10} /> },
             contacted: { bg: 'bg-neutral-100', text: 'text-neutral-600', border: 'border-neutral-300', icon: <MessageSquare size={10} /> },
             'in-progress': { bg: 'bg-brand-pink/10', text: 'text-brand-pink', border: 'border-brand-pink/20', icon: <Sparkles size={10} /> },
-            completed: { bg: 'bg-neutral-950', text: 'text-white', border: 'border-neutral-950', icon: <CheckCircle2 size={10} /> }
+            completed: { bg: 'bg-neutral-950', text: 'text-white', border: 'border-neutral-950', icon: <CheckCircle2 size={10} /> },
+            
+            // Order statuses
+            pending: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100', icon: <Clock size={10} /> },
+            confirmed: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-100', icon: <CheckCircle2 size={10} /> },
+            processing: { bg: 'bg-brand-pink/10', text: 'text-brand-pink', border: 'border-brand-pink/20', icon: <Sparkles size={10} /> },
+            'in-production': { bg: 'bg-brand-pink/10', text: 'text-brand-pink', border: 'border-brand-pink/20', icon: <Sparkles size={10} /> },
+            shipped: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-100', icon: <Truck size={10} /> },
+            delivered: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-100', icon: <CheckCircle2 size={10} /> },
+            disputed: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: <AlertTriangle size={10} /> },
+            cancelled: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-100', icon: <X size={10} /> }
         };
         const config = configs[status] || configs.new;
         return (
@@ -397,14 +638,14 @@ const Profile = () => {
     };
 
     const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
-        { id: 'general', label: 'Collector Identity', icon: <User size={18} strokeWidth={1.5} /> },
-        { id: 'orders', label: 'Acquisitions', icon: <Package size={18} strokeWidth={1.5} /> },
-        { id: 'bag', label: 'Pending Reserves', icon: <ShoppingBag size={18} strokeWidth={1.5} /> },
-        { id: 'wishlist', label: 'Curated Wishlist', icon: <Heart size={18} strokeWidth={1.5} /> },
-        { id: 'addresses', label: 'Destination Vault', icon: <MapPin size={18} strokeWidth={1.5} /> },
-        { id: 'billing', label: 'Member Privileges', icon: <CreditCard size={18} strokeWidth={1.5} /> },
-        { id: 'security', label: 'Security & Access', icon: <Shield size={18} strokeWidth={1.5} /> },
-        { id: 'notifications', label: 'Preferences', icon: <Bell size={18} strokeWidth={1.5} /> },
+        { id: 'general', label: 'My Profile', icon: <User size={18} strokeWidth={1.5} /> },
+        { id: 'orders', label: 'My Orders', icon: <Package size={18} strokeWidth={1.5} /> },
+        { id: 'bag', label: 'My Cart', icon: <ShoppingBag size={18} strokeWidth={1.5} /> },
+        { id: 'wishlist', label: 'My Wishlist', icon: <Heart size={18} strokeWidth={1.5} /> },
+        { id: 'addresses', label: 'My Addresses', icon: <MapPin size={18} strokeWidth={1.5} /> },
+        { id: 'billing', label: 'My Membership', icon: <CreditCard size={18} strokeWidth={1.5} /> },
+        { id: 'security', label: 'Security & Password', icon: <Shield size={18} strokeWidth={1.5} /> },
+        { id: 'notifications', label: 'Notifications', icon: <Bell size={18} strokeWidth={1.5} /> },
     ];
 
     if (isLoadingData) {
@@ -509,19 +750,39 @@ const Profile = () => {
                                     <div className="w-1.5 h-1.5 bg-brand-pink rounded-full" />
                                     <h3 className="text-neutral-950 text-[10px] font-black uppercase tracking-[0.3em]">Artisan Partnership</h3>
                                 </div>
-                                <h4 className="text-xl font-serif font-bold text-neutral-950 mb-4 leading-tight">
-                                    Your Craft. <br />
-                                    <span className="italic text-neutral-400 font-light text-lg">Our Infrastructure.</span>
-                                </h4>
-                                <p className="text-neutral-500 text-[11px] font-medium leading-relaxed mb-8">
-                                    Are you a master of your craft seeking a global audience? Join the Rifa Collective to scale your passion with our premium commerce infrastructure.
-                                </p>
-                                <Link 
-                                    to="/collaborate" 
-                                    className="w-full py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-pink transition-all block text-center shadow-lg"
-                                >
-                                    Apply to Collaborate
-                                </Link>
+                                {user?.role === 'artisan' ? (
+                                    <>
+                                        <h4 className="text-xl font-serif font-bold text-neutral-950 mb-4 leading-tight">
+                                            Your Shop. <br />
+                                            <span className="italic text-brand-pink font-medium text-lg">Active Creator.</span>
+                                        </h4>
+                                        <p className="text-neutral-500 text-[11px] font-medium leading-relaxed mb-8">
+                                            You are registered as a master artisan partner. Access your seller hub to manage inventory, track orders, and view your tax settlements.
+                                        </p>
+                                        <Link 
+                                            to="/craftmaker/dashboard" 
+                                            className="w-full py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-pink transition-all block text-center shadow-lg"
+                                        >
+                                            Go to Maker Dashboard
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h4 className="text-xl font-serif font-bold text-neutral-950 mb-4 leading-tight">
+                                            Your Craft. <br />
+                                            <span className="italic text-neutral-400 font-light text-lg">Our Infrastructure.</span>
+                                        </h4>
+                                        <p className="text-neutral-500 text-[11px] font-medium leading-relaxed mb-8">
+                                            Are you a master of your craft seeking a global audience? Join the Rifa Collective to scale your passion with our premium commerce infrastructure.
+                                        </p>
+                                        <Link 
+                                            to="/collaborate" 
+                                            className="w-full py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-pink transition-all block text-center shadow-lg"
+                                        >
+                                            Apply to Collaborate
+                                        </Link>
+                                    </>
+                                )}
                                 
                                 <div className="mt-6 flex items-center justify-between border-t border-neutral-100 pt-6">
                                     <div className="text-center">
@@ -761,28 +1022,113 @@ const Profile = () => {
                                                 </div>
                                             </div>
                                         ) : (
-                                            /* Simple Detail View (Internal State) */
-                                            <div className="bg-white border border-neutral-50 p-8 space-y-8 animate-in fade-in slide-in-from-right-4">
-                                                <button 
-                                                    onClick={() => setSelectedOrderId(null)}
-                                                    className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors"
-                                                >
-                                                    <ArrowLeft size={12} /> Back to Chronicle
-                                                </button>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                                    <div className="space-y-6">
-                                                        <DetailRow label="Order Reference" icon={<Package size={14} />} value={selectedOrderId} />
-                                                        <DetailRow label="Dispatch Status" icon={<Truck size={14} />} value="Premium Courier Tracking" />
-                                                        <DetailRow label="Authentication" icon={<CheckCircle2 size={14} />} value="Verified Artisan Piece" />
+                                            (() => {
+                                                const selectedOrder = combinedOrders.find(o => o.id === selectedOrderId);
+                                                const rawOrder = selectedOrder && 'rawOrder' in selectedOrder ? (selectedOrder as any).rawOrder : null;
+                                                return (
+                                                    <div className="bg-white border border-neutral-50 p-8 space-y-8 animate-in fade-in slide-in-from-right-4">
+                                                        <button 
+                                                            onClick={() => setSelectedOrderId(null)}
+                                                            className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors"
+                                                        >
+                                                            <ArrowLeft size={12} /> Back to Chronicle
+                                                        </button>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                            <div className="space-y-6">
+                                                                <DetailRow label="Order Reference" icon={<Package size={14} />} value={selectedOrderId} />
+                                                                <DetailRow label="Dispatch Status" icon={<Truck size={14} />} value={
+                                                                    rawOrder?.status === 'disputed' ? 'Dispute Under Review' :
+                                                                    rawOrder?.status === 'delivered' ? 'Delivered to Destination' :
+                                                                    rawOrder?.status === 'shipped' ? 'Premium Courier Shipped' : 
+                                                                    rawOrder?.status === 'processing' ? 'Handcrafting In Progress' : 
+                                                                    rawOrder?.status === 'in-production' ? 'Handcrafting In Progress' :
+                                                                    rawOrder?.status === 'confirmed' ? 'Confirmed & Packaging' :
+                                                                    'Confirmed & In Inspection'
+                                                                } />
+                                                                <DetailRow label="Authentication" icon={<CheckCircle2 size={14} />} value="Verified Artisan Piece" />
+                                                                
+                                                                {selectedOrder?.image && (
+                                                                    <div className="flex items-center gap-4 mt-6 p-4 bg-neutral-50 rounded-sm border border-neutral-100">
+                                                                        <img src={selectedOrder.image} className="w-12 h-16 object-cover border border-neutral-200" alt="" />
+                                                                        <div>
+                                                                            <h5 className="text-xs font-bold text-neutral-950">{selectedOrder.name}</h5>
+                                                                            <p className="text-[10px] text-neutral-400 font-light mt-0.5">{selectedOrder.price}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {!['in-production', 'shipped', 'delivered', 'disputed'].includes(rawOrder?.status) && (
+                                                            <div className="p-6 bg-neutral-50/50 border border-neutral-100 space-y-4">
+                                                                <h4 className="text-xs font-black uppercase tracking-widest text-neutral-950">Next Milestone</h4>
+                                                                <p className="text-xs text-neutral-500 font-light leading-relaxed">
+                                                                    {rawOrder?.proofStatus === 'sent' 
+                                                                        ? 'Action Required: A custom mockup proof has been submitted by the artisan. Please review it below to enable production.'
+                                                                        : rawOrder?.proofStatus === 'approved'
+                                                                        ? 'Production Underway: The mockup is approved! The artisan has began handcrafting your bespoke masterpiece.'
+                                                                        : rawOrder?.proofStatus === 'revision-requested'
+                                                                        ? 'Revision in Progress: The artisan is modifying your custom mockup according to your requirements.'
+                                                                        : 'Your masterpiece is undergoing final inspection. Anticipated delivery is within 3-5 business cycles.'
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* --- ACTION BUTTONS FOR DELIVERED ORDERS --- */}
+                                                        {rawOrder?.status === 'delivered' && (
+                                                            <div className="mt-8 p-6 bg-gradient-to-br from-neutral-950 to-neutral-800 rounded-sm border border-neutral-700 space-y-4">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <CheckCircle2 size={14} className="text-emerald-400" />
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest text-white">Order Delivered</h4>
+                                                                </div>
+                                                                <p className="text-[11px] text-neutral-400 font-light leading-relaxed">
+                                                                    Your masterpiece has arrived. We hope you love it! If anything isn't right, you can raise a ticket or place a fresh order.
+                                                                </p>
+                                                                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                                                                    <button
+                                                                        onClick={() => handleReorder(rawOrder)}
+                                                                        disabled={isReordering}
+                                                                        className="flex items-center justify-center gap-2 px-5 py-3 bg-white text-neutral-950 text-[11px] font-black uppercase tracking-widest hover:bg-neutral-100 transition-all disabled:opacity-50"
+                                                                    >
+                                                                        {isReordering ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                                                        Reorder Masterwork
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setIsDisputeModalOpen(true)}
+                                                                        className="flex items-center justify-center gap-2 px-5 py-3 bg-transparent border border-neutral-600 text-neutral-300 text-[11px] font-black uppercase tracking-widest hover:border-brand-pink hover:text-brand-pink transition-all"
+                                                                    >
+                                                                        <AlertTriangle size={12} />
+                                                                        Request Refund / Exchange
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* --- DISPUTED STATUS NOTICE --- */}
+                                                        {rawOrder?.status === 'disputed' && (
+                                                            <div className="mt-8 p-6 bg-amber-50 border border-amber-200 space-y-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <AlertTriangle size={14} className="text-amber-600" />
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest text-amber-800">Ticket Under Review</h4>
+                                                                </div>
+                                                                <p className="text-[11px] text-amber-700 font-light leading-relaxed">
+                                                                    Your dispute ticket has been filed and is currently under review by our team. We'll get back to you within 2-3 business days.
+                                                                </p>
+                                                            </div>
+                                                        )}
+
+                                                        {rawOrder && !['in-production', 'shipped', 'delivered', 'disputed'].includes(rawOrder.status) && (
+                                                            <BuyerProofDetails 
+                                                                order={rawOrder} 
+                                                                onUpdate={async () => {
+                                                                    const updatedOrders = await api.getOrders();
+                                                                    setOrders(updatedOrders);
+                                                                }} 
+                                                            />
+                                                        )}
                                                     </div>
-                                                    <div className="p-6 bg-neutral-50/50 border border-neutral-100 space-y-4">
-                                                        <h4 className="text-xs font-black uppercase tracking-widest text-neutral-950">Next Milestone</h4>
-                                                        <p className="text-xs text-neutral-500 font-light leading-relaxed">
-                                                            Your masterpiece is undergoing final inspection. Anticipated delivery is within 3-5 business cycles.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                );
+                                            })()
                                         )}
                                     </div>
                                 )}
@@ -1291,6 +1637,124 @@ const Profile = () => {
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* ===== DISPUTE / TICKET MODAL ===== */}
+            <AnimatePresence>
+                {isDisputeModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+                        onClick={(e) => { if (e.target === e.currentTarget) { setIsDisputeModalOpen(false); setDisputeForm({ category: 'quality-issue', description: '', evidenceUrl: '' }); } }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                            className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 shadow-2xl"
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-8 py-6 border-b border-neutral-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center">
+                                        <AlertTriangle size={14} className="text-brand-pink" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-white">Raise a Ticket</h3>
+                                        <p className="text-[10px] text-neutral-500 font-light mt-0.5">Refund · Exchange · Quality Issue</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setIsDisputeModalOpen(false); setDisputeForm({ category: 'quality-issue', description: '', evidenceUrl: '' }); }}
+                                    className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {disputeSuccess ? (
+                                <div className="flex flex-col items-center justify-center py-16 px-8 gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                        <CheckCircle2 size={28} className="text-emerald-400" />
+                                    </div>
+                                    <h4 className="text-sm font-black uppercase tracking-widest text-white">Ticket Filed Successfully</h4>
+                                    <p className="text-[11px] text-neutral-400 font-light text-center leading-relaxed">
+                                        Your request has been submitted and our team will review it within 2–3 business days.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="p-8 space-y-6">
+                                    {/* Category */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                                            Reason for Ticket *
+                                        </label>
+                                        <select
+                                            value={disputeForm.category}
+                                            onChange={(e) => setDisputeForm({ ...disputeForm, category: e.target.value })}
+                                            className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 text-white text-xs font-medium focus:border-brand-pink outline-none transition-all appearance-none cursor-pointer"
+                                        >
+                                            <option value="quality-issue">Quality Issue — Item is not as described</option>
+                                            <option value="damaged-item">Damaged / Incorrect Item Received</option>
+                                            <option value="refund-request">Refund Request — Change of mind</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Description */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                                            Describe the Issue
+                                        </label>
+                                        <textarea
+                                            value={disputeForm.description}
+                                            onChange={(e) => setDisputeForm({ ...disputeForm, description: e.target.value })}
+                                            placeholder="Please describe the issue in detail. The more context you provide, the faster we can resolve it..."
+                                            rows={4}
+                                            className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 text-white text-xs font-light focus:border-brand-pink outline-none transition-all resize-none placeholder:text-neutral-600"
+                                        />
+                                    </div>
+
+                                    {/* Evidence URL */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                                            Photo Evidence URL <span className="text-neutral-600 normal-case font-light">(optional)</span>
+                                        </label>
+                                        <input
+                                            type="url"
+                                            value={disputeForm.evidenceUrl}
+                                            onChange={(e) => setDisputeForm({ ...disputeForm, evidenceUrl: e.target.value })}
+                                            placeholder="https://... (link to photo of defective item)"
+                                            className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 text-white text-xs font-light focus:border-brand-pink outline-none transition-all placeholder:text-neutral-600"
+                                        />
+                                    </div>
+
+                                    {/* Info note */}
+                                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-sm">
+                                        <p className="text-[10px] text-neutral-500 font-light leading-relaxed">
+                                            <span className="text-neutral-300 font-bold">Note:</span> By submitting this ticket, your order status will be updated to "Under Dispute" and will be reviewed by our team. The artisan will also be notified.
+                                        </p>
+                                    </div>
+
+                                    {/* Submit */}
+                                    <button
+                                        onClick={handleRaiseDispute}
+                                        disabled={isSubmittingDispute || !disputeForm.category}
+                                        className="w-full py-4 bg-brand-pink text-white text-[11px] font-black uppercase tracking-widest hover:bg-pink-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isSubmittingDispute ? (
+                                            <><Loader2 size={13} className="animate-spin" /> Submitting Ticket...</>
+                                        ) : (
+                                            <><AlertTriangle size={13} /> Submit Ticket</>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

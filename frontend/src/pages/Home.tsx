@@ -101,15 +101,24 @@ const ScrollDotNav = ({ activeId }: { activeId: string }) => {
 };
 
 interface GalleryItem {
-    num: number;
+    id?: string;
+    num?: number;
+    img?: string;
     title: string;
-    type: string;
-    technique: string;
-    story: string;
+    type?: string;
+    category?: string;
+    technique?: string;
+    subtitle?: string;
+    story?: string;
 }
 
 const GalleryCard = ({ item, index }: { item: GalleryItem, index: number }) => {
     const [isFlipped, setIsFlipped] = useState(false);
+    
+    // Resolve proper type, technique, and story with fallback descriptions
+    const typeLabel = item.type || item.category || 'Handicraft';
+    const techniqueLabel = item.technique || item.subtitle || 'Traditional Method';
+    const storyText = item.story || 'A regional master dedicated to conserving classical heritage and craft techniques, bringing intricate artistry into daily life.';
     
     return (
         <motion.div
@@ -131,9 +140,13 @@ const GalleryCard = ({ item, index }: { item: GalleryItem, index: number }) => {
             >
                 {/* Front Side */}
                 <div className="absolute inset-0 backface-hidden rounded-sm overflow-hidden border border-neutral-100 bg-white shadow-sm">
-                    <img src={`/gallery/img${item.num}.png`} alt={item.title} className="w-full h-full object-cover grayscale-[10%]" />
+                    <img 
+                        src={item.img || `/gallery/img${item.num}.png`} 
+                        alt={item.title} 
+                        className="w-full h-full object-cover grayscale-[10%]" 
+                    />
                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent">
-                        <p className="text-white text-[10px] uppercase tracking-widest font-bold opacity-80 mb-1">{item.type}</p>
+                        <p className="text-white text-[10px] uppercase tracking-widest font-bold opacity-80 mb-1">{typeLabel}</p>
                         <h4 className="text-white font-serif text-xl">{item.title}</h4>
                         <div className="lg:hidden mt-2 text-[8px] text-white/50 uppercase tracking-[0.2em]">Tap to read story</div>
                     </div>
@@ -145,19 +158,19 @@ const GalleryCard = ({ item, index }: { item: GalleryItem, index: number }) => {
                         <div>
                             <span className="text-brand-pink text-[9px] uppercase tracking-widest font-black mb-2 block">Discipline</span>
                             <h4 className="text-white font-serif text-2xl mb-1">{item.title}</h4>
-                            <p className="text-neutral-500 text-xs italic">{item.type}</p>
+                            <p className="text-neutral-500 text-xs italic">{typeLabel}</p>
                         </div>
 
                         <div className="h-[1px] w-12 bg-brand-pink/30"></div>
 
                         <div>
                             <span className="text-neutral-500 text-[9px] uppercase tracking-widest font-bold mb-2 block">Technique</span>
-                            <p className="text-neutral-300 text-sm font-light leading-relaxed">{item.technique}</p>
+                            <p className="text-neutral-300 text-sm font-light leading-relaxed">{techniqueLabel}</p>
                         </div>
 
                         <div>
                             <span className="text-neutral-500 text-[9px] uppercase tracking-widest font-bold mb-2 block">The Story</span>
-                            <p className="text-neutral-400 text-xs font-light leading-relaxed italic">"{item.story}"</p>
+                            <p className="text-neutral-400 text-xs font-light leading-relaxed italic">"{storyText}"</p>
                         </div>
 
                         <Link to="/custom-order" className="pt-4 text-brand-pink text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 group/btn">
@@ -198,7 +211,7 @@ const Home = () => {
             try {
                 const [pRes, aRes, cRes, gRes] = await Promise.all([
                     fetch(`${API_URL}/products?limit=4`),
-                    fetch(`${API_URL}/artisans?limit=3`),
+                    fetch(`${API_URL}/artisans?limit=8`),
                     fetch(`${API_URL}/categories`),
                     fetch(`${API_URL}/gallery`)
                 ]);
@@ -289,7 +302,7 @@ const Home = () => {
             <ScrollDotNav activeId={activeSection} />
 
             {/* Hero Section */}
-            <section id="home-hero" className="relative min-h-screen flex items-center pt-24 pb-12 px-4 sm:px-8 lg:px-16 max-w-[1600px] mx-auto border-b border-neutral-200">
+            <section id="home-hero" className="relative min-h-screen flex items-center pt-32 pb-16 px-4 sm:px-8 lg:px-16 max-w-[1600px] mx-auto border-b border-neutral-200">
                 <div className="grid lg:grid-cols-2 gap-16 lg:gap-12 items-center w-full z-10">
                     <motion.div
                         initial="hidden"
@@ -298,12 +311,11 @@ const Home = () => {
                         className="order-2 lg:order-1 pt-10 lg:pt-0"
                     >
                         <motion.div variants={fadeInUp}>
-                            <Link 
-                                to="/craftmaker/dashboard" 
+                            <span 
                                 className="inline-block px-4 py-1.5 mb-8 text-xs font-bold tracking-widest uppercase border border-brand-pink text-brand-pink rounded-full"
                             >
-                                Bespoke Gifting
-                            </Link>
+                                Gifting Concierge
+                            </span>
                         </motion.div>
                         
                         <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-neutral-950 leading-[0.95] tracking-tighter mb-8">
@@ -321,8 +333,8 @@ const Home = () => {
                                     Shop the Collection <ArrowRight size={16} />
                                 </Link>
                             </MagneticButton>
-                            <Link to="/custom-order" className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 hover:text-neutral-950 transition-all border-b border-transparent hover:border-neutral-950 pb-1">
-                                Bespoke Commissions
+                            <Link to="/marketplace" state={{ openConcierge: true }} className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 hover:text-neutral-950 transition-all border-b border-transparent hover:border-neutral-950 pb-1">
+                                Gifting Concierge
                             </Link>
                         </motion.div>
                     </motion.div>
@@ -632,7 +644,7 @@ const Home = () => {
                         ) : artisans.length > 0 ? artisans.map((maker, idx) => (
                             <Link 
                                 key={idx}
-                                to={`/artisan/${maker.id}`}
+                                to={`/rifa/${maker.id}`}
                                 className="block"
                             >
                                 <motion.div 
@@ -717,8 +729,11 @@ const Home = () => {
                             className="flex overflow-x-auto pb-8 gap-8 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 lg:px-8"
                         >
                             {(galleryItems.length > 0 ? galleryItems : [
-                                { title: "The Resin Bloom", type: "Resin Art", technique: "Hand-poured Epoxy", story: "Capturing the ephemeral beauty of dried spring botanicals in eternal glass-like suspension." },
-                                { title: "Midnight Crochet", type: "Textile Art", technique: "Victorian Lace-work", story: "Intricate micro-patterns inspired by vintage lace, reimagined for modern luxury home decor." }
+                                { num: 1, title: "The Resin Bloom", type: "Resin Art", technique: "Hand-poured Epoxy", story: "Capturing the ephemeral beauty of dried spring botanicals in eternal glass-like suspension." },
+                                { num: 2, title: "Midnight Crochet", type: "Textile Art", technique: "Victorian Lace-work", story: "Intricate micro-patterns inspired by vintage lace, reimagined for modern luxury home decor." },
+                                { num: 3, title: "Earthen Terracotta", type: "Clay Art", technique: "Wheel-thrown & Fired", story: "Bringing the ancient Indus Valley terracotta heritage to contemporary home table pieces." },
+                                { num: 4, title: "Satin Elegance", type: "Satin Flowers", technique: "Singed Edge Petals", story: "Meticulously crafted satin ribbons shaped by flame to mirror organic petals." },
+                                { num: 5, title: "Canvas Whispers", type: "Canvas Art", technique: "Heavy Impasto Acrylic", story: "Textured strokes of raw local mud and acrylic, capturing monsoon over rural landscapes." }
                             ]).map((item, index) => (
                                 <GalleryCard key={index} item={item} index={index} />
                             ))}

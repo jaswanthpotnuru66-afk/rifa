@@ -61,6 +61,12 @@ const Checkout = () => {
     const [selectedAddress, setSelectedAddress] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Promotions & Coupon States
+    const [promoCode, setPromoCode] = useState('');
+    const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+    const [appliedPromo, setAppliedPromo] = useState<any>(null);
+    const [promoError, setPromoError] = useState('');
     
     // Map & Location States
     const [mapCenter, setMapCenter] = useState<[number, number]>([17.3850, 78.4867]); // Default Hyderabad
@@ -204,8 +210,72 @@ const Checkout = () => {
     const subtotalMRP = cartItems.reduce((acc: number, item: any) => acc + ((item.original_price || item.price) * (item.quantity || 1)), 0);
     const subtotalPrice = cartItems.reduce((acc: number, item: any) => acc + (item.price * (item.quantity || 1)), 0);
     const totalSavings = subtotalMRP - subtotalPrice;
-    const totalAmount = subtotalPrice + (cartItems.length > 0 ? 29 : 0);
 
+    // Promotions Discount Calculation
+    let couponDiscount = 0;
+    if (appliedPromo) {
+        if (appliedPromo.artisan_id) {
+            // Scoped to specific artisan's products
+            const artisanItems = cartItems.filter(item => item.artisan_id === appliedPromo.artisan_id);
+            const artisanSubtotal = artisanItems.reduce((acc, item) => acc + (item.price * (item.quantity || 1)), 0);
+            if (appliedPromo.type === 'percentage') {
+                couponDiscount = artisanSubtotal * (appliedPromo.value / 100);
+            } else {
+                couponDiscount = Math.min(appliedPromo.value, artisanSubtotal);
+            }
+        } else {
+            // Global admin coupon
+            if (appliedPromo.type === 'percentage') {
+                couponDiscount = subtotalPrice * (appliedPromo.value / 100);
+            } else {
+                couponDiscount = Math.min(appliedPromo.value, subtotalPrice);
+            }
+        }
+        couponDiscount = Math.round(couponDiscount * 100) / 100;
+    }
+
+    const totalAmount = Math.max(0, subtotalPrice - couponDiscount) + (cartItems.length > 0 ? 29 : 0);
+
+    const handleApplyPromo = async () => {
+        if (!promoCode.trim()) return;
+        setIsValidatingPromo(true);
+        setPromoError('');
+        try {
+            const promotions = await api.getPromotions();
+            const codeUpper = promoCode.trim().toUpperCase();
+            const promo = promotions.find((p: any) => p.code.toUpperCase() === codeUpper && p.is_active);
+            
+            if (!promo) {
+                setPromoError('Invalid or expired promotion code.');
+                setAppliedPromo(null);
+                return;
+            }
+
+            if (promo.artisan_id) {
+                // Scoped to specific artisan
+                const artisanItems = cartItems.filter(item => item.artisan_id === promo.artisan_id);
+                if (artisanItems.length === 0) {
+                    setPromoError(`This promo is only valid for items from that specific artisan.`);
+                    setAppliedPromo(null);
+                    return;
+                }
+            }
+
+            setAppliedPromo(promo);
+            setPromoError('');
+        } catch (err) {
+            console.error('Coupon validation error:', err);
+            setPromoError('Error validating promotion code.');
+        } finally {
+            setIsValidatingPromo(false);
+        }
+    };
+
+    const handleRemovePromo = () => {
+        setAppliedPromo(null);
+        setPromoCode('');
+        setPromoError('');
+    };
 
     const handlePlaceOrder = async () => {
         if (!selectedAddress) {
@@ -228,7 +298,9 @@ const Checkout = () => {
                 paymentMethod,
                 totalAmount,
                 isGifting,
-                giftMessage
+                giftMessage,
+                promoCode: appliedPromo ? appliedPromo.code : null,
+                promoDiscount: couponDiscount > 0 ? couponDiscount : null
             };
 
             const res = await api.createOrder(orderData);
@@ -563,6 +635,48 @@ const Checkout = () => {
                             </div>
 
                             <div className="p-8 space-y-5 bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')] bg-repeat">
+                                {/* ── Premium Promotions Coupon Widget ── */}
+                                <div className="space-y-3 pb-4 border-b border-neutral-100">
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">Collector's Promotion</p>
+                                    {appliedPromo ? (
+                                        <div className="flex items-center justify-between p-3.5 bg-green-50 border border-green-100 rounded-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black tracking-widest text-green-700 bg-green-100 px-2 py-0.5 rounded-full uppercase">{appliedPromo.code}</span>
+                                                    <span className="text-[10px] font-bold text-green-700">Applied</span>
+                                                </div>
+                                                <span className="text-[10px] text-neutral-500 font-medium leading-relaxed italic">{appliedPromo.description}</span>
+                                            </div>
+                                            <button 
+                                                onClick={handleRemovePromo}
+                                                className="text-[10px] font-black uppercase text-red-500 hover:text-red-700 tracking-widest transition-colors shrink-0"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input 
+                                                type="text" 
+                                                placeholder="ENTER PROMO CODE"
+                                                value={promoCode}
+                                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                className="flex-1 px-4 py-3 bg-white border border-neutral-200 text-xs font-bold uppercase tracking-widest outline-none focus:border-brand-pink transition-all placeholder:text-neutral-300"
+                                            />
+                                            <button 
+                                                onClick={handleApplyPromo}
+                                                disabled={isValidatingPromo}
+                                                className="px-6 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-neutral-800 disabled:opacity-50 transition-all flex items-center justify-center shrink-0"
+                                            >
+                                                {isValidatingPromo ? 'Validating...' : 'Apply'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {promoError && (
+                                        <p className="text-[10px] text-red-500 font-medium italic animate-in fade-in duration-200">{promoError}</p>
+                                    )}
+                                </div>
+
                                 <div className="flex justify-between items-center text-xs text-neutral-500 font-medium italic">
                                     <span>Original Valuation</span>
                                     <span className="text-neutral-900 font-bold">₹{subtotalMRP.toLocaleString()}</span>
@@ -571,6 +685,12 @@ const Checkout = () => {
                                     <span>Collector's Benefit</span>
                                     <span>-₹{totalSavings.toLocaleString()}</span>
                                 </div>
+                                {couponDiscount > 0 && (
+                                    <div className="flex justify-between items-center text-xs text-brand-pink font-bold italic animate-in fade-in duration-300">
+                                        <span>Promo Discount ({appliedPromo?.code})</span>
+                                        <span>-₹{couponDiscount.toLocaleString()}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center text-xs text-neutral-500 font-medium italic">
                                     <span>Packaging & Handling</span>
                                     <span className="text-neutral-900 font-bold">₹29</span>

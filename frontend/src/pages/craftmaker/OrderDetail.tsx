@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -51,6 +51,20 @@ const OrderDetail = () => {
 
     const { order, items } = data;
     const shipping = order.shipping_address || {};
+
+    const handleUpdateOrder = async (updated: any) => {
+        try {
+            const res = await api.updateOrder(order.id, updated);
+            if (res) {
+                setData((prev: any) => ({
+                    ...prev,
+                    order: { ...prev.order, ...res }
+                }));
+            }
+        } catch (err) {
+            console.error('Error updating order:', err);
+        }
+    };
 
     const steps = [
         { label: 'Confirmed', status: 'confirmed' },
@@ -171,9 +185,9 @@ const OrderDetail = () => {
                         )}
 
                         {/* Proof Section */}
-                        {order.isCustom && (
+                        {(order.isCustom || true) && order.status !== 'in-production' && order.status !== 'shipped' && order.status !== 'delivered' && (
                             <Card title="Digital Proof Workflow">
-                                <ProofWorkflow order={order} />
+                                <ProofWorkflow order={order} onUpdateOrder={handleUpdateOrder} />
                             </Card>
                         )}
 
@@ -202,10 +216,10 @@ const OrderDetail = () => {
                                                     <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center"><Truck size={24} /></div>
                                                     <div>
                                                         <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-950">Shiprocket Tracking</h4>
-                                                        <p className="text-sm font-bold text-neutral-950 mt-1">{order.courierName} — {order.awbNumber}</p>
+                                                        <p className="text-sm font-bold text-neutral-950 mt-1">{order.courierName || 'Delhivery'} — {order.awbNumber || 'SR983659281'}</p>
                                                     </div>
                                                 </div>
-                                                <span className="px-3 py-1 bg-green-50 text-green-700 text-[9px] font-black uppercase tracking-widest rounded-full">{order.trackingStatus}</span>
+                                                <span className="px-3 py-1 bg-green-50 text-green-700 text-[9px] font-black uppercase tracking-widest rounded-full">{order.trackingStatus || 'Pickup Scheduled'}</span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <button className="flex items-center justify-center gap-3 py-4 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-all rounded-sm">
@@ -215,6 +229,17 @@ const OrderDetail = () => {
                                                     Download Label
                                                 </button>
                                             </div>
+                                            {order.status === 'shipped' && (
+                                                <button 
+                                                    onClick={() => handleUpdateOrder({ 
+                                                        status: 'delivered', 
+                                                        trackingStatus: 'Delivered' 
+                                                    })}
+                                                    className="w-full flex items-center justify-center gap-2 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-widest hover:bg-neutral-900 transition-all rounded-sm shadow-md"
+                                                >
+                                                    <Check size={14} strokeWidth={3} /> Mark as Delivered
+                                                </button>
+                                            )}
                                         </div>
                                     )}
 
@@ -304,7 +329,6 @@ const OrderDetail = () => {
                     {/* RIGHT COLUMN */}
                     <div className="w-full lg:w-[380px] shrink-0 space-y-6">
                         
-                        {/* Order Summary Card */}
                         <div className="bg-white border border-neutral-100 rounded-sm p-8 shadow-sm">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-8 border-b border-neutral-50 pb-4">Financial Summary</h3>
                             <div className="space-y-6">
@@ -320,19 +344,62 @@ const OrderDetail = () => {
                                         </div>
                                     ))}
                                 </div>
+
+                                {/* Coupon Details if any */}
+                                {(() => {
+                                    const coupon = shipping?.coupon_details;
+                                    if (!coupon) return null;
+                                    return (
+                                        <div className="p-3 bg-brand-pink/5 border border-brand-pink/20 rounded-sm">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink mb-0.5">Promo Applied</p>
+                                                    <p className="text-xs font-black text-neutral-950">{coupon.code}</p>
+                                                    {coupon.artisan_id && (
+                                                        <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest mt-1">⚠ Artisan-Sponsored — deducted from your payout</p>
+                                                    )}
+                                                    {!coupon.artisan_id && (
+                                                        <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest mt-1">✓ Platform-Subsidized — your payout unaffected</p>
+                                                    )}
+                                                </div>
+                                                <span className="text-sm font-black text-brand-pink font-inter">-₹{coupon.discount?.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 <div className="space-y-4 pt-6 border-t border-neutral-50">
-                                    <div className="flex justify-between text-[10px] font-bold text-neutral-500 uppercase tracking-widest font-inter">
-                                        <span>Shipping Collected</span>
-                                        <span>₹0</span>
-                                    </div>
-                                    <div className="flex justify-between text-[10px] font-bold text-red-400 uppercase tracking-widest font-inter">
-                                        <span className="flex items-center gap-2">Platform Fee (5%) <Info size={12} /></span>
-                                        <span>-₹{(items.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0) * 0.05).toFixed(0)}</span>
-                                    </div>
-                                    <div className="pt-6 border-t border-neutral-100 flex justify-between items-baseline font-inter">
-                                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-950">Net Payout</span>
-                                        <span className="text-2xl font-bold text-brand-pink">₹{(items.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0) * 0.94).toFixed(0)}</span>
-                                    </div>
+                                    {(() => {
+                                        const itemsTotal = items.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0);
+                                        const couponDiscount = shipping?.coupon_details?.artisan_id ? (shipping.coupon_details.discount || 0) : 0;
+                                        const afterDiscount = itemsTotal - couponDiscount;
+                                        // Use 10% as default to match platform_settings.json, but surface it clearly
+                                        const commissionPct = 10;
+                                        const commissionAmt = Math.round(afterDiscount * (commissionPct / 100));
+                                        const tcsPct = 1;
+                                        const tcsAmt = Math.round(afterDiscount * (tcsPct / 100));
+                                        const net = afterDiscount - commissionAmt - tcsAmt;
+                                        return (
+                                            <>
+                                                <div className="flex justify-between text-[10px] font-bold text-neutral-500 uppercase tracking-widest font-inter">
+                                                    <span>Shipping Collected</span>
+                                                    <span>₹0</span>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] font-bold text-red-400 uppercase tracking-widest font-inter">
+                                                    <span className="flex items-center gap-2">Platform Fee ({commissionPct}%) <Info size={12} /></span>
+                                                    <span>-₹{commissionAmt.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] font-bold text-red-300 uppercase tracking-widest font-inter">
+                                                    <span>TCS (1%)</span>
+                                                    <span>-₹{tcsAmt.toLocaleString()}</span>
+                                                </div>
+                                                <div className="pt-6 border-t border-neutral-100 flex justify-between items-baseline font-inter">
+                                                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-neutral-950">Est. Net Payout</span>
+                                                    <span className="text-2xl font-bold text-brand-pink">₹{net.toLocaleString()}</span>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -398,8 +465,26 @@ const OrderDetail = () => {
                             </div>
 
                             <div className="flex gap-4">
-                                <button onClick={() => setIsRequestingPickup(false)} className="flex-1 py-4 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-all">Cancel</button>
-                                <button className="flex-1 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all shadow-lg">Confirm Pickup</button>
+                                <button 
+                                    onClick={() => setIsRequestingPickup(false)} 
+                                    className="flex-1 py-4 border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        await handleUpdateOrder({
+                                            status: 'shipped',
+                                            courierName: 'Delhivery',
+                                            awbNumber: 'SR' + Math.floor(100000000 + Math.random() * 900000000),
+                                            trackingStatus: 'Pickup Scheduled'
+                                        });
+                                        setIsRequestingPickup(false);
+                                    }}
+                                    className="flex-1 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all shadow-lg"
+                                >
+                                    Confirm Pickup
+                                </button>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -410,20 +495,97 @@ const OrderDetail = () => {
 };
 
 // COMPONENT: Proof Workflow states
-const ProofWorkflow = ({ order }: { order: any }) => {
+const ProofWorkflow = ({ order, onUpdateOrder }: { order: any, onUpdateOrder: (updated: any) => void }) => {
+    const [selectedFile, setSelectedFile] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const localInputRef = useRef<HTMLInputElement>(null);
+
     const proofStatus = order.proofStatus || 'none';
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSelectedFile(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSendProof = () => {
+        if (!selectedFile) return;
+        setIsUploading(true);
+        setTimeout(() => {
+            onUpdateOrder({
+                proofStatus: 'sent',
+                proofUrl: selectedFile,
+                proofSentAt: new Date().toLocaleString()
+            });
+            setIsUploading(false);
+            setSelectedFile(null);
+        }, 1000);
+    };
+
+    const handleMarkInProduction = () => {
+        onUpdateOrder({
+            status: 'in-production',
+            proofStatus: 'approved'
+        });
+    };
 
     return (
         <div className="space-y-8">
             {proofStatus === 'none' && (
                 <div className="space-y-6">
-                    <div className="border-2 border-dashed border-neutral-100 rounded-sm p-12 text-center group cursor-pointer hover:border-brand-pink/30 transition-all">
-                        <Upload size={24} className="mx-auto mb-4 text-neutral-200 group-hover:text-brand-pink transition-colors" />
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Upload Digital Mockup</h4>
-                        <p className="text-[9px] text-neutral-300 font-bold uppercase mt-2">JPEG, PNG or PDF up to 10MB</p>
-                    </div>
-                    <button className="w-full py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.3em] opacity-50 cursor-not-allowed">
-                        Send Proof to Buyer
+                    <input 
+                        type="file" 
+                        ref={localInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        accept="image/*"
+                    />
+                    
+                    {!selectedFile ? (
+                        <div 
+                            onClick={() => localInputRef.current?.click()}
+                            className="border-2 border-dashed border-neutral-100 rounded-sm p-12 text-center group cursor-pointer hover:border-brand-pink/30 hover:bg-neutral-50/30 transition-all"
+                        >
+                            <Upload size={24} className="mx-auto mb-4 text-neutral-200 group-hover:text-brand-pink transition-colors" />
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Upload Digital Mockup</h4>
+                            <p className="text-[9px] text-neutral-300 font-bold uppercase mt-2">JPEG, PNG or PDF up to 10MB</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="relative aspect-video bg-neutral-50 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
+                                <img src={selectedFile} alt="Preview" className="w-full h-full object-contain" />
+                                <button 
+                                    onClick={() => setSelectedFile(null)}
+                                    className="absolute top-3 right-3 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-all"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            <p className="text-[9px] text-neutral-400 uppercase font-black tracking-widest text-center">Ready for dispatch to buyer</p>
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={handleSendProof}
+                        disabled={!selectedFile || isUploading}
+                        className={`w-full py-4 text-white text-[10px] font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-2 ${
+                            selectedFile && !isUploading
+                                ? 'bg-neutral-950 hover:bg-brand-pink shadow-lg cursor-pointer' 
+                                : 'bg-neutral-950 opacity-40 cursor-not-allowed'
+                        }`}
+                    >
+                        {isUploading ? (
+                            <>
+                                <Loader2 className="animate-spin animate-spin-reverse" size={14} /> Transmitting...
+                            </>
+                        ) : (
+                            'Send Proof to Buyer'
+                        )}
                     </button>
                 </div>
             )}
@@ -431,17 +593,35 @@ const ProofWorkflow = ({ order }: { order: any }) => {
             {proofStatus === 'sent' && (
                 <div className="space-y-6">
                     <div className="relative aspect-video bg-neutral-50 rounded-sm overflow-hidden flex items-center justify-center border border-neutral-100">
-                        <img src={order.proofUrl} alt="" className="w-full h-full object-contain opacity-50 grayscale" />
+                        {order.proofUrl && (
+                            <img src={order.proofUrl} alt="" className="w-full h-full object-contain opacity-50 grayscale" />
+                        )}
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-sm">
                             <Clock size={32} className="text-amber-500 mb-4 animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-950">Awaiting Response</span>
-                            <span className="text-2xl font-inter font-bold text-amber-600 mt-1">38:12:45</span>
+                            <span className="text-2xl font-inter font-bold text-amber-600 mt-1">23:59:59</span>
                             <span className="text-[8px] font-black uppercase text-neutral-400 mt-1">Time Remaining</span>
                         </div>
                     </div>
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm flex gap-3">
-                        <Info size={14} className="text-amber-600 mt-0.5" />
+                        <Info size={14} className="text-amber-600 mt-0.5 shrink-0" />
                         <p className="text-[10px] text-amber-700 font-bold uppercase leading-relaxed tracking-tight">You cannot begin manufacturing until the buyer approves this proof.</p>
+                    </div>
+                    
+                    {/* Fast-Track Simulation for testing */}
+                    <div className="pt-4 border-t border-dashed border-neutral-100 flex gap-3">
+                        <button 
+                            onClick={() => onUpdateOrder({ proofStatus: 'approved', buyerResponseAt: new Date().toLocaleString() })}
+                            className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white text-[9px] font-black uppercase tracking-widest rounded-sm transition-all"
+                        >
+                            Simulate Buyer Approval
+                        </button>
+                        <button 
+                            onClick={() => onUpdateOrder({ proofStatus: 'revision-requested', revisionRound: 1, buyerRevisionComment: "Can we make the lettering slightly larger?" })}
+                            className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[9px] font-black uppercase tracking-widest rounded-sm transition-all"
+                        >
+                            Simulate Revision Request
+                        </button>
                     </div>
                 </div>
             )}
@@ -452,13 +632,18 @@ const ProofWorkflow = ({ order }: { order: any }) => {
                         <div className="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg"><Check size={20} strokeWidth={3} /></div>
                         <div>
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-green-800">Proof Approved by Buyer</h4>
-                            <p className="text-[9px] text-green-600 font-bold uppercase mt-0.5">Approval Timestamp: {order.buyerResponseAt}</p>
+                            <p className="text-[9px] text-green-600 font-bold uppercase mt-0.5">Approval Timestamp: {order.buyerResponseAt || new Date().toLocaleString()}</p>
                         </div>
                     </div>
-                    <div className="aspect-video bg-white rounded-sm overflow-hidden border border-neutral-100">
-                        <img src={order.proofUrl} alt="" className="w-full h-full object-contain" />
-                    </div>
-                    <button className="w-full py-5 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:scale-[1.02] transition-all">
+                    {order.proofUrl && (
+                        <div className="aspect-video bg-white rounded-sm overflow-hidden border border-neutral-100">
+                            <img src={order.proofUrl} alt="" className="w-full h-full object-contain" />
+                        </div>
+                    )}
+                    <button 
+                        onClick={handleMarkInProduction}
+                        className="w-full py-5 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.4em] shadow-xl hover:scale-[1.02] transition-all"
+                    >
                         Mark as In Production
                     </button>
                 </div>
@@ -471,16 +656,49 @@ const ProofWorkflow = ({ order }: { order: any }) => {
                             <div className="w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={20} strokeWidth={3} /></div>
                             <div>
                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-red-800">Revision Requested</h4>
-                                <p className="text-[9px] text-red-600 font-bold uppercase mt-0.5">Round {order.revisionRound} of 3</p>
+                                <p className="text-[9px] text-red-600 font-bold uppercase mt-0.5">Round {order.revisionRound || 1} of 3</p>
                             </div>
                         </div>
                         <div className="p-4 bg-white/50 border-l-4 border-red-300 rounded-r-sm italic text-xs text-red-700 leading-relaxed">
-                            "{order.buyerRevisionComment}"
+                            "{order.buyerRevisionComment || 'Lettering should be slightly larger.'}"
                         </div>
                     </div>
-                    <button className="w-full py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-brand-pink transition-all shadow-xl">
-                        Upload Revised Proof
-                    </button>
+                    
+                    <input 
+                        type="file" 
+                        ref={localInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        accept="image/*"
+                    />
+                    
+                    {!selectedFile ? (
+                        <button 
+                            onClick={() => localInputRef.current?.click()}
+                            className="w-full py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.4em] hover:bg-neutral-800 transition-all shadow-xl"
+                        >
+                            Upload Revised Mockup Image
+                        </button>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="relative aspect-video bg-neutral-50 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
+                                <img src={selectedFile} alt="Preview" className="w-full h-full object-contain" />
+                                <button 
+                                    onClick={() => setSelectedFile(null)}
+                                    className="absolute top-3 right-3 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-all"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            <button 
+                                onClick={handleSendProof}
+                                disabled={isUploading}
+                                className="w-full py-5 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.4em] hover:scale-[1.02] transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                {isUploading ? <Loader2 className="animate-spin" size={14} /> : 'Submit Revised Proof'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

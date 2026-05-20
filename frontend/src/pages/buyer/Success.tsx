@@ -10,6 +10,17 @@ const Success = () => {
     const location = useLocation();
     const [orderId] = useState(() => location.state?.orderId || `RIFA-${Math.floor(100000 + Math.random() * 900000)}`);
 
+    // Calculate a dynamic delivery window: 10–14 days from today
+    const deliveryRange = (() => {
+        const today = new Date();
+        const from = new Date(today);
+        from.setDate(today.getDate() + 10);
+        const to = new Date(today);
+        to.setDate(today.getDate() + 14);
+        const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+        return `${from.toLocaleDateString('en-IN', opts)} – ${to.toLocaleDateString('en-IN', { ...opts, year: 'numeric' })}`;
+    })();
+
     return (
         <div className="min-h-screen bg-[#FAF7F2] pt-32 pb-20 selection:bg-brand-pink/20 overflow-hidden relative">
             {/* Background Accents */}
@@ -67,7 +78,7 @@ const Success = () => {
                                 </div>
                                 <div>
                                     <p className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-1">Estimated Delivery</p>
-                                    <p className="text-lg font-serif font-bold text-neutral-950">12 - 14 May, 2024</p>
+                                    <p className="text-lg font-serif font-bold text-neutral-950">{deliveryRange}</p>
                                 </div>
                             </div>
                             <div className="space-y-6">

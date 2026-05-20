@@ -1,25 +1,56 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
-    Flag, X, ExternalLink, Tag
+    Flag, X, ExternalLink, Tag, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
-import { mockFlaggedListings } from '../../../lib/adminOps.mock';
+import { api } from '../../../lib/api';
 
 const AdminFlaggedListings = () => {
     const [activeTab, setActiveTab] = useState<'all' | 'open' | 'reviewed' | 'delisted'>('all');
     const [reasonFilter, setReasonFilter] = useState('All reasons');
-    const [selectedListing, setSelectedListing] = useState<typeof mockFlaggedListings[0] | null>(null);
+    const [listings, setListings] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedListing, setSelectedListing] = useState<any | null>(null);
+    const [actioning, setActioning] = useState(false);
 
-    const counts = {
-        all: mockFlaggedListings.length,
-        open: mockFlaggedListings.filter(l => l.status === 'open').length,
-        reviewed: mockFlaggedListings.filter(l => l.status === 'reviewed').length,
-        delisted: mockFlaggedListings.filter(l => l.status === 'delisted').length
+    const fetchListings = async () => {
+        try {
+            const raw = await api.getAdminFlaggedListings();
+            if (raw) {
+                const mapped = raw.map((item: any) => ({
+                    id: item.id,
+                    listingId: item.product_id,
+                    productName: item.products?.name || 'Unknown Product',
+                    makerShopName: item.artisans?.name || 'Unknown Maker',
+                    makerId: item.artisan_id || '',
+                    flagReason: item.reason || 'misleading',
+                    flaggedBy: item.flagged_by || 'system',
+                    flaggedAt: item.created_at || new Date().toISOString(),
+                    status: item.status || 'open'
+                }));
+                setListings(mapped);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
+    useEffect(() => {
+        fetchListings();
+    }, []);
+
+    const counts = useMemo(() => ({
+        all: listings.length,
+        open: listings.filter(l => l.status === 'open').length,
+        reviewed: listings.filter(l => l.status === 'reviewed').length,
+        delisted: listings.filter(l => l.status === 'delisted').length
+    }), [listings]);
+
     const filteredListings = useMemo(() => {
-        let result = [...mockFlaggedListings];
+        let result = [...listings];
         if (activeTab !== 'all') {
             result = result.filter(l => l.status === activeTab);
         }
@@ -27,7 +58,35 @@ const AdminFlaggedListings = () => {
             result = result.filter(l => l.flagReason === reasonFilter.toLowerCase().replace(/ /g, '-'));
         }
         return result;
-    }, [activeTab, reasonFilter]);
+    }, [listings, activeTab, reasonFilter]);
+
+    const handleResolve = async (action: 'no-action' | 'delist') => {
+        if (!selectedListing) return;
+        setActioning(true);
+        try {
+            const res = await api.resolveFlaggedListing(selectedListing.id, action);
+            if (res) {
+                await fetchListings();
+                setSelectedListing(null);
+            } else {
+                alert('Resolution failed');
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setActioning(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <AdminOpsLayout>
+                <div className="flex items-center justify-center min-h-[65vh]">
+                    <Loader2 size={36} className="animate-spin text-brand-pink" />
+                </div>
+            </AdminOpsLayout>
+        );
+    }
 
     return (
         <AdminOpsLayout>
@@ -232,16 +291,19 @@ const AdminFlaggedListings = () => {
 
                             {/* Panel Footer */}
                             <div className="p-8 bg-white border-t border-neutral-100 shrink-0 space-y-3">
-                                <button className="w-full py-4 border border-neutral-200 text-neutral-950 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-neutral-50 transition-all">
-                                    No Action — Mark Reviewed
+                                <button 
+                                    onClick={() => handleResolve('no-action')}
+                                    disabled={actioning}
+                                    className="w-full py-4 border border-neutral-200 text-neutral-950 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-neutral-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {actioning && <Loader2 size={12} className="animate-spin" />} No Action — Mark Reviewed
                                 </button>
-                                {selectedListing.flagReason === 'no-material-notice' && (
-                                    <button className="w-full py-4 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-amber-50 transition-all">
-                                        Add Material Notice Warning
-                                    </button>
-                                )}
-                                <button className="w-full py-4 border border-red-200 text-red-600 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-red-50 transition-all">
-                                    Delist Product
+                                <button 
+                                    onClick={() => handleResolve('delist')}
+                                    disabled={actioning}
+                                    className="w-full py-4 border border-red-200 text-red-600 text-[10px] font-black uppercase tracking-[0.4em] hover:bg-red-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {actioning && <Loader2 size={12} className="animate-spin" />} Delist Product
                                 </button>
                             </div>
                         </div>

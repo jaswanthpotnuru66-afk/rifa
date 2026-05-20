@@ -1,26 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
     Eye, MousePointer2, TrendingUp, IndianRupee, Users, 
-    Star, ArrowUpRight
+    Star, ArrowUpRight, Loader2
 } from 'lucide-react';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
-import { mockAnalyticsData } from '../../lib/craftmaker';
+import { api } from '../../lib/api';
 
 const DATE_RANGES = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days', 'Custom'];
-const CHART_COLORS = ['#D4547A', '#4A8C6F', '#E8A020', '#C4603A'];
+const CHART_COLORS = ['#D4547A', '#4A8C6F', '#E8A020', '#C4603A', '#8F5DA5'];
 
 const Analytics = () => {
     const [activeRange, setActiveRange] = useState('Last 30 Days');
-    const { kpis, dailyRevenue, categoryBreakdown, topProducts, reviewDistribution } = mockAnalyticsData;
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    const maxRevenue = Math.max(...dailyRevenue.map(d => d.amount), 1);
-    const totalReviews = Object.values(reviewDistribution).reduce((a, b) => a + b, 0);
-    const totalCategoryOrders = categoryBreakdown.reduce((a, c) => a + c.count, 0);
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const res = await api.getArtisanAnalytics();
+                if (res) {
+                    setData(res);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAnalytics();
+    }, []);
+
+    if (loading) {
+        return (
+            <CraftMakerLayout>
+                <div className="flex items-center justify-center min-h-[65vh]">
+                    <Loader2 size={36} className="animate-spin text-brand-pink" />
+                </div>
+            </CraftMakerLayout>
+        );
+    }
+
+    if (!data) {
+        return (
+            <CraftMakerLayout>
+                <div className="text-center p-20 text-neutral-400 font-serif italic">
+                    Could not retrieve analytics data.
+                </div>
+            </CraftMakerLayout>
+        );
+    }
+
+    const { kpis, dailyRevenue, categoryBreakdown, topProducts, reviewDistribution } = data;
+
+    const maxRevenue = Math.max(...dailyRevenue.map((d: any) => d.amount), 1);
+    const totalReviews = Object.values(reviewDistribution).reduce((a: any, b: any) => Number(a) + Number(b), 0) as number;
+    const totalCategoryOrders = categoryBreakdown.reduce((a: number, c: any) => a + c.count, 0);
 
     // Build SVG line path from daily revenue
     const svgWidth = 600, svgHeight = 180;
-    const points = dailyRevenue.map((d, i) => {
+    const points = dailyRevenue.map((d: any, i: number) => {
         const x = (i / (dailyRevenue.length - 1)) * svgWidth;
         const y = svgHeight - (d.amount / maxRevenue) * svgHeight;
         return `${x},${y}`;
@@ -85,7 +124,7 @@ const Analytics = () => {
                     <div className="lg:col-span-6 bg-white border border-neutral-100 rounded-sm p-8 shadow-sm">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400">Daily Revenue</h2>
-                            <span className="text-sm font-bold text-neutral-950 font-inter">₹{dailyRevenue.reduce((a,d)=>a+d.amount,0).toLocaleString()} Total</span>
+                            <span className="text-sm font-bold text-neutral-950 font-inter">₹{dailyRevenue.reduce((a: number, d: any) => a + d.amount, 0).toLocaleString()} Total</span>
                         </div>
                         <div className="overflow-hidden rounded-sm" style={{ height: 200 }}>
                             <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none" className="w-full h-full">
@@ -110,7 +149,7 @@ const Analytics = () => {
                                     strokeLinecap="round"
                                 />
                                 {/* Dots */}
-                                {dailyRevenue.map((d, i) => {
+                                {dailyRevenue.map((d: any, i: number) => {
                                     const x = (i / (dailyRevenue.length - 1)) * svgWidth;
                                     const y = svgHeight - (d.amount / maxRevenue) * svgHeight;
                                     return d.amount > 0 ? <circle key={i} cx={x} cy={y} r="4" fill="#D4547A" stroke="white" strokeWidth="2" /> : null;
@@ -119,7 +158,7 @@ const Analytics = () => {
                         </div>
                         {/* X-axis labels */}
                         <div className="flex justify-between mt-2">
-                            {dailyRevenue.filter((_, i) => i % 3 === 0).map((d, i) => (
+                            {dailyRevenue.filter((_: any, i: number) => i % 3 === 0).map((d: any, i: number) => (
                                 <span key={i} className="text-[9px] font-bold text-neutral-300">{d.date}</span>
                             ))}
                         </div>
@@ -132,9 +171,9 @@ const Analytics = () => {
                             {/* CSS conic-gradient donut */}
                             <div className="relative shrink-0">
                                 <div className="w-28 h-28 rounded-full" style={{
-                                    background: `conic-gradient(${categoryBreakdown.map((cat, i) => {
+                                    background: `conic-gradient(${categoryBreakdown.map((cat: any, i: number) => {
                                         const pct = (cat.count / totalCategoryOrders) * 100;
-                                        return `${CHART_COLORS[i]} ${i === 0 ? 0 : categoryBreakdown.slice(0,i).reduce((a,c) => a + (c.count/totalCategoryOrders)*100, 0)}% ${pct + categoryBreakdown.slice(0,i).reduce((a,c) => a + (c.count/totalCategoryOrders)*100, 0)}%`;
+                                        return `${CHART_COLORS[i]} ${i === 0 ? 0 : categoryBreakdown.slice(0, i).reduce((a: number, c: any) => a + (c.count / totalCategoryOrders) * 100, 0)}% ${pct + categoryBreakdown.slice(0, i).reduce((a: number, c: any) => a + (c.count / totalCategoryOrders) * 100, 0)}%`;
                                     }).join(', ')})`
                                 }} />
                                 <div className="absolute inset-0 m-4 rounded-full bg-white flex items-center justify-center">
@@ -142,7 +181,7 @@ const Analytics = () => {
                                 </div>
                             </div>
                             <div className="space-y-3 flex-1">
-                                {categoryBreakdown.map((cat, i) => (
+                                {categoryBreakdown.map((cat: any, i: number) => (
                                     <div key={cat.category} className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i] }} />
@@ -171,7 +210,7 @@ const Analytics = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-50">
-                                    {topProducts.map((product, i) => (
+                                    {topProducts.map((product: any, i: number) => (
                                         <tr key={product.id} className="hover:bg-neutral-50/80 transition-colors">
                                             <td className="px-5 py-4 text-[10px] font-black text-neutral-300">0{i+1}</td>
                                             <td className="px-5 py-4">

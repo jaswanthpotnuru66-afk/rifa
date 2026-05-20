@@ -1,13 +1,43 @@
 
+import { useState, useEffect } from 'react';
 import { 
     ShieldCheck, Download, 
     FileText, CheckCircle2,
-    Info, RefreshCcw
+    Info, RefreshCcw, Loader2
 } from 'lucide-react';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
-import { mockTCSMonthly } from '../../../lib/adminOps.mock';
+import { api } from '../../../lib/api';
 
 const AdminTaxReports = () => {
+    const [reports, setReports] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchReports = async () => {
+        try {
+            const res = await api.getAdminTaxReports();
+            if (res) {
+                setReports(res);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReports();
+    }, []);
+
+    if (loading) {
+        return (
+            <AdminOpsLayout>
+                <div className="flex items-center justify-center min-h-[65vh]">
+                    <Loader2 size={36} className="animate-spin text-brand-pink" />
+                </div>
+            </AdminOpsLayout>
+        );
+    }
 
     return (
         <AdminOpsLayout>
@@ -70,29 +100,37 @@ const AdminTaxReports = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-50 text-[11px] font-medium text-neutral-600">
-                                {mockTCSMonthly.map(row => (
-                                    <tr key={row.month} className="hover:bg-neutral-50/50 transition-colors">
-                                        <td className="px-6 py-5 font-bold text-neutral-900 font-inter">{row.month} 2025</td>
-                                        <td className="px-6 py-5 text-right font-inter">₹{row.totalGrossSales.toLocaleString()}</td>
-                                        <td className="px-6 py-5 text-right font-black text-brand-pink font-inter">₹{row.totalTCSCollected.toLocaleString()}</td>
-                                        <td className="px-6 py-5 text-center font-inter">{row.makerCount}</td>
-                                        <td className="px-6 py-5 text-right font-inter">₹{row.averagePerMaker.toLocaleString()}</td>
-                                        <td className="px-6 py-5 text-center">
-                                            {row.exportedAt ? (
-                                                <span className="flex items-center justify-center gap-1.5 text-green-600 font-bold uppercase text-[9px]">
-                                                    <CheckCircle2 size={12} /> Exported {new Date(row.exportedAt).toLocaleDateString()}
-                                                </span>
-                                            ) : (
-                                                <span className="text-amber-500 font-bold uppercase text-[9px]">Not Exported</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <button className="p-2 text-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 rounded-sm transition-all group" title="Download Report">
-                                                <Download size={16} className="group-hover:scale-110 transition-transform" />
-                                            </button>
+                                {reports.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-12 text-center text-neutral-400 font-serif italic">
+                                            No tax reports generated for compliance.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    reports.map(row => (
+                                        <tr key={row.month} className="hover:bg-neutral-50/50 transition-colors">
+                                            <td className="px-6 py-5 font-bold text-neutral-900 font-inter">{row.month}</td>
+                                            <td className="px-6 py-5 text-right font-inter">₹{row.totalGrossSales.toLocaleString()}</td>
+                                            <td className="px-6 py-5 text-right font-black text-brand-pink font-inter">₹{row.totalTCSCollected.toLocaleString()}</td>
+                                            <td className="px-6 py-5 text-center font-inter">{row.makerCount}</td>
+                                            <td className="px-6 py-5 text-right font-inter">₹{row.averagePerMaker.toLocaleString()}</td>
+                                            <td className="px-6 py-5 text-center">
+                                                {row.exportedAt ? (
+                                                    <span className="flex items-center justify-center gap-1.5 text-green-600 font-bold uppercase text-[9px]">
+                                                        <CheckCircle2 size={12} /> Exported {new Date(row.exportedAt).toLocaleDateString()}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-amber-500 font-bold uppercase text-[9px]">Not Exported</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <button className="p-2 text-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 rounded-sm transition-all group" title="Download Report">
+                                                    <Download size={16} className="group-hover:scale-110 transition-transform" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

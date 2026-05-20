@@ -52,7 +52,9 @@ const AdminDisputes = () => {
             result = result.filter(d =>
                 d.id.toLowerCase().includes(q) ||
                 (d.order_id || '').toLowerCase().includes(q) ||
-                (d.artisans?.brand_name || '').toLowerCase().includes(q)
+                (d.artisans?.brand_name || '').toLowerCase().includes(q) ||
+                (d.buyer?.full_name || '').toLowerCase().includes(q) ||
+                (d.buyer?.email || '').toLowerCase().includes(q)
             );
         }
 
@@ -145,9 +147,10 @@ const AdminDisputes = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="hidden lg:grid grid-cols-[120px_1fr_1fr_100px_80px_100px_100px_80px] gap-4 px-6 text-[9px] font-black uppercase tracking-widest text-neutral-400">
+                            <div className="hidden lg:grid grid-cols-[120px_1fr_1fr_1fr_100px_80px_100px_100px_80px] gap-4 px-6 text-[9px] font-black uppercase tracking-widest text-neutral-400">
                                 <div>Dispute ID</div>
                                 <div>Order ID</div>
+                                <div>Buyer</div>
                                 <div>Maker</div>
                                 <div>Category</div>
                                 <div>Raised</div>
@@ -162,7 +165,7 @@ const AdminDisputes = () => {
 
                                 return (
                                     <div key={dispute.id} className={`bg-white border rounded-sm transition-all shadow-sm ${isUrgent ? 'bg-red-50/50 border-red-100' : 'border-neutral-100'}`}>
-                                        <div className="flex flex-col lg:grid lg:grid-cols-[120px_1fr_1fr_100px_80px_100px_100px_80px] gap-4 p-4 lg:p-6 items-center">
+                                        <div className="flex flex-col lg:grid lg:grid-cols-[120px_1fr_1fr_1fr_100px_80px_100px_100px_80px] gap-4 p-4 lg:p-6 items-center">
 
                                             <div className="flex justify-between lg:block w-full lg:w-auto">
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">ID</span>
@@ -172,6 +175,14 @@ const AdminDisputes = () => {
                                             <div className="flex justify-between lg:block w-full lg:w-auto">
                                                 <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Order</span>
                                                 <Link to={`/admin/ops/orders/${dispute.order_id}`} className="text-xs font-bold text-brand-pink hover:underline font-inter truncate block">{dispute.order_id}</Link>
+                                            </div>
+
+                                            <div className="flex justify-between lg:block w-full lg:w-auto">
+                                                <span className="lg:hidden text-[9px] font-black uppercase tracking-widest text-neutral-400">Buyer</span>
+                                                <div className="text-right lg:text-left">
+                                                    <p className="text-xs font-bold text-neutral-900">{dispute.buyer?.full_name || '—'}</p>
+                                                    <p className="text-[10px] text-neutral-400 font-light">{dispute.buyer?.email || ''}</p>
+                                                </div>
                                             </div>
 
                                             <div className="flex justify-between lg:block w-full lg:w-auto">

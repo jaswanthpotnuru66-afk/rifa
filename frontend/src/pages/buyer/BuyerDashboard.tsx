@@ -65,7 +65,8 @@ const BuyerDashboard = () => {
                 product_name: product.name,
                 price: product.price,
                 quantity: 1,
-                image_url: product.images[0]
+                image_url: product.images[0],
+                artisan_id: product.artisan_id || product.artisanId
             });
             window.location.href = '/cart';
         } catch (err) {
@@ -76,6 +77,41 @@ const BuyerDashboard = () => {
     return (
         <div className="min-h-screen bg-[#FAF7F2] pt-32 pb-20 selection:bg-brand-pink/20">
             <div className="max-w-7xl mx-auto px-4 md:px-8">
+
+                {/* Digital Proof Notifications */}
+                {orders.some(o => o.proofStatus === 'sent') && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-12 p-6 bg-brand-pink text-white rounded-sm flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden"
+                    >
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center animate-pulse shrink-0">
+                                <Sparkles size={20} className="text-white" />
+                            </div>
+                            <div>
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80 block">🎨 Bespoke Design Alert</span>
+                                <p className="text-sm font-serif font-bold mt-1 text-white leading-relaxed">
+                                    An artisan has submitted a digital mockup proof for your order. Please review it now to approve production.
+                                </p>
+                            </div>
+                        </div>
+                        <Link 
+                            to="/profile" 
+                            onClick={() => {
+                                const target = orders.find(o => o.proofStatus === 'sent');
+                                if (target) {
+                                    sessionStorage.setItem('active_tab', 'orders');
+                                    sessionStorage.setItem('selected_order_id', target.id);
+                                }
+                            }}
+                            className="px-6 py-3 bg-white hover:bg-neutral-50 text-neutral-950 text-[10px] font-black uppercase tracking-widest shrink-0 transition-all shadow-md relative z-10"
+                        >
+                            Review Proof
+                        </Link>
+                        <div className="absolute right-0 top-0 bottom-0 w-32 bg-white/5 skew-x-12 transform translate-x-12 select-none pointer-events-none" />
+                    </motion.div>
+                )}
                 
                 {/* 1. Personalized Header */}
                 <header className="mb-16">
@@ -87,6 +123,14 @@ const BuyerDashboard = () => {
                             </h1>
                         </div>
                         <div className="flex gap-4">
+                            {user?.role === 'artisan' && (
+                                <Link 
+                                    to="/craftmaker/dashboard" 
+                                    className="flex items-center gap-3 px-6 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-widest hover:bg-neutral-950 transition-all shadow-xl"
+                                >
+                                    Maker Dashboard
+                                </Link>
+                            )}
                             <Link to="/profile" className="flex items-center gap-3 px-6 py-4 bg-white border border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-600 hover:border-neutral-950 transition-all">
                                 <Clock size={14} /> Acquisition History
                             </Link>
@@ -147,46 +191,48 @@ const BuyerDashboard = () => {
                     transition={{ delay: 0.2 }}
                     className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 mb-24 h-[400px]"
                 >
-                    {/* Big Feature Tile */}
-                    <div className="col-span-1 md:col-span-2 row-span-2 relative group overflow-hidden border border-neutral-100 p-8 flex flex-col justify-between cursor-pointer">
+                    {/* Big Feature Tile — Wishlist */}
+                    <Link to="/profile" state={{ activeTab: 'wishlist' }} className="col-span-1 md:col-span-2 row-span-2 relative group overflow-hidden border border-neutral-100 p-8 flex flex-col justify-between cursor-pointer">
                         <img src="/artisan_studio.png" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105" alt="" />
                         <div className="absolute inset-0 bg-neutral-950/60 transition-colors group-hover:bg-neutral-950/70" />
                         <div className="relative z-10 flex justify-between items-start">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-pink">Your Curated Collection</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-pink">My Wishlist</span>
                             <Heart size={20} className="text-brand-pink" />
                         </div>
                         <div className="relative z-10">
                             <p className="text-7xl font-serif font-bold text-white mb-2">{wishlist.length.toString().padStart(2, '0')}</p>
-                            <p className="text-sm font-light text-neutral-300">Saved masterworks waiting for acquisition.</p>
+                            <p className="text-sm font-light text-neutral-300">Items you saved for later.</p>
                         </div>
-                    </div>
+                    </Link>
 
-                    {/* Standard Tiles */}
-                    <div className="col-span-1 bg-white p-8 border border-neutral-100 flex flex-col justify-between group cursor-pointer hover:border-brand-pink transition-colors">
+                    {/* Standard Tiles — Cart / Pending Reserves */}
+                    <Link to="/profile" state={{ activeTab: 'bag' }} className="col-span-1 bg-white p-8 border border-neutral-100 flex flex-col justify-between group cursor-pointer hover:border-brand-pink transition-colors">
                         <div className="flex justify-between items-start text-neutral-400 group-hover:text-brand-pink transition-colors">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-950">Pending Reserves</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-950">My Cart</span>
                             <ShoppingBag size={16} />
                         </div>
                         <p className="text-5xl font-serif font-bold text-neutral-950 mt-4">{cart.length.toString().padStart(2, '0')}</p>
-                    </div>
+                    </Link>
 
-                    <div className="col-span-1 bg-neutral-950 p-8 flex flex-col justify-between group cursor-pointer hover:bg-neutral-900 transition-colors">
+                    {/* Active Chronicles — Orders */}
+                    <Link to="/profile" state={{ activeTab: 'orders' }} className="col-span-1 bg-neutral-950 p-8 flex flex-col justify-between group cursor-pointer hover:bg-neutral-900 transition-colors">
                         <div className="flex justify-between items-start text-neutral-500 group-hover:text-white transition-colors">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white">Active Chronicles</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">My Orders</span>
                             <Clock size={16} />
                         </div>
                         <p className="text-5xl font-serif font-bold text-white mt-4">{orders.length.toString().padStart(2, '0')}</p>
-                    </div>
+                    </Link>
 
-                    <div className="col-span-1 md:col-span-2 bg-[#F3ECE0] p-8 border border-neutral-200 flex items-center justify-between group cursor-pointer">
+                    {/* Collector Status — Member Privileges */}
+                    <Link to="/profile" state={{ activeTab: 'billing' }} className="col-span-1 md:col-span-2 bg-[#F3ECE0] p-8 border border-neutral-200 flex items-center justify-between group cursor-pointer">
                         <div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2 block">Collector Status</span>
-                            <p className="text-2xl font-serif font-bold text-neutral-950">{orders.length > 5 ? 'Elite Patron' : 'Initiated Member'}</p>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2 block">My Membership</span>
+                            <p className="text-2xl font-serif font-bold text-neutral-950">{orders.length > 5 ? 'Elite Member' : 'New Member'}</p>
                         </div>
                         <div className="w-16 h-16 rounded-full border border-neutral-950 flex items-center justify-center bg-white transform group-hover:rotate-45 transition-transform duration-500">
                             <Star size={20} className="text-neutral-950" />
                         </div>
-                    </div>
+                    </Link>
                 </motion.div>
 
                 {/* 3. Latest Drops (Product Grid) */}
@@ -292,7 +338,7 @@ const BuyerDashboard = () => {
                         {isLoading ? Array.from({ length: 3 }).map((_, i) => (
                             <div key={i} className="h-64 bg-neutral-900 animate-pulse" />
                         )) : artisans.slice(0, 3).map((artisan) => (
-                            <Link key={artisan.id} to={`/artisan/${artisan.id}`} className="group relative flex flex-col">
+                            <Link key={artisan.id} to={`/rifa/${artisan.id}`} className="group relative flex flex-col">
                                 <div className="aspect-square w-full overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700 relative">
                                     <img src={artisan.img} alt={artisan.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s]" />
                                     <div className="absolute inset-0 bg-neutral-950/20 group-hover:bg-transparent transition-colors" />

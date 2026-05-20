@@ -1,15 +1,75 @@
-import { useState } from 'react';
-import { Megaphone, Ticket, Percent, Plus, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Megaphone, Ticket, Percent, Plus, Tag, Loader } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
+import { api } from '../../lib/api';
 
 const Marketing = () => {
-    const [activeTab, setActiveTab] = useState<'discounts' | 'flash'>('discounts');
+    const [promotions, setPromotions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
+    const [activeTab, setActiveTab] = useState<'discounts' | 'flash'>('discounts');
     
-    // Using empty state by default to show off the beautiful Popsy illustration
-    const mockDiscounts: any[] = [];
-    const mockFlashSales: any[] = [];
+    // Form States
+    const [type, setType] = useState('percentage');
+    const [code, setCode] = useState('');
+    const [value, setValue] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [error, setError] = useState('');
+
+    const fetchPromotions = async () => {
+        setLoading(true);
+        const data = await api.getArtisanPromotions();
+        setPromotions(data || []);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchPromotions();
+    }, []);
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!code || !value) {
+            setError('Please fill in both the Promo Code and Discount Value.');
+            return;
+        }
+        setError('');
+        
+        const payload = {
+            title: `${type === 'percentage' ? 'Percentage' : type === 'fixed' ? 'Fixed Amount' : 'Free Shipping'} Promotion`,
+            description: `${type === 'percentage' ? `${value}% off` : `₹${value} off`} with code ${code.toUpperCase()}`,
+            code: code.toUpperCase().replace(/\s+/g, ''),
+            type,
+            value: Number(value),
+            start_date: startDate ? new Date(startDate).toISOString() : undefined,
+            end_date: endDate ? new Date(endDate).toISOString() : undefined
+        };
+
+        const res = await api.createPromotion(payload);
+        if (res && !res.error) {
+            setPromotions([res, ...promotions]);
+            setIsCreating(false);
+            setCode('');
+            setValue('');
+            setStartDate('');
+            setEndDate('');
+        } else {
+            setError(res?.error || 'Failed to create promotion');
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        const ok = await api.deletePromotion(id);
+        if (ok) {
+            setPromotions(promotions.filter(p => p.id !== id));
+        }
+    };
+
+    // Split between standard discount codes and flash sales
+    const discounts = promotions.filter(p => p.type !== 'flash');
+    const flashSales = promotions.filter(p => p.type === 'flash');
 
     return (
         <CraftMakerLayout title="Marketing & Promotions">
@@ -33,7 +93,8 @@ const Marketing = () => {
                 {/* Create Promotion Widget */}
                 <AnimatePresence>
                     {isCreating && (
-                        <motion.div 
+                        <motion.form 
+                            onSubmit={handleCreate}
                             initial={{ opacity: 0, height: 0, y: -20 }}
                             animate={{ opacity: 1, height: 'auto', y: 0 }}
                             exit={{ opacity: 0, height: 0, y: -20 }}
@@ -43,12 +104,20 @@ const Marketing = () => {
                                 <Megaphone className="text-brand-pink" size={20} />
                                 <h3 className="text-white font-serif text-xl font-bold">New Promotion</h3>
                             </div>
+
+                            {error && (
+                                <p className="mb-4 text-xs font-bold text-red-500 uppercase tracking-widest">{error}</p>
+                            )}
                             
                             <div className="grid md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black uppercase tracking-widest text-white/50">Promotion Type</label>
-                                        <select className="w-full bg-white/5 border border-white/10 text-white p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all appearance-none">
+                                        <select 
+                                            value={type}
+                                            onChange={(e) => setType(e.target.value)}
+                                            className="w-full bg-white/5 border border-white/10 text-white p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all appearance-none"
+                                        >
                                             <option value="percentage">Percentage Discount</option>
                                             <option value="fixed">Fixed Amount Discount</option>
                                             <option value="freeship">Free Shipping</option>
@@ -56,7 +125,13 @@ const Marketing = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black uppercase tracking-widest text-white/50">Discount Code (e.g. DIWALI20)</label>
-                                        <input type="text" placeholder="SUMMER50" className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all" />
+                                        <input 
+                                            type="text" 
+                                            value={code}
+                                            onChange={(e) => setCode(e.target.value)}
+                                            placeholder="SUMMER50" 
+                                            className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all uppercase" 
+                                        />
                                     </div>
                                 </div>
                                 
@@ -65,28 +140,44 @@ const Marketing = () => {
                                         <label className="text-[9px] font-black uppercase tracking-widest text-white/50">Discount Value</label>
                                         <div className="relative">
                                             <Percent size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-                                            <input type="number" placeholder="20" className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 pl-10 text-sm font-bold outline-none focus:border-brand-pink transition-all" />
+                                            <input 
+                                                type="number" 
+                                                value={value}
+                                                onChange={(e) => setValue(e.target.value)}
+                                                placeholder="20" 
+                                                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 pl-10 text-sm font-bold outline-none focus:border-brand-pink transition-all" 
+                                            />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-white/50">Start Date</label>
-                                            <input type="date" className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all css-invert-calendar-icon" />
+                                            <input 
+                                                type="date" 
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all css-invert-calendar-icon" 
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase tracking-widest text-white/50">End Date</label>
-                                            <input type="date" className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all css-invert-calendar-icon" />
+                                            <input 
+                                                type="date" 
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 text-white placeholder-white/20 p-3.5 text-sm font-bold outline-none focus:border-brand-pink transition-all css-invert-calendar-icon" 
+                                            />
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <div className="mt-8 flex justify-end">
-                                <button className="bg-white text-[#0a0a0a] hover:bg-brand-pink hover:text-white px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg">
+                                <button type="submit" className="bg-white text-[#0a0a0a] hover:bg-brand-pink hover:text-white px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg">
                                     Launch Promotion
                                 </button>
                             </div>
-                        </motion.div>
+                        </motion.form>
                     )}
                 </AnimatePresence>
 
@@ -109,10 +200,40 @@ const Marketing = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className="bg-white border border-neutral-100 rounded-sm p-1">
-                    {activeTab === 'discounts' ? (
-                        mockDiscounts.length > 0 ? (
-                            <div>{/* List of active discounts would go here */}</div>
+                <div className="bg-white border border-neutral-100 rounded-sm p-8">
+                    {loading ? (
+                        <div className="py-24 flex flex-col items-center justify-center text-neutral-400">
+                            <Loader className="animate-spin mb-4" size={24} />
+                            <p className="text-xs uppercase tracking-widest font-black">Loading shop promotions...</p>
+                        </div>
+                    ) : activeTab === 'discounts' ? (
+                        discounts.length > 0 ? (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {discounts.map((promo) => (
+                                    <div key={promo.id} className="border border-neutral-100 p-6 rounded-sm space-y-4 shadow-sm hover:shadow-md transition-all bg-white relative group overflow-hidden">
+                                        <div className="absolute top-0 right-0 h-1.5 w-full bg-brand-pink opacity-80" />
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <span className="px-2.5 py-1 bg-brand-pink/10 text-brand-pink text-[8px] font-black uppercase tracking-widest rounded-sm">
+                                                    {promo.type === 'percentage' ? 'Percentage' : promo.type === 'fixed' ? 'Fixed Discount' : 'Free Shipping'}
+                                                </span>
+                                                <h4 className="font-serif text-xl font-bold text-neutral-900 mt-3 tracking-tight">{promo.code}</h4>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleDelete(promo.id)}
+                                                className="text-neutral-400 hover:text-red-500 text-[9px] font-black uppercase tracking-widest transition-all"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                        <p className="text-neutral-500 text-xs font-light">{promo.description || 'Exclusive artisan discount code.'}</p>
+                                        <div className="border-t border-neutral-100 pt-3 flex justify-between items-center text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                                            <span>Value: {promo.type === 'percentage' ? `${promo.value}%` : promo.type === 'fixed' ? `₹${promo.value}` : 'Free'}</span>
+                                            <span>Ends: {new Date(promo.end_date).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div className="py-24 px-6 flex flex-col items-center text-center">
                                 <img src="https://illustrations.popsy.co/amber/key-to-success.svg" alt="Discounts" className="w-48 h-48 opacity-80 mb-6" />
@@ -124,8 +245,33 @@ const Marketing = () => {
                             </div>
                         )
                     ) : (
-                        mockFlashSales.length > 0 ? (
-                            <div>{/* List of active flash sales would go here */}</div>
+                        flashSales.length > 0 ? (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {flashSales.map((promo) => (
+                                    <div key={promo.id} className="border border-neutral-100 p-6 rounded-sm space-y-4 shadow-sm hover:shadow-md transition-all bg-white relative group overflow-hidden">
+                                        <div className="absolute top-0 right-0 h-1.5 w-full bg-brand-pink opacity-80" />
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <span className="px-2.5 py-1 bg-brand-pink/10 text-brand-pink text-[8px] font-black uppercase tracking-widest rounded-sm">
+                                                    Flash Sale
+                                                </span>
+                                                <h4 className="font-serif text-xl font-bold text-neutral-900 mt-3 tracking-tight">{promo.code}</h4>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleDelete(promo.id)}
+                                                className="text-neutral-400 hover:text-red-500 text-[9px] font-black uppercase tracking-widest transition-all"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                        <p className="text-neutral-500 text-xs font-light">{promo.description}</p>
+                                        <div className="border-t border-neutral-100 pt-3 flex justify-between items-center text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                                            <span>Value: {promo.value}%</span>
+                                            <span>Ends: {new Date(promo.end_date).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div className="py-24 px-6 flex flex-col items-center text-center">
                                 <img src="https://illustrations.popsy.co/amber/calendar.svg" alt="Flash Sales" className="w-48 h-48 opacity-80 mb-6" />

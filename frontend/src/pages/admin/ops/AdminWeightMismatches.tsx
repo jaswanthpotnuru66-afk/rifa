@@ -1,22 +1,97 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
-    Info, Search, RotateCcw, Unlock
+    Info, Search, Unlock, Loader2
 } from 'lucide-react';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
-import { mockWeightMismatches } from '../../../lib/adminOps.mock';
+import { api } from '../../../lib/api';
 
 const WeightMismatches = () => {
+    const [mismatches, setMismatches] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'all' | 'strike1' | 'strike2' | 'strike3'>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const stats = {
-        totalOverages: mockWeightMismatches.length,
-        totalDeducted: mockWeightMismatches.reduce((acc, curr) => acc + curr.overageShippingCost, 0),
-        lockedMakers: Array.from(new Set(mockWeightMismatches.filter(w => w.makerStrikeCount >= 3).map(w => w.makerId))).length
+    useEffect(() => {
+        fetchMismatches();
+    }, []);
+
+    const fetchMismatches = async () => {
+        setIsLoading(true);
+        try {
+            const alerts = await api.getAdminShippingAlerts();
+            // Filter only weight mismatches
+            const weightAlerts = alerts.filter((a: any) => a.type === 'weight_mismatch');
+            setMismatches(weightAlerts);
+        } catch (error) {
+            console.error('Failed to fetch weight mismatches:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
+    const handleResolve = async (id: string) => {
+        setIsProcessing(id);
+        try {
+            await api.resolveShippingAlert(id, 'resolved', 'Resolved by admin action');
+            await fetchMismatches();
+        } catch (error) {
+            console.error('Failed to resolve mismatch:', error);
+        } finally {
+            setIsProcessing(null);
+        }
+    };
+
+    const processedMismatches = useMemo(() => {
+        // Group and count strikes per maker
+        const strikeMap: { [key: string]: number } = {};
+        mismatches.forEach(m => {
+            if (m.artisan_id) {
+                strikeMap[m.artisan_id] = (strikeMap[m.artisan_id] || 0) + 1;
+            }
+        });
+
+        return mismatches.map(m => {
+            const strikeCount = strikeMap[m.artisan_id || ''] || 1;
+            const originalWeight = Number(m.original_weight) || 0;
+            const detectedWeight = Number(m.detected_weight) || 0;
+            const overage = Math.max(0, detectedWeight - originalWeight);
+            
+            return {
+                id: m.id,
+                date: m.created_at,
+                orderId: m.order_id,
+                makerId: m.artisan_id,
+                makerShopName: m.artisans?.brand_name || 'Individual',
+                declaredWeight: originalWeight,
+                billedWeight: detectedWeight,
+                overageGrams: overage,
+                overageShippingCost: Math.abs(Number(m.adjustment_amount)) || 0,
+                deducted: m.status === 'resolved',
+                makerStrikeCount: strikeCount,
+                status: m.status
+            };
+        });
+    }, [mismatches]);
+
+    const stats = useMemo(() => {
+        const lockedMakers = new Set<string>();
+
+        processedMismatches.forEach(w => {
+            if (w.makerStrikeCount >= 3 && w.status !== 'resolved') {
+                lockedMakers.add(w.makerId);
+            }
+        });
+
+        return {
+            totalOverages: processedMismatches.length,
+            totalDeducted: processedMismatches.reduce((acc, curr) => acc + (curr.deducted ? curr.overageShippingCost : 0), 0),
+            lockedMakers: lockedMakers.size
+        };
+    }, [processedMismatches]);
+
     const filteredMismatches = useMemo(() => {
-        let result = [...mockWeightMismatches];
+        let result = [...processedMismatches];
         if (activeTab === 'strike1') result = result.filter(w => w.makerStrikeCount === 1);
         if (activeTab === 'strike2') result = result.filter(w => w.makerStrikeCount === 2);
         if (activeTab === 'strike3') result = result.filter(w => w.makerStrikeCount >= 3);
@@ -29,10 +104,12 @@ const WeightMismatches = () => {
             );
         }
         return result;
-    }, [activeTab, searchQuery]);
+    }, [processedMismatches, activeTab, searchQuery]);
 
     const StatCard = ({ label, value, subText }: { label: string; value: string | number; subText: string }) => (
-        <div className="bg-white border border-neutral-100 rounded-sm p-6">
+        <div className="bg-white border border-neutral-100 rounded-sm p-6 relative group overflow-hidden">
+            {/* Editorial Frame Markers */}
+            <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-neutral-100 group-hover:border-brand-pink/30 transition-colors" />
             <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-4">{label}</p>
             <h3 className="text-3xl font-serif font-bold text-neutral-950 tracking-tight">{value}</h3>
             <p className="text-[10px] font-bold text-neutral-400 mt-2">{subText}</p>
@@ -51,9 +128,9 @@ const WeightMismatches = () => {
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard label="Total Incidents" value={stats.totalOverages} subText="All time recorded mismatches" />
-                    <StatCard label="Total Deducted" value={`₹${stats.totalDeducted.toLocaleString()}`} subText="Cost recovered this month" />
-                    <StatCard label="Locked Makers" value={stats.lockedMakers} subText="Require manual weight audit" />
+                    <StatCard label="Total Incidents" value={isLoading ? '...' : stats.totalOverages} subText="All time recorded mismatches" />
+                    <StatCard label="Total Deducted" value={isLoading ? '...' : `₹${stats.totalDeducted.toLocaleString()}`} subText="Cost recovered this month" />
+                    <StatCard label="Locked Makers" value={isLoading ? '...' : stats.lockedMakers} subText="Require manual weight audit" />
                 </div>
 
                 {/* Explainer Box */}
@@ -115,15 +192,20 @@ const WeightMismatches = () => {
                         <div />
                     </div>
 
-                    {filteredMismatches.length > 0 ? filteredMismatches.map(item => {
-                        const isLocked = item.makerStrikeCount >= 3;
+                    {isLoading ? (
+                        <div className="py-24 flex flex-col items-center justify-center bg-white border border-dashed border-neutral-100 rounded-sm">
+                            <Loader2 size={32} className="text-brand-pink animate-spin mb-4" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Loading Weight Mismatches...</p>
+                        </div>
+                    ) : filteredMismatches.length > 0 ? filteredMismatches.map(item => {
+                        const isLocked = item.makerStrikeCount >= 3 && item.status !== 'resolved';
                         return (
                             <div key={item.id} className={`bg-white border rounded-sm transition-all ${isLocked ? 'bg-red-50/30 border-red-100' : 'border-neutral-100'}`}>
                                 <div className="flex flex-col lg:grid lg:grid-cols-[1fr_1.2fr_1.5fr_0.8fr_0.8fr_0.8fr_1fr_120px_100px] gap-4 p-4 lg:p-6 items-center">
                                     
                                     <div className="text-xs font-medium text-neutral-500">{new Date(item.date).toLocaleDateString()}</div>
                                     
-                                    <div className="text-xs font-bold text-neutral-950">{item.orderId}</div>
+                                    <div className="text-xs font-bold text-neutral-950">#{item.orderId.slice(0, 8)}</div>
 
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-neutral-50 border border-neutral-100 flex items-center justify-center text-[10px] font-black text-neutral-400">
@@ -157,7 +239,7 @@ const WeightMismatches = () => {
                                                 {[1, 2, 3].map(s => (
                                                     <div key={s} className={`w-2.5 h-2.5 rounded-full border ${
                                                         item.makerStrikeCount >= s 
-                                                            ? (item.makerStrikeCount >= 3 ? 'bg-red-500 border-red-600' : 'bg-amber-400 border-amber-500') 
+                                                            ? (item.makerStrikeCount >= 3 && item.status !== 'resolved' ? 'bg-red-500 border-red-600' : 'bg-amber-400 border-amber-500') 
                                                             : 'bg-neutral-100 border-neutral-200'
                                                     }`} />
                                                 ))}
@@ -169,21 +251,24 @@ const WeightMismatches = () => {
                                     </div>
 
                                     <div className="flex justify-center">
-                                        {isLocked ? (
-                                            <button className="flex items-center gap-2 px-3 py-1.5 border border-red-200 text-red-600 text-[8px] font-black uppercase tracking-widest hover:bg-red-50 transition-all">
-                                                <Unlock size={12} /> Unlock
+                                        {isProcessing === item.id ? (
+                                            <Loader2 size={16} className="text-brand-pink animate-spin" />
+                                        ) : item.status !== 'resolved' ? (
+                                            <button 
+                                                onClick={() => handleResolve(item.id)}
+                                                className="flex items-center gap-2 px-3 py-1.5 border border-brand-pink text-brand-pink text-[8px] font-black uppercase tracking-widest hover:bg-brand-pink/5 transition-all"
+                                            >
+                                                <Unlock size={12} /> Resolve
                                             </button>
                                         ) : (
-                                            <button className="p-2 hover:bg-neutral-50 rounded-sm text-neutral-300 hover:text-brand-pink transition-colors">
-                                                <RotateCcw size={14} />
-                                            </button>
+                                            <span className="text-[8px] font-black text-green-600 uppercase tracking-widest">Resolved</span>
                                         )}
                                     </div>
                                 </div>
                             </div>
                         );
                     }) : (
-                        <div className="py-24 border-2 border-dashed border-neutral-100 rounded-sm text-center">
+                        <div className="py-24 border-2 border-dashed border-neutral-100 rounded-sm text-center bg-white">
                             <p className="text-[10px] font-black text-neutral-300 uppercase tracking-widest">No mismatch incidents found</p>
                         </div>
                     )}

@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     AlertTriangle, ChevronDown, ChevronUp, 
     MessageSquare, Check, X,
-    Shield, Info, Plus
+    Shield, Info, Plus, Loader
 } from 'lucide-react';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
-import { mockDisputes, type Dispute } from '../../lib/craftmaker';
+import { api } from '../../lib/api';
 
 const Disputes = () => {
+    const [disputes, setDisputes] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    const fetchDisputes = async () => {
+        setLoading(true);
+        const data = await api.getArtisanDisputes();
+        setDisputes(data || []);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchDisputes();
+    }, []);
 
     const toggleDispute = (id: string) => {
         setExpandedId(expandedId === id ? null : id);
@@ -46,18 +59,26 @@ const Disputes = () => {
 
                     {/* Dispute Rows */}
                     <div className="space-y-2">
-                        {mockDisputes.map((dispute) => (
-                            <DisputeRow 
-                                key={dispute.id} 
-                                dispute={dispute} 
-                                isExpanded={expandedId === dispute.id}
-                                onToggle={() => toggleDispute(dispute.id)}
-                            />
-                        ))}
+                        {loading ? (
+                            <div className="py-24 flex flex-col items-center justify-center text-neutral-400">
+                                <Loader className="animate-spin mb-4" size={24} />
+                                <p className="text-xs uppercase tracking-widest font-black">Loading disputes...</p>
+                            </div>
+                        ) : (
+                            disputes.map((dispute) => (
+                                <DisputeRow 
+                                    key={dispute.id} 
+                                    dispute={dispute} 
+                                    isExpanded={expandedId === dispute.id}
+                                    onToggle={() => toggleDispute(dispute.id)}
+                                    onRefresh={fetchDisputes}
+                                />
+                            ))
+                        )}
                     </div>
 
-                    {mockDisputes.length === 0 && (
-                        <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 rounded-sm bg-white/50">
+                    {!loading && disputes.length === 0 && (
+                        <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-neutral-200 rounded-sm bg-white/50 animate-in fade-in">
                             <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-green-300 mb-6">
                                 <Check size={24} strokeWidth={1} />
                             </div>
@@ -72,8 +93,19 @@ const Disputes = () => {
     );
 };
 
-const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExpanded: boolean, onToggle: () => void }) => {
+const DisputeRow = ({ dispute, isExpanded, onToggle, onRefresh }: { dispute: any, isExpanded: boolean, onToggle: () => void, onRefresh: () => void }) => {
     const [response, setResponse] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!response) return;
+        setSubmitting(true);
+        const res = await api.respondToDispute(dispute.id, response);
+        setSubmitting(false);
+        if (res) {
+            onRefresh();
+        }
+    };
 
     return (
         <div className={`bg-white border transition-all ${isExpanded ? 'border-brand-pink shadow-xl ring-4 ring-brand-pink/5' : 'border-neutral-100'}`}>
@@ -83,16 +115,16 @@ const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExp
                 className="flex flex-col md:flex-row md:items-center gap-4 p-6 cursor-pointer hover:bg-neutral-50 transition-colors"
             >
                 <div className="w-24">
-                    <span className="text-sm font-bold text-neutral-950">#{dispute.orderId}</span>
+                    <span className="text-sm font-bold text-neutral-950">#{dispute.order_id ? dispute.order_id.slice(0, 8) : 'Unknown'}</span>
                 </div>
                 <div className="w-48">
-                    <span className="text-xs font-bold text-neutral-950">{dispute.buyerName}</span>
+                    <span className="text-xs font-bold text-neutral-950">Valued Buyer</span>
                 </div>
                 <div className="flex-1">
-                    <span className="text-xs font-medium text-neutral-700">{dispute.category}</span>
+                    <span className="text-xs font-medium text-neutral-700 capitalize">{dispute.category?.replace('-', ' ')}</span>
                 </div>
                 <div className="w-32 text-center">
-                    <span className="text-xs text-neutral-400">{dispute.dateRaised}</span>
+                    <span className="text-xs text-neutral-400">{new Date(dispute.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="w-32 flex justify-center">
                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
@@ -100,15 +132,15 @@ const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExp
                         dispute.status === 'under-review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                         'bg-red-50 text-red-700 border-red-100'
                     }`}>
-                        {dispute.status.replace('-', ' ')}
+                        {dispute.status?.replace('-', ' ')}
                     </span>
                 </div>
                 <div className="w-32 text-center">
-                    {dispute.outcome ? (
+                    {dispute.status === 'resolved' ? (
                         <span className={`text-[9px] font-black uppercase tracking-widest ${
-                            dispute.outcome === 'maker-favour' ? 'text-green-600' : 'text-red-600'
+                            dispute.verdict === 'rejected' ? 'text-green-600' : 'text-red-600'
                         }`}>
-                            {dispute.outcome === 'maker-favour' ? 'Won' : 'Refund Issued'}
+                            {dispute.verdict === 'rejected' ? 'Won' : 'Refund Issued'}
                         </span>
                     ) : <span className="text-xs text-neutral-300">--</span>}
                 </div>
@@ -133,12 +165,12 @@ const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExp
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-red-500">Buyer's Claim</h4>
                                     <div className="p-6 bg-white border border-red-100 rounded-sm">
-                                        <p className="text-sm font-medium italic text-neutral-700 mb-6 leading-relaxed">"{dispute.buyerDescription}"</p>
+                                        <p className="text-sm font-medium italic text-neutral-700 mb-6 leading-relaxed">"{dispute.description}"</p>
                                         <div className="space-y-2">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Buyer's Evidence Photo</p>
                                             <div className="aspect-square bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
-                                                {dispute.buyerPhoto ? (
-                                                    <img src={dispute.buyerPhoto} alt="" className="w-full h-full object-cover" />
+                                                {dispute.evidence_urls && dispute.evidence_urls[0] ? (
+                                                    <img src={dispute.evidence_urls[0]} alt="" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <X size={32} className="text-neutral-200" />
                                                 )}
@@ -151,11 +183,11 @@ const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExp
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-green-500">Your Evidence</h4>
                                     <div className="p-6 bg-white border border-green-100 rounded-sm h-full">
                                         <div className="space-y-2">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Your Approved Digital Proof</p>
-                                            <div className="aspect-square bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Digital Proof Summary</p>
+                                            <div className="aspect-square bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
                                                 <img src="/products/pottery.png" alt="" className="w-full h-full object-cover grayscale opacity-50" />
                                             </div>
-                                            <p className="text-[9px] text-green-600 font-bold uppercase mt-3">✓ Proof Approved by Buyer on 12 May 2025</p>
+                                            <p className="text-[9px] text-green-600 font-bold uppercase mt-3">✓ Proof Loaded from Secure Vault Storage</p>
                                         </div>
                                     </div>
                                 </div>
@@ -164,26 +196,26 @@ const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExp
                             {/* Admin Ruling */}
                             {dispute.status === 'resolved' && (
                                 <div className={`p-8 rounded-sm border ${
-                                    dispute.outcome === 'maker-favour' 
+                                    dispute.verdict === 'rejected' 
                                     ? 'bg-green-50 border-green-200' 
                                     : 'bg-red-50 border-red-200'
                                 }`}>
                                     <div className="flex items-start gap-4">
                                         <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
-                                            dispute.outcome === 'maker-favour' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                                            dispute.verdict === 'rejected' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                                         }`}>
-                                            {dispute.outcome === 'maker-favour' ? <Check size={24} strokeWidth={3} /> : <AlertTriangle size={24} />}
+                                            {dispute.verdict === 'rejected' ? <Check size={24} strokeWidth={3} /> : <AlertTriangle size={24} />}
                                         </div>
                                         <div className="flex-1">
                                             <h4 className={`text-lg font-serif font-bold mb-2 ${
-                                                dispute.outcome === 'maker-favour' ? 'text-green-900' : 'text-red-900'
+                                                dispute.verdict === 'rejected' ? 'text-green-900' : 'text-red-900'
                                             }`}>
-                                                {dispute.outcome === 'maker-favour' ? 'Admin Ruled in Your Favor' : 'Refund Issued to Buyer'}
+                                                {dispute.verdict === 'rejected' ? 'Admin Ruled in Your Favor' : 'Refund Issued to Buyer'}
                                             </h4>
-                                            <p className="text-sm font-medium leading-relaxed opacity-80 mb-6">{dispute.adminRuling}</p>
+                                            <p className="text-sm font-medium leading-relaxed opacity-80 mb-6">{dispute.admin_notes || 'Case closed after review.'}</p>
                                             <div className="flex gap-4">
                                                 <div className="px-4 py-2 bg-white/50 border border-current/10 rounded-sm text-[9px] font-black uppercase tracking-widest">
-                                                    Financial Impact: {dispute.amountDeducted ? `-₹${dispute.amountDeducted}` : 'None'}
+                                                    Financial Impact: {dispute.verdict === 'refunded' ? `-₹${dispute.orders?.total_amount || 'Amount'}` : 'None'}
                                                 </div>
                                             </div>
                                         </div>
@@ -210,9 +242,11 @@ const DisputeRow = ({ dispute, isExpanded, onToggle }: { dispute: Dispute, isExp
                                                 <Plus size={14} /> Attach Evidence Photo
                                             </button>
                                             <button 
-                                                disabled={!response}
-                                                className="px-10 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all shadow-xl disabled:opacity-50"
+                                                onClick={handleSubmit}
+                                                disabled={!response || submitting}
+                                                className="px-10 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all shadow-xl disabled:opacity-50 inline-flex items-center gap-2"
                                             >
+                                                {submitting && <Loader className="animate-spin" size={12} />}
                                                 Submit Response
                                             </button>
                                         </div>

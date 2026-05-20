@@ -40,18 +40,21 @@ const Cart = () => {
         const newQty = Math.max(1, item.quantity + delta);
         if (newQty === item.quantity) return;
 
+        // Optimistic update
+        setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
+
         try {
-            // Optimistic update
-            setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
-            
-            // Sync with backend (we use addToCart which handles updates if item exists)
-            await api.addToCart({ ...item, quantity: newQty });
+            const res = await api.updateCartItemQuantity(id, newQty);
+            if (!res) {
+                // Revert on failure
+                setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: item.quantity } : i));
+            }
         } catch (err) {
             console.error('Update quantity error:', err);
-            // Revert on error
             setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: item.quantity } : i));
         }
     };
+
 
     const removeItem = async (id: string) => {
         try {
@@ -75,7 +78,12 @@ const Cart = () => {
         setWishlistItems(prev => prev.filter(i => i.id !== item.id));
         if (!cartItems.find(i => i.id === item.id)) {
             try {
-                const newItem = { ...item, quantity: 1, product_id: item.id || item.product_id };
+                const newItem = { 
+                    ...item, 
+                    quantity: 1, 
+                    product_id: item.id || item.product_id,
+                    artisan_id: item.artisan_id || item.artisanId
+                };
                 await api.addToCart(newItem);
                 setCartItems(prev => [...prev, newItem]);
             } catch (err) {
