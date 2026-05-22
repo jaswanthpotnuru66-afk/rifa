@@ -5,7 +5,7 @@ import {
     ShoppingCart, AlertCircle, Flag,
     Truck, IndianRupee, FileBarChart, TrendingUp,
     Settings, Bell, LogOut, Menu, ChevronRight,
-    X, Download, Check
+    X, Download, Check, Gift
 } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -30,6 +30,7 @@ const NAV_ITEMS = [
     { name: 'Platform Revenue', path: '/admin/ops/revenue', icon: TrendingUp, section: 'FINANCIALS' },
 
     { name: 'Settings', path: '/admin/ops/settings', icon: Settings, section: 'PLATFORM' },
+    { name: 'Combos & Offers', path: '/admin/ops/combos', icon: Gift, section: 'PLATFORM' },
 ];
 
 const SECTIONS = ['MAKERS', 'MARKETPLACE', 'SHIPPING', 'FINANCIALS', 'PLATFORM'];

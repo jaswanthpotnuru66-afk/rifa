@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Search, Plus, 
-    Package, 
+    Package, Edit2,
     Trash2, ChevronDown, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -121,14 +121,24 @@ const Listings = () => {
                         <h1 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight">Archives</h1>
                         <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest mt-1">Manage your collection of masterpieces</p>
                     </div>
-                    <MagneticButton>
-                        <Link 
-                            to="/craftmaker/listings/new"
-                            className="inline-flex items-center gap-3 px-8 py-4 bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-opacity-90 transition-all"
-                        >
-                            <Plus size={14} strokeWidth={3} /> Add New Listing
-                        </Link>
-                    </MagneticButton>
+                    <div className="flex items-center gap-3">
+                        <MagneticButton>
+                            <Link 
+                                to="/craftmaker/combos/new"
+                                className="inline-flex items-center gap-2 px-6 py-4 bg-white border-2 border-brand-pink text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] shadow-sm hover:bg-brand-pink hover:text-white transition-all"
+                            >
+                                <Package size={14} strokeWidth={3} /> Create Combo
+                            </Link>
+                        </MagneticButton>
+                        <MagneticButton>
+                            <Link 
+                                to="/craftmaker/listings/new"
+                                className="inline-flex items-center gap-2 px-6 py-4 bg-brand-pink border-2 border-brand-pink text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-brand-pink/90 transition-all"
+                            >
+                                <Plus size={14} strokeWidth={3} /> Add Listing
+                            </Link>
+                        </MagneticButton>
+                    </div>
                 </div>
 
                 {/* Filter Tabs */}
@@ -244,7 +254,7 @@ const Listings = () => {
                                         />
                                         <div className="w-12 h-12 bg-neutral-100 rounded-sm overflow-hidden flex-shrink-0 border border-neutral-100">
                                             {listing.images && listing.images[0] ? (
-                                                <img src={listing.images[0]} alt="" className="w-full h-full object-cover" />
+                                                <img loading="lazy" src={listing.images[0]} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full bg-brand-pink/10 flex items-center justify-center text-brand-pink">
                                                     <Package size={20} />
@@ -297,7 +307,13 @@ const Listings = () => {
                                                 {listing.status === 'pending' ? 'Under Review' : (listing.status || 'active')}
                                             </span>
                                         </div>
-                                        <div className="w-10 text-right flex items-center justify-end">
+                                        <div className="w-16 flex items-center justify-end gap-1">
+                                            <Link 
+                                                to={`/craftmaker/listings/${listing.id}/edit`}
+                                                className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-400 hover:text-brand-pink"
+                                            >
+                                                <Edit2 size={16} />
+                                            </Link>
                                             <button 
                                                 onClick={() => handleDelete(listing.id)}
                                                 className="p-2 hover:bg-red-50 rounded-full transition-colors text-neutral-300 hover:text-red-500"
@@ -311,7 +327,7 @@ const Listings = () => {
                         ) : (
                             /* Empty State */
                             <div className="py-24 px-6 flex flex-col items-center text-center bg-white border border-dashed border-neutral-200 rounded-sm">
-                                <img src="https://illustrations.popsy.co/amber/falling-objects.svg" alt="Empty" className="w-48 h-48 opacity-80 mb-4" />
+                                <img loading="lazy" src="https://illustrations.popsy.co/amber/falling-objects.svg" alt="Empty" className="w-48 h-48 opacity-80 mb-4" />
                                 <h3 className="text-xl font-serif font-bold text-neutral-950 mb-2">No listings found</h3>
                                 <p className="text-neutral-500 text-sm max-w-sm mb-6">Looks like you don't have any listings matching these filters. Add a new listing to start selling!</p>
                                 <button 

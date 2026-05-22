@@ -9,7 +9,7 @@ import { api } from '../../../lib/api';
 const AdminDisputes = () => {
     const [disputes, setDisputes] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'all' | 'open' | 'under-review' | 'resolved'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'open' | 'under-review' | 'resolved'>('open');
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy] = useState('Newest');
 
@@ -229,9 +229,13 @@ const AdminDisputes = () => {
                                                 <div className="lg:flex lg:justify-center">
                                                     <Link 
                                                         to={`/admin/ops/disputes/${dispute.id}`} 
-                                                        className="px-4 py-2 bg-brand-pink text-white text-[9px] font-black uppercase tracking-widest hover:bg-brand-pink-dark transition-all shadow-lg shadow-brand-pink/10"
+                                                        className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                            dispute.status === 'resolved'
+                                                            ? 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 shadow-none'
+                                                            : 'bg-brand-pink text-white hover:bg-brand-pink-dark shadow-lg shadow-brand-pink/10'
+                                                        }`}
                                                     >
-                                                        Resolve
+                                                        {dispute.status === 'resolved' ? 'View' : 'Resolve'}
                                                     </Link>
                                                 </div>
                                             </div>

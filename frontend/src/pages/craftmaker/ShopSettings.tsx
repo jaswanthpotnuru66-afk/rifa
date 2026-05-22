@@ -109,7 +109,7 @@ const ShopSettings = () => {
                                         <div className="relative w-28 h-28 group cursor-pointer" onClick={() => logoInputRef.current?.click()}>
                                             <div className="w-full h-full rounded-full overflow-hidden border-2 border-neutral-100 shadow-lg bg-neutral-50">
                                                 {profile.img ? (
-                                                    <img src={profile.img} alt="" className="w-full h-full object-cover" />
+                                                    <img loading="lazy" src={profile.img} alt="" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-neutral-200 uppercase font-black">{profile.name.substring(0, 2)}</div>
                                                 )}
@@ -124,7 +124,7 @@ const ShopSettings = () => {
                                         <label className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Shop Banner</label>
                                         <div className="relative h-28 group cursor-pointer rounded-sm overflow-hidden border border-neutral-100 shadow-sm bg-neutral-50" onClick={() => bannerInputRef.current?.click()}>
                                             {profile.process_img ? (
-                                                <img src={profile.process_img} alt="" className="w-full h-full object-cover" />
+                                                <img loading="lazy" src={profile.process_img} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-neutral-200 font-serif italic uppercase">No Banner Set</div>
                                             )}

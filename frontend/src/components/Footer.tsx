@@ -13,13 +13,13 @@ const Footer = () => {
                             Customized handmade gifts, woven with emotions and crafted with heart. From your imagination to reality.
                         </p>
                         <div className="flex space-x-4">
-                            <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
+                            <a href="https://www.instagram.com/rifa_crafts_and_gifts?igsh=MWlkYnhrdm1yajIzNQ==" target="_blank" rel="noopener noreferrer" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
                                 <Instagram size={20} />
                             </a>
-                            <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
+                            <a href="https://wa.me/918367337381" target="_blank" rel="noopener noreferrer" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
                                 <MessageCircle size={20} />
                             </a>
-                            <a href="mailto:contact@rifaarts.com" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
+                            <a href="mailto:rifaartscrafts@gmail.com" className="p-2 bg-white rounded-full shadow-sm hover:text-brand-pink transition-colors">
                                 <Mail size={20} />
                             </a>
                         </div>

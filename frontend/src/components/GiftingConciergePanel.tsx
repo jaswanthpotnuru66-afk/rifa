@@ -158,7 +158,7 @@ const GiftingConciergePanel = ({ isOpen, onClose, products }: GiftingConciergePa
                                                 className="flex gap-4 group/item"
                                             >
                                                 <div className="w-20 h-24 bg-neutral-100 overflow-hidden shrink-0">
-                                                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition-all" />
+                                                    <img loading="lazy" src={product.images[0]} alt={product.name} className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition-all" />
                                                 </div>
                                                 <div className="flex flex-col justify-center">
                                                     <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink mb-1">{product.category}</p>

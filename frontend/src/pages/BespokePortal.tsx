@@ -101,7 +101,7 @@ const BespokePortal = () => {
                             </div>
 
                             <div className="relative aspect-square rounded-none overflow-hidden bg-white shadow-2xl border border-neutral-100">
-                                <img 
+                                <img loading="lazy" 
                                     src={selectedImage || product.images[0]} 
                                     alt="Masterpiece Preview" 
                                     className="w-full h-full object-cover"
@@ -130,7 +130,7 @@ const BespokePortal = () => {
                                     onClick={() => setSelectedImage(img)}
                                     className={`w-20 h-20 rounded-none overflow-hidden border transition-all ${selectedImage === img ? 'border-brand-pink shadow-lg scale-105' : 'border-neutral-200 opacity-60 hover:opacity-100'}`}
                                 >
-                                    <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
+                                    <img loading="lazy" src={img} alt="Thumbnail" className="w-full h-full object-cover" />
                                 </button>
                             ))}
                         </div>

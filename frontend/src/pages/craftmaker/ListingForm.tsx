@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, type FieldArrayWithId, type UseFormRegister, type UseFormWatch, type UseFormSetValue } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,30 +35,9 @@ const ListingForm = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const isEditMode = Boolean(id);
-    const existingListing: CraftMakerListing | null = null; // We will implement real fetch for edit mode later if needed
 
-    const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormInputs>({
-        defaultValues: existingListing ? {
-            title: (existingListing as any).title,
-            category: (existingListing as any).category,
-            subCategory: (existingListing as any).subCategory || '',
-            description: (existingListing as any).description,
-            tags: (existingListing as any).tags,
-            stateOfOrigin: (existingListing as any).stateOfOrigin,
-            images: (existingListing as any).images,
-            basePrice: (existingListing as any).basePrice,
-            compareAtPrice: (existingListing as any).compareAtPrice,
-            stock: (existingListing as any).stock,
-            isUnlimited: (existingListing as any).isUnlimited,
-            isCustomisable: (existingListing as any).isCustomisable,
-            processingTime: (existingListing as any).processingTime || 7,
-            specFields: (existingListing as any).specFields || [],
-            packageWeight: (existingListing as any).packageWeight,
-            dimensions: (existingListing as any).dimensions,
-            returnWindow: (existingListing as any).returnWindow,
-            exchangeAccepted: (existingListing as any).exchangeAccepted,
-            status: (existingListing as any).status
-        } : {
+    const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormInputs>({
+        defaultValues: {
             title: '',
             category: 'Pottery',
             subCategory: '',
@@ -79,6 +58,44 @@ const ListingForm = () => {
             status: 'active'
         }
     });
+
+    useEffect(() => {
+        if (isEditMode && id) {
+            setIsLoading(true);
+            api.getArtisanProductById(id).then((data: any) => {
+                if (data) {
+                    reset({
+                        title: data.name || '',
+                        category: data.category || 'Pottery',
+                        subCategory: '',
+                        description: data.description || '',
+                        tags: data.tag ? [data.tag] : [],
+                        stateOfOrigin: data.details?.stateOfOrigin || 'Rajasthan',
+                        images: data.images || [],
+                        basePrice: data.price || 0,
+                        compareAtPrice: data.original_price || undefined,
+                        stock: 1,
+                        isUnlimited: false,
+                        isCustomisable: !!data.is_custom,
+                        processingTime: data.details?.processingTime || 7,
+                        specFields: data.details?.specFields || [],
+                        packageWeight: data.details?.weight || 0,
+                        dimensions: data.details?.dimensions || { l: 0, w: 0, h: 0 },
+                        returnWindow: '7 days',
+                        exchangeAccepted: true,
+                        status: data.status || 'pending'
+                    });
+                    if (data.is_natural !== undefined) {
+                        setIsMaterialNoticeOn(data.is_natural);
+                    }
+                }
+                setIsLoading(false);
+            }).catch((err: any) => {
+                console.error(err);
+                setIsLoading(false);
+            });
+        }
+    }, [id, isEditMode, reset]);
 
     const { fields: specFields, append: appendSpec, remove: removeSpec } = useFieldArray({
         control,
@@ -248,7 +265,7 @@ const ListingForm = () => {
 
 
     return (
-        <CraftMakerLayout title={isEditMode ? `Edit Listing — ${(existingListing as any)?.title}` : 'New Listing'}>
+        <CraftMakerLayout title={isEditMode ? `Edit Listing — ${title || 'Loading...'}` : 'New Listing'}>
             <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -377,7 +394,7 @@ const ListingForm = () => {
                                 <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4">
                                     {images.map((img, idx) => (
                                         <div key={idx} className="relative aspect-square rounded-sm overflow-hidden border border-neutral-100 group">
-                                            <img src={img} alt="" className="w-full h-full object-cover" />
+                                            <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />
                                             {idx === 0 && (
                                                 <div className="absolute top-0 left-0 bg-brand-pink text-white text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5">
                                                     Cover
@@ -669,7 +686,7 @@ const ListingForm = () => {
                                 <div className="group flex flex-col max-w-[320px]">
                                     <div className="relative aspect-[4/5] bg-white overflow-hidden mb-6 border border-neutral-100">
                                         {images && images[0] ? (
-                                            <img src={images[0]} alt="" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                                            <img loading="lazy" src={images[0]} alt="" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                                         ) : (
                                             <div className="w-full h-full bg-neutral-50 flex items-center justify-center text-neutral-200"><ImageIcon size={48} strokeWidth={1} /></div>
                                         )}
@@ -756,7 +773,7 @@ const ListingForm = () => {
                             <div className="max-w-7xl mx-auto">
                                 <div className="flex flex-col lg:flex-row gap-20">
                                     <div className="flex-1 aspect-square bg-white border border-neutral-100 flex items-center justify-center">
-                                        {images[0] ? <img src={images[0]} alt="" className="w-full h-full object-cover" /> : <ImageIcon size={64} className="text-neutral-100" />}
+                                        {images[0] ? <img loading="lazy" src={images[0]} alt="" className="w-full h-full object-cover" /> : <ImageIcon size={64} className="text-neutral-100" />}
                                     </div>
                                     <div className="flex-1 space-y-10">
                                         <div>

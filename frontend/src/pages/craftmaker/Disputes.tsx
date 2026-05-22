@@ -118,7 +118,7 @@ const DisputeRow = ({ dispute, isExpanded, onToggle, onRefresh }: { dispute: any
                     <span className="text-sm font-bold text-neutral-950">#{dispute.order_id ? dispute.order_id.slice(0, 8) : 'Unknown'}</span>
                 </div>
                 <div className="w-48">
-                    <span className="text-xs font-bold text-neutral-950">Valued Buyer</span>
+                    <span className="text-xs font-bold text-neutral-950 truncate block">{dispute.orders?.shipping_address?.full_name || 'Buyer'}</span>
                 </div>
                 <div className="flex-1">
                     <span className="text-xs font-medium text-neutral-700 capitalize">{dispute.category?.replace('-', ' ')}</span>
@@ -170,7 +170,7 @@ const DisputeRow = ({ dispute, isExpanded, onToggle, onRefresh }: { dispute: any
                                             <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Buyer's Evidence Photo</p>
                                             <div className="aspect-square bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
                                                 {dispute.evidence_urls && dispute.evidence_urls[0] ? (
-                                                    <img src={dispute.evidence_urls[0]} alt="" className="w-full h-full object-cover" />
+                                                    <img loading="lazy" src={dispute.evidence_urls[0]} alt="" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <X size={32} className="text-neutral-200" />
                                                 )}
@@ -185,9 +185,17 @@ const DisputeRow = ({ dispute, isExpanded, onToggle, onRefresh }: { dispute: any
                                         <div className="space-y-2">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400">Digital Proof Summary</p>
                                             <div className="aspect-square bg-neutral-100 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
-                                                <img src="/products/pottery.png" alt="" className="w-full h-full object-cover grayscale opacity-50" />
+                                                {dispute.artisan_evidence_urls && dispute.artisan_evidence_urls.length > 0 ? (
+                                                    <img loading="lazy" src={dispute.artisan_evidence_urls[0]} alt="" className="w-full h-full object-cover" />
+                                                ) : dispute.orders?.proof_url ? (
+                                                    <img loading="lazy" src={dispute.orders.proof_url} alt="" className="w-full h-full object-cover grayscale opacity-50" />
+                                                ) : (
+                                                    <div className="text-[10px] text-neutral-400 font-bold uppercase text-center p-4">No Digital Proof Attached</div>
+                                                )}
                                             </div>
-                                            <p className="text-[9px] text-green-600 font-bold uppercase mt-3">✓ Proof Loaded from Secure Vault Storage</p>
+                                            { (dispute.artisan_evidence_urls?.length > 0 || dispute.orders?.proof_url) && (
+                                                <p className="text-[9px] text-green-600 font-bold uppercase mt-3">✓ Proof Loaded from Secure Vault Storage</p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -223,38 +231,49 @@ const DisputeRow = ({ dispute, isExpanded, onToggle, onRefresh }: { dispute: any
                                 </div>
                             )}
 
-                            {/* Maker Response Form */}
+                            {/* Maker Response Form or Read Only */}
                             {(dispute.status === 'open' || dispute.status === 'under-review') && (
                                 <div className="space-y-6 pt-6 border-t border-neutral-200">
                                     <div className="flex items-center gap-3 text-neutral-400">
                                         <MessageSquare size={16} />
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest">Submit Your Response to Admin</h4>
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest">
+                                            {dispute.artisan_response ? 'Your Response' : 'Submit Your Response to Admin'}
+                                        </h4>
                                     </div>
-                                    <div className="space-y-4">
-                                        <textarea 
-                                            value={response}
-                                            onChange={(e) => setResponse(e.target.value)}
-                                            className="w-full bg-white border border-neutral-100 p-6 outline-none focus:border-brand-pink text-sm font-medium transition-all min-h-[120px] resize-none rounded-sm shadow-inner"
-                                            placeholder="Provide context and evidence to defend this dispute..."
-                                        />
-                                        <div className="flex items-center justify-between">
-                                            <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors">
-                                                <Plus size={14} /> Attach Evidence Photo
-                                            </button>
-                                            <button 
-                                                onClick={handleSubmit}
-                                                disabled={!response || submitting}
-                                                className="px-10 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all shadow-xl disabled:opacity-50 inline-flex items-center gap-2"
-                                            >
-                                                {submitting && <Loader className="animate-spin" size={12} />}
-                                                Submit Response
-                                            </button>
+                                    
+                                    {dispute.artisan_response ? (
+                                        <div className="p-6 bg-white border border-brand-pink/20 rounded-sm">
+                                            <p className="text-sm font-medium italic text-neutral-700 leading-relaxed">"{dispute.artisan_response}"</p>
                                         </div>
-                                    </div>
-                                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-sm flex gap-4">
-                                        <Info className="text-amber-600 shrink-0" size={16} />
-                                        <p className="text-[9px] text-amber-700 font-bold uppercase leading-relaxed tracking-tight">Admin rulings are final. Providing high-resolution proof photos significantly increases success rate.</p>
-                                    </div>
+                                    ) : (
+                                        <>
+                                            <div className="space-y-4">
+                                                <textarea 
+                                                    value={response}
+                                                    onChange={(e) => setResponse(e.target.value)}
+                                                    className="w-full bg-white border border-neutral-100 p-6 outline-none focus:border-brand-pink text-sm font-medium transition-all min-h-[120px] resize-none rounded-sm shadow-inner"
+                                                    placeholder="Provide context and evidence to defend this dispute..."
+                                                />
+                                                <div className="flex items-center justify-between">
+                                                    <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-950 transition-colors">
+                                                        <Plus size={14} /> Attach Evidence Photo
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleSubmit}
+                                                        disabled={!response || submitting}
+                                                        className="px-10 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all shadow-xl disabled:opacity-50 inline-flex items-center gap-2"
+                                                    >
+                                                        {submitting && <Loader className="animate-spin" size={12} />}
+                                                        Submit Response
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-sm flex gap-4">
+                                                <Info className="text-amber-600 shrink-0" size={16} />
+                                                <p className="text-[9px] text-amber-700 font-bold uppercase leading-relaxed tracking-tight">Admin rulings are final. Providing high-resolution proof photos significantly increases success rate.</p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>

@@ -187,12 +187,12 @@ const ProductDetail = () => {
                                             onMouseEnter={() => setSelectedImage(img)}
                                             className={`aspect-square rounded border-2 transition-all ${selectedImage === img ? 'border-brand-pink shadow-md' : 'border-neutral-100 grayscale hover:grayscale-0'}`}
                                         >
-                                            <img src={img} alt="" className="w-full h-full object-cover" />
+                                            <img loading="lazy" src={img} alt="" className="w-full h-full object-cover" />
                                         </button>
                                     ))}
                                 </div>
                                 <div className="flex-1 aspect-[4/5] bg-neutral-50 overflow-hidden rounded-sm relative group">
-                                    <img src={selectedImage} alt={product.name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-700 hover:scale-110" />
+                                    <img loading="lazy" src={selectedImage} alt={product.name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-700 hover:scale-110" />
                                     <div className="absolute top-4 right-4 flex flex-col gap-2">
                                         <button 
                                             onClick={handleAddToWishlist}
@@ -441,7 +441,7 @@ const ProductDetail = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                         {recommendedProducts.map((p: any) => (
                             <Link key={p.id} to={`/product/${p.id}`} className="group block bg-white border border-neutral-100 p-2 rounded hover:border-neutral-300 transition-all shadow-sm">
-                                <div className="aspect-[3/4] bg-neutral-50 overflow-hidden rounded mb-3"><img src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /></div>
+                                <div className="aspect-[3/4] bg-neutral-50 overflow-hidden rounded mb-3"><img loading="lazy" src={p.images[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /></div>
                                 <h4 className="text-sm font-bold text-neutral-900 truncate mb-1">{p.name}</h4>
                                 <div className="flex items-center gap-2"><span className="text-sm font-bold">₹{p.price.toLocaleString()}</span><span className="text-[10px] text-green-600 font-bold uppercase">Free Delivery</span></div>
                             </Link>

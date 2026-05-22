@@ -172,7 +172,7 @@ const MakerDetail = () => {
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-neutral-50 rounded-sm overflow-hidden flex items-center justify-center border border-neutral-100">
                                                 {product.images?.[0] ? (
-                                                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                                                    <img loading="lazy" src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <Package size={20} className="text-neutral-200" />
                                                 )}

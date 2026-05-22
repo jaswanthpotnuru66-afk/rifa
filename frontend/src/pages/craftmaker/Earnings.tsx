@@ -269,7 +269,7 @@ const Earnings = () => {
                         ))
                     ) : (
                         <div className="py-24 px-6 flex flex-col items-center text-center bg-white border border-dashed border-neutral-200 rounded-sm">
-                            <img src="https://illustrations.popsy.co/amber/taking-notes.svg" alt="Empty Earnings" className="w-48 h-48 opacity-80 mb-4" />
+                            <img loading="lazy" src="https://illustrations.popsy.co/amber/taking-notes.svg" alt="Empty Earnings" className="w-48 h-48 opacity-80 mb-4" />
                             <h3 className="text-xl font-serif font-bold text-neutral-950 mb-2">No earnings yet</h3>
                             <p className="text-neutral-500 text-sm max-w-sm">Once you complete your first delivery, your payouts will be generated and tracked here.</p>
                         </div>

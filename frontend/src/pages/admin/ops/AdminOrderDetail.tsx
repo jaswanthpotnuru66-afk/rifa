@@ -163,7 +163,7 @@ const AdminOrderDetail = () => {
                                     <div key={item.id} className="flex items-center gap-8 group">
                                         <div className="w-24 h-24 bg-neutral-50 border border-neutral-100 rounded-sm flex items-center justify-center overflow-hidden shrink-0">
                                             {item.image_url ? (
-                                                <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                <img loading="lazy" src={item.image_url} alt={item.product_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             ) : (
                                                 <Package size={32} strokeWidth={1} className="text-neutral-200 group-hover:scale-110 transition-transform duration-500" />
                                             )}

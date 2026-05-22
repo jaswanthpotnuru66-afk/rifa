@@ -150,7 +150,7 @@ const WhyRifa = () => {
                         </div>
                         <div className="relative aspect-square">
                             <div className="absolute inset-0 bg-neutral-200 rounded-sm overflow-hidden">
-                                <img
+                                <img loading="lazy"
                                     src={activeTab === 'customer' 
                                         ? "/customer_lifestyle.png" 
                                         : "/artisan_studio.png"

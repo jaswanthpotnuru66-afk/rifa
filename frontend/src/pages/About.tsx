@@ -100,7 +100,7 @@ const About = () => {
                         className="relative"
                     >
                         <div className="aspect-[4/5] overflow-hidden bg-neutral-100 relative group">
-                            <img
+                            <img loading="lazy"
                                 src={aboutBg}
                                 alt="Founder crafting"
                                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"

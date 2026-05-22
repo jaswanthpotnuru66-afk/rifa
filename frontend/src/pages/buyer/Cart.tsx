@@ -142,7 +142,7 @@ const Cart = () => {
                                         
                                         {/* Product Image */}
                                         <div className="w-full md:w-40 aspect-[4/5] bg-neutral-50 rounded-sm overflow-hidden shrink-0 border border-neutral-100 shadow-sm relative">
-                                            <img src={item.image_url || item.images?.[0]} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                            <img loading="lazy" src={item.image_url || item.images?.[0]} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                         </div>
 
                                         {/* Product Details */}
@@ -280,7 +280,7 @@ const Cart = () => {
                                     wishlistItems.map((item) => (
                                         <div key={item.id} className="p-4 flex gap-4 group hover:bg-neutral-50/50 transition-all">
                                             <div className="w-16 h-20 bg-neutral-100 rounded-sm overflow-hidden shrink-0">
-                                                <img src={item.images[0]} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+                                                <img loading="lazy" src={item.images[0]} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h5 className="text-xs font-serif font-bold text-neutral-900 truncate mb-1">{item.name}</h5>
@@ -325,7 +325,7 @@ const Cart = () => {
                             <Link key={p.id} to={`/product/${p.id}`} className="group block">
                                 <div className="aspect-[3/4] bg-white border border-neutral-100 p-2 mb-4 group-hover:shadow-xl transition-all">
                                     <div className="w-full h-full bg-neutral-50 overflow-hidden relative">
-                                        <img src={p.images[0]} alt="" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                                        <img loading="lazy" src={p.images[0]} alt="" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                                     </div>
                                 </div>
                                 <h3 className="text-xs font-serif font-bold text-neutral-950 truncate mb-1">{p.name}</h3>

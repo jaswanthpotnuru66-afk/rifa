@@ -59,7 +59,7 @@ const Creations = () => {
                                     viewport={{ once: true }}
                                     className="group relative overflow-hidden aspect-[3/4] cursor-pointer bg-neutral-200"
                                 >
-                                    <img
+                                    <img loading="lazy"
                                         src={cat.img}
                                         alt={cat.name}
                                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-in-out group-hover:scale-110"
@@ -125,7 +125,7 @@ const Creations = () => {
                                     }`}
                             >
                                 {galleryImages.length > 0 ? (
-                                    <img
+                                    <img loading="lazy"
                                         src={item as string}
                                         alt={`Gallery piece ${idx + 1}`}
                                         className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-75"

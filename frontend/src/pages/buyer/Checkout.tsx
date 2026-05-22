@@ -511,7 +511,7 @@ const Checkout = () => {
                                                     <p className="text-xs text-neutral-400 uppercase font-bold mt-1">Instant Activation</p>
                                                 </div>
                                             </div>
-                                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-4" />
+                                            <img loading="lazy" src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-4" />
                                         </button>
                                         
                                         {/* Vault Credit Card */}
@@ -620,7 +620,7 @@ const Checkout = () => {
                                 {cartItems.map((item: any, idx: number) => (
                                     <div key={item.id || idx} className="flex gap-4 border-b border-neutral-50 pb-4 last:border-0 last:pb-0">
                                         <div className="w-20 h-24 bg-white rounded border border-neutral-200 overflow-hidden shrink-0 shadow-sm">
-                                            <img src={item.image_url || item.images?.[0]} alt="" className="w-full h-full object-cover" />
+                                            <img loading="lazy" src={item.image_url || item.images?.[0]} alt="" className="w-full h-full object-cover" />
                                         </div>
                                         <div className="flex flex-col justify-center space-y-1 flex-1">
                                             <h4 className="text-sm font-serif font-bold text-neutral-950 leading-tight">{item.product_name || item.name}</h4>

@@ -18,31 +18,35 @@ const BuyerDashboard = () => {
     const [orders, setOrders] = useState<any[]>([]);
     const [wishlist, setWishlist] = useState<any[]>([]);
     const [cart, setCart] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [isLoadingArtisans, setIsLoadingArtisans] = useState(true);
+    const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+    const [isLoadingWishlist, setIsLoadingWishlist] = useState(true);
+    const [isLoadingCart, setIsLoadingCart] = useState(true);
     const [isConciergeOpen, setIsConciergeOpen] = useState(false);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [pRes, aRes, oRes, wRes, cRes] = await Promise.all([
-                    fetch(`${API_URL}/products?limit=12`),
-                    fetch(`${API_URL}/artisans?limit=6`),
-                    api.getOrders(),
-                    api.getWishlist(),
-                    api.getCart()
-                ]);
-                if (pRes.ok) setProducts(await pRes.json());
-                if (aRes.ok) setArtisans(await aRes.json());
-                setOrders(Array.isArray(oRes) ? oRes : []);
-                setWishlist(Array.isArray(wRes) ? wRes : []);
-                setCart(Array.isArray(cRes) ? cRes : []);
-            } catch (err) {
-                console.error('Dashboard fetch error:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchDashboardData();
+        fetch(`${API_URL}/products?limit=12`)
+            .then(res => res.json())
+            .then(data => { setProducts(data); setIsLoadingProducts(false); })
+            .catch(err => { console.error(err); setIsLoadingProducts(false); });
+
+        fetch(`${API_URL}/artisans?limit=6`)
+            .then(res => res.json())
+            .then(data => { setArtisans(data); setIsLoadingArtisans(false); })
+            .catch(err => { console.error(err); setIsLoadingArtisans(false); });
+
+        api.getOrders()
+            .then(data => { setOrders(Array.isArray(data) ? data : []); setIsLoadingOrders(false); })
+            .catch(err => { console.error(err); setIsLoadingOrders(false); });
+
+        api.getWishlist()
+            .then(data => { setWishlist(Array.isArray(data) ? data : []); setIsLoadingWishlist(false); })
+            .catch(err => { console.error(err); setIsLoadingWishlist(false); });
+
+        api.getCart()
+            .then(data => { setCart(Array.isArray(data) ? data : []); setIsLoadingCart(false); })
+            .catch(err => { console.error(err); setIsLoadingCart(false); });
     }, []);
 
     const fadeInUp: any = {
@@ -200,7 +204,11 @@ const BuyerDashboard = () => {
                             <Heart size={20} className="text-brand-pink" />
                         </div>
                         <div className="relative z-10">
-                            <p className="text-7xl font-serif font-bold text-white mb-2">{wishlist.length.toString().padStart(2, '0')}</p>
+                            {isLoadingWishlist ? (
+                                <div className="h-20 w-24 bg-white/20 animate-pulse rounded-sm mb-2" />
+                            ) : (
+                                <p className="text-7xl font-serif font-bold text-white mb-2">{wishlist.length.toString().padStart(2, '0')}</p>
+                            )}
                             <p className="text-sm font-light text-neutral-300">Items you saved for later.</p>
                         </div>
                     </Link>
@@ -211,7 +219,11 @@ const BuyerDashboard = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-950">My Cart</span>
                             <ShoppingBag size={16} />
                         </div>
-                        <p className="text-5xl font-serif font-bold text-neutral-950 mt-4">{cart.length.toString().padStart(2, '0')}</p>
+                        {isLoadingCart ? (
+                            <div className="h-12 w-16 bg-neutral-100 animate-pulse rounded-sm mt-4" />
+                        ) : (
+                            <p className="text-5xl font-serif font-bold text-neutral-950 mt-4">{cart.length.toString().padStart(2, '0')}</p>
+                        )}
                     </Link>
 
                     {/* Active Chronicles — Orders */}
@@ -220,14 +232,22 @@ const BuyerDashboard = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-white">My Orders</span>
                             <Clock size={16} />
                         </div>
-                        <p className="text-5xl font-serif font-bold text-white mt-4">{orders.length.toString().padStart(2, '0')}</p>
+                        {isLoadingOrders ? (
+                            <div className="h-12 w-16 bg-neutral-800 animate-pulse rounded-sm mt-4" />
+                        ) : (
+                            <p className="text-5xl font-serif font-bold text-white mt-4">{orders.length.toString().padStart(2, '0')}</p>
+                        )}
                     </Link>
 
                     {/* Collector Status — Member Privileges */}
                     <Link to="/profile" state={{ activeTab: 'billing' }} className="col-span-1 md:col-span-2 bg-[#F3ECE0] p-8 border border-neutral-200 flex items-center justify-between group cursor-pointer">
                         <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2 block">My Membership</span>
-                            <p className="text-2xl font-serif font-bold text-neutral-950">{orders.length > 5 ? 'Elite Member' : 'New Member'}</p>
+                            {isLoadingOrders ? (
+                                <div className="h-8 w-32 bg-neutral-200 animate-pulse rounded-sm" />
+                            ) : (
+                                <p className="text-2xl font-serif font-bold text-neutral-950">{orders.length > 5 ? 'Elite Member' : 'New Member'}</p>
+                            )}
                         </div>
                         <div className="w-16 h-16 rounded-full border border-neutral-950 flex items-center justify-center bg-white transform group-hover:rotate-45 transition-transform duration-500">
                             <Star size={20} className="text-neutral-950" />
@@ -248,7 +268,7 @@ const BuyerDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {isLoading ? Array.from({ length: 4 }).map((_, i) => (
+                        {isLoadingProducts ? Array.from({ length: 4 }).map((_, i) => (
                             <div key={i} className="animate-pulse space-y-4">
                                 <div className="aspect-[4/5] bg-neutral-100 rounded-sm" />
                                 <div className="h-4 bg-neutral-100 w-1/2" />
@@ -263,7 +283,7 @@ const BuyerDashboard = () => {
                             >
                                 <Link to={`/product/${product.id}`} className="block">
                                     <div className="relative aspect-[4/5] bg-white overflow-hidden mb-6 border border-neutral-100">
-                                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                                        <img src={product.images[0]} alt={product.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button 
                                                 onClick={(e) => {
@@ -307,13 +327,26 @@ const BuyerDashboard = () => {
                         </div>
                     </div>
                     <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar snap-x">
-                        {(products.length > 4 ? products.slice(4, 12) : [...products, ...products]).map((product, idx) => (
-                            <Link to={`/product/${product.id}`} key={`${product.id}-${idx}`} className="min-w-[280px] w-[280px] snap-start group">
-                                <div className="aspect-square bg-neutral-100 overflow-hidden mb-4 border border-neutral-100">
-                                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        {(isLoadingProducts ? Array.from({ length: 4 }).map((_, i) => ({ id: `skel-${i}` } as any)) : (products.length > 4 ? products.slice(4, 12) : [...products, ...products])).map((product, idx) => (
+                            <Link to={product.id.startsWith('skel') ? '#' : `/product/${product.id}`} key={`${product.id}-${idx}`} className="min-w-[280px] w-[280px] snap-start group">
+                                <div className="aspect-square bg-neutral-100 overflow-hidden mb-4 border border-neutral-100 relative">
+                                    {isLoadingProducts ? (
+                                        <div className="absolute inset-0 bg-neutral-200 animate-pulse" />
+                                    ) : (
+                                        <img src={product.images[0]} alt={product.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    )}
                                 </div>
-                                <h3 className="font-serif text-base text-neutral-900 truncate group-hover:text-brand-pink transition-colors">{product.name}</h3>
-                                <p className="text-[11px] font-bold text-neutral-500 mt-1">₹{product.price.toLocaleString()}</p>
+                                {isLoadingProducts ? (
+                                    <>
+                                        <div className="h-4 bg-neutral-200 w-3/4 animate-pulse mb-2" />
+                                        <div className="h-3 bg-neutral-200 w-1/4 animate-pulse" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="font-serif text-base text-neutral-900 truncate group-hover:text-brand-pink transition-colors">{product.name}</h3>
+                                        <p className="text-[11px] font-bold text-neutral-500 mt-1">₹{product.price.toLocaleString()}</p>
+                                    </>
+                                )}
                             </Link>
                         ))}
                     </div>
@@ -335,12 +368,12 @@ const BuyerDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        {isLoading ? Array.from({ length: 3 }).map((_, i) => (
+                        {isLoadingArtisans ? Array.from({ length: 3 }).map((_, i) => (
                             <div key={i} className="h-64 bg-neutral-900 animate-pulse" />
                         )) : artisans.slice(0, 3).map((artisan) => (
                             <Link key={artisan.id} to={`/rifa/${artisan.id}`} className="group relative flex flex-col">
                                 <div className="aspect-square w-full overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700 relative">
-                                    <img src={artisan.img} alt={artisan.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s]" />
+                                    <img src={artisan.img} alt={artisan.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s]" />
                                     <div className="absolute inset-0 bg-neutral-950/20 group-hover:bg-transparent transition-colors" />
                                 </div>
                                 <div className="mt-6 border-l border-brand-pink pl-6">

@@ -330,7 +330,7 @@ const CustomOrder = () => {
                                             </label>
                                         ) : (
                                             <div className="flex items-center gap-4 p-4 border border-neutral-200 bg-white">
-                                                {previewUrl && <img src={previewUrl} alt="Preview" className="w-16 h-16 object-cover flex-shrink-0" />}
+                                                {previewUrl && <img loading="lazy" src={previewUrl} alt="Preview" className="w-16 h-16 object-cover flex-shrink-0" />}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-bold text-neutral-950 truncate">{selectedFile.name}</p>
                                                     <p className="text-xs text-neutral-400 mt-0.5">{(selectedFile.size / 1024).toFixed(1)} KB</p>

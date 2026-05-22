@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { 
     Search, Filter, ChevronDown, 
-    Star, ArrowRight, Sparkles, X,
-    Loader2
+    Star, ArrowRight, Sparkles, X
 } from 'lucide-react';
+import { Skeleton } from '../components/Skeleton';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -220,10 +220,40 @@ const Marketplace = () => {
                 </div>
 
             {loading ? (
-                <div className="py-40 flex flex-col items-center justify-center gap-4">
-                    <Loader2 size={40} className="text-brand-pink animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Curating the collection...</p>
-                </div>
+                view === 'products' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
+                        {Array.from({ length: 8 }).map((_, idx) => (
+                            <div key={idx} className="flex flex-col h-full">
+                                <Skeleton className="w-full aspect-[4/5] mb-6" />
+                                <div className="flex justify-between items-start mb-2">
+                                    <Skeleton className="w-16 h-3" />
+                                    <Skeleton className="w-8 h-3" />
+                                </div>
+                                <Skeleton className="w-3/4 h-6 mb-4" />
+                                <Skeleton className="w-24 h-5 mt-auto" />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 border border-neutral-100">
+                                <Skeleton className="w-full aspect-[4/5]" />
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Skeleton className="w-16 h-3" />
+                                        <Skeleton className="w-3/4 h-8" />
+                                    </div>
+                                    <Skeleton className="w-full h-16" />
+                                    <div className="space-y-4">
+                                        <Skeleton className="w-full h-4" />
+                                        <Skeleton className="w-full h-4" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
             ) : error ? (
                 <div className="py-40 text-center">
                     <p className="text-red-500 font-bold uppercase tracking-widest text-[10px] mb-4">Error loading collection</p>
@@ -260,7 +290,7 @@ const Marketplace = () => {
                                         <Link to={`/product/${product.id}`} className="flex flex-col h-full">
                                             {/* Image Container */}
                                             <div className="relative aspect-[4/5] bg-white overflow-hidden mb-6 border border-neutral-100">
-                                                <img 
+                                                <img loading="lazy" 
                                                     src={product.images && product.images.length > 0 ? product.images[0] : ''} 
                                                     alt={product.name}
                                                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
@@ -356,7 +386,7 @@ const Marketplace = () => {
                                     >
                                         <Link to={`/rifa/${artisan.id}`} className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 border border-neutral-100 hover:border-brand-pink/30 transition-all duration-500">
                                             <div className="aspect-[4/5] overflow-hidden">
-                                                <img 
+                                                <img loading="lazy" 
                                                     src={artisan.img} 
                                                     alt={artisan.name}
                                                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-110 group-hover:scale-100"
@@ -606,7 +636,7 @@ const Marketplace = () => {
                                                     className="flex gap-4 group/item"
                                                 >
                                                     <div className="w-20 h-24 bg-neutral-100 overflow-hidden shrink-0">
-                                                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition-all" />
+                                                        <img loading="lazy" src={product.images[0]} alt={product.name} className="w-full h-full object-cover grayscale group-hover/item:grayscale-0 transition-all" />
                                                     </div>
                                                     <div className="flex flex-col justify-center">
                                                         <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink mb-1">{product.category}</p>

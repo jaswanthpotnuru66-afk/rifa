@@ -515,7 +515,7 @@ const ProductCard = ({ product }: { product: any }) => {
             <Link to={`/product/${product.id}`} className="flex flex-col h-full">
                 {/* Image Aspect ratio container */}
                 <div className="relative aspect-[4/5] overflow-hidden bg-[#FAF7F2] border-b border-neutral-50">
-                    <img 
+                    <img loading="lazy" 
                         src={product.images?.[0] || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&q=80&w=600'} 
                         alt={product.name} 
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
@@ -592,12 +592,16 @@ const ArtisanCard = ({ artisan }: { artisan: any }) => {
                 to={`/rifa/${artisan.id}`} 
                 className="grid sm:grid-cols-5 gap-6 items-center bg-white p-6 border border-neutral-100 hover:border-brand-pink/20 hover:shadow-xl transition-all duration-500 rounded-sm"
             >
-                <div className="sm:col-span-2 aspect-[4/5] overflow-hidden bg-[#FAF7F2] rounded-sm">
-                    <img 
-                        src={artisan.img || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400'} 
-                        alt={artisan.name} 
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100"
-                    />
+                <div className="sm:col-span-2 aspect-[4/5] overflow-hidden bg-[#FAF7F2] rounded-sm flex items-center justify-center">
+                    {artisan.img ? (
+                        <img loading="lazy" 
+                            src={artisan.img} 
+                            alt={artisan.name} 
+                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100"
+                        />
+                    ) : (
+                        <span className="text-6xl font-serif text-brand-pink/30 font-bold uppercase">{artisan.name?.charAt(0) || 'A'}</span>
+                    )}
                 </div>
                 <div className="sm:col-span-3 space-y-4">
                     <div className="space-y-1">

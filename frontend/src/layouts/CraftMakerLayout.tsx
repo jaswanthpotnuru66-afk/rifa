@@ -36,11 +36,18 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
     const [notifications, setNotifications] = React.useState<any[]>([]);
     
     // Dynamic Profile Data
-    const [profile, setProfile] = React.useState<any>(null);
-    const [stats, setStats] = React.useState<any>(null);
+    const cachedStats = api.getArtisanStatsCache();
+    const [profile, setProfile] = React.useState<any>(cachedStats?.artisan || null);
+    const [stats, setStats] = React.useState<any>(cachedStats?.stats || null);
     const [disputesCount, setDisputesCount] = React.useState(0);
 
-    const isActive = (path: string) => location.pathname === path;
+    const isActive = (path: string) => {
+        if (location.pathname === path) return true;
+        if (path === '/craftmaker/dashboard') return false;
+        if (path === '/craftmaker/orders' && location.pathname.startsWith('/craftmaker/orders/custom')) return false;
+        if (path === '/craftmaker/listings' && (location.pathname.startsWith('/craftmaker/listings/') || location.pathname.startsWith('/craftmaker/combos/'))) return true;
+        return location.pathname.startsWith(`${path}/`);
+    };
     const currentPageName = NAV_ITEMS.find(i => isActive(i.path))?.name || 'Artisan Portal';
 
     React.useEffect(() => {
@@ -199,44 +206,41 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
                 </div>
 
                 {/* ── Shop identity card ── */}
-                <div className="mx-4 mb-4 rounded-sm overflow-hidden shrink-0" style={{ backgroundColor: '#171717' }}>
-                    <div className="relative h-12 overflow-hidden bg-gradient-to-tr from-[#171717] via-brand-pink/5 to-brand-pink/20" />
-                    <div className="px-4 pt-0 pb-4 -mt-4 relative z-10">
-                        <div className="flex items-end gap-3">
-                            <div className="w-10 h-10 rounded-full border-2 border-[#0a0a0a] bg-neutral-900 overflow-hidden shrink-0 shadow-lg flex items-center justify-center">
+                <div className="mx-4 mb-6 rounded-2xl overflow-hidden shrink-0 border border-white/10 shadow-lg relative group bg-neutral-900">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-brand-pink/5 to-brand-pink/10 opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="relative h-14 overflow-hidden bg-gradient-to-tr from-neutral-950 via-brand-pink/10 to-brand-pink/20" />
+                    <div className="px-5 pt-0 pb-5 -mt-6 relative z-10">
+                        <div className="flex items-end gap-4">
+                            <div className="w-12 h-12 rounded-xl border-2 border-neutral-900 bg-neutral-950 overflow-hidden shrink-0 shadow-xl flex items-center justify-center relative group-hover:-translate-y-1 transition-transform duration-300">
                                 {profile?.img ? (
-                                    <img src={profile.img} alt="" className="w-full h-full object-cover" />
+                                    <img loading="lazy" src={profile.img} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-white text-xs font-black">{profile?.name?.substring(0, 2).toUpperCase() || 'CM'}</span>
+                                    <span className="text-white text-sm font-black">{profile?.name?.substring(0, 2).toUpperCase() || 'CM'}</span>
                                 )}
                             </div>
-                            <div className="min-w-0 pb-1">
-                                <p className="text-white text-xs font-bold truncate leading-tight">{profile?.name || 'My Studio'}</p>
-                                <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="min-w-0 pb-1.5">
+                                <p className="text-white text-sm font-bold truncate leading-tight group-hover:text-brand-pink transition-colors">{profile?.name || 'My Studio'}</p>
+                                <div className="flex items-center gap-2 mt-1">
                                     <span className={`w-1.5 h-1.5 rounded-full animate-pulse shrink-0 ${profile?.status === 'active' || !profile?.status ? 'bg-green-400' : 'bg-amber-400'}`} />
-                                    <span className={`text-[8px] font-black uppercase tracking-[0.15em] ${profile?.status === 'active' || !profile?.status ? 'text-green-400' : 'text-amber-400'}`}>
+                                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${profile?.status === 'active' || !profile?.status ? 'text-green-400' : 'text-amber-400'}`}>
                                         {profile?.status || 'Active'}
-                                    </span>
-                                    <span className="text-white/20 text-[8px] font-black shrink-0">•</span>
-                                    <span className="text-brand-pink text-[8px] font-black uppercase tracking-[0.15em] truncate max-w-[60px]" title={profile?.location || 'India'}>
-                                        {profile?.location || 'India'}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         {/* Mini stats */}
-                        <div className="grid grid-cols-3 gap-1 mt-3">
-                            <div className="text-center">
-                                <p className="text-white text-sm font-black font-serif leading-none">{activeOrders}</p>
-                                <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Orders</p>
+                        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/5">
+                            <div className="text-center group-hover:transform group-hover:scale-105 transition-all">
+                                <p className="text-white text-sm font-black font-inter leading-none">{activeOrders}</p>
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mt-1">Orders</p>
                             </div>
-                            <div className="text-center border-x border-white/5">
-                                <p className={`text-sm font-black font-serif leading-none ${pendingProofs > 0 ? 'text-amber-400' : 'text-white'}`}>{pendingProofs}</p>
-                                <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Proofs</p>
+                            <div className="text-center border-x border-white/5 group-hover:transform group-hover:scale-105 transition-all">
+                                <p className={`text-sm font-black font-inter leading-none ${pendingProofs > 0 ? 'text-brand-pink drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]' : 'text-white'}`}>{pendingProofs}</p>
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mt-1">Proofs</p>
                             </div>
-                            <div className="text-center">
-                                <p className="text-white text-sm font-black font-serif leading-none">{shopRating.toString().split(' ')[0]}</p>
-                                <p className="text-white/30 text-[8px] font-bold uppercase tracking-wide mt-0.5">Rating</p>
+                            <div className="text-center group-hover:transform group-hover:scale-105 transition-all">
+                                <p className="text-white text-sm font-black font-inter leading-none">{shopRating.toString().split(' ')[0]}</p>
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mt-1">Rating</p>
                             </div>
                         </div>
                     </div>
@@ -251,13 +255,16 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
                         const active = isActive(item.path);
                         return (
                             <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-[11px] font-bold tracking-wide transition-all group mb-4 ${
-                                    active ? 'bg-brand-pink text-white' : 'text-white/50 hover:text-white hover:bg-white/5'
+                                className={`flex items-center gap-4 px-4 py-3 rounded-r-full text-xs font-bold tracking-wide transition-all duration-300 group mb-6 relative overflow-hidden ${
+                                    active ? 'text-white' : 'text-white/50 hover:text-white hover:bg-white/5'
                                 }`}
                             >
-                                <item.icon size={15} className={active ? 'text-white' : 'text-white/30 group-hover:text-white/70'} />
-                                {item.name}
-                                {active && <ChevronRight size={11} className="ml-auto text-white/60" />}
+                                {active && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-brand-pink/20 to-transparent border-l-2 border-brand-pink pointer-events-none" />
+                                )}
+                                <item.icon size={16} className={`relative z-10 ${active ? 'text-brand-pink' : 'text-white/30 group-hover:text-white/70'}`} />
+                                <span className="relative z-10">{item.name}</span>
+                                {active && <ChevronRight size={12} className="ml-auto text-brand-pink relative z-10" />}
                             </Link>
                         );
                     })()}
@@ -273,21 +280,23 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
                                         const active = isActive(item.path);
                                         return (
                                             <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}
-                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-[11px] font-bold tracking-wide transition-all group ${
+                                                className={`flex items-center gap-4 px-4 py-2.5 rounded-r-full text-xs font-bold tracking-wide transition-all duration-300 group relative overflow-hidden ${
                                                     active
-                                                        ? 'bg-white/10 text-white'
-                                                        : 'text-white/40 hover:text-white hover:bg-white/5'
+                                                        ? 'text-white'
+                                                        : 'text-white/50 hover:text-white hover:bg-white/5'
                                                 }`}
                                             >
-                                                <item.icon size={14} className={active ? 'text-brand-pink' : 'text-white/25 group-hover:text-white/60'} strokeWidth={active ? 2.5 : 2} />
-                                                <span className="flex-1">{item.name}</span>
+                                                {active && (
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent border-l-2 border-white pointer-events-none" />
+                                                )}
+                                                <item.icon size={16} className={`relative z-10 ${active ? 'text-white' : 'text-white/30 group-hover:text-white/70'}`} strokeWidth={active ? 2.5 : 2} />
+                                                <span className="flex-1 relative z-10">{item.name}</span>
                                                 {/* Badge for disputes */}
                                                 {item.path === '/craftmaker/disputes' && disputesCount > 0 && (
-                                                    <span className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[8px] font-black text-white shrink-0">
+                                                    <span className="w-5 h-5 rounded-full bg-brand-pink shadow-[0_0_10px_rgba(236,72,153,0.5)] flex items-center justify-center text-[9px] font-black text-white shrink-0 relative z-10">
                                                         {disputesCount}
                                                     </span>
                                                 )}
-                                                {active && <div className="w-1 h-1 rounded-full bg-brand-pink shrink-0" />}
                                             </Link>
                                         );
                                     })}

@@ -52,7 +52,7 @@ const WhyCollaborate = () => {
             <section className="relative h-[80vh] flex items-center justify-center overflow-hidden border-b border-neutral-100">
                 <div className="absolute inset-0 z-0">
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#FAF7F2]/90 z-10" />
-                    <img 
+                    <img loading="lazy" 
                         src="https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=2070&auto=format&fit=crop" 
                         alt="Artisan at work" 
                         className="w-full h-full object-cover opacity-40"

@@ -383,7 +383,7 @@ const Auth = () => {
                         {/* Social Buttons */}
                         <div className="grid grid-cols-2 gap-4">
                             <button type="button" className="flex items-center justify-center gap-3 py-4 border border-neutral-100 rounded-sm hover:bg-neutral-50 transition-all group">
-                                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4 grayscale group-hover:grayscale-0" />
+                                <img loading="lazy" src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4 grayscale group-hover:grayscale-0" />
                                 <span className="text-[9px] font-black uppercase tracking-widest">Google</span>
                             </button>
                             <button type="button" className="flex items-center justify-center gap-3 py-4 border border-neutral-100 rounded-sm hover:bg-neutral-50 transition-all group">

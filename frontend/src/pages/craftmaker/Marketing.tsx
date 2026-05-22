@@ -236,7 +236,7 @@ const Marketing = () => {
                             </div>
                         ) : (
                             <div className="py-24 px-6 flex flex-col items-center text-center">
-                                <img src="https://illustrations.popsy.co/amber/key-to-success.svg" alt="Discounts" className="w-48 h-48 opacity-80 mb-6" />
+                                <img loading="lazy" src="https://illustrations.popsy.co/amber/key-to-success.svg" alt="Discounts" className="w-48 h-48 opacity-80 mb-6" />
                                 <h3 className="text-xl font-serif font-bold text-neutral-950 mb-2">No active discount codes</h3>
                                 <p className="text-neutral-500 text-sm max-w-sm mb-8">Create your first promo code to reward loyal customers and drive conversions.</p>
                                 <button onClick={() => setIsCreating(true)} className="px-6 py-3 border border-neutral-200 hover:border-brand-pink text-neutral-600 hover:text-brand-pink text-[10px] font-black uppercase tracking-widest transition-all">
@@ -274,7 +274,7 @@ const Marketing = () => {
                             </div>
                         ) : (
                             <div className="py-24 px-6 flex flex-col items-center text-center">
-                                <img src="https://illustrations.popsy.co/amber/calendar.svg" alt="Flash Sales" className="w-48 h-48 opacity-80 mb-6" />
+                                <img loading="lazy" src="https://illustrations.popsy.co/amber/calendar.svg" alt="Flash Sales" className="w-48 h-48 opacity-80 mb-6" />
                                 <h3 className="text-xl font-serif font-bold text-neutral-950 mb-2">No upcoming flash sales</h3>
                                 <p className="text-neutral-500 text-sm max-w-sm mb-8">Schedule a temporary price drop on specific listings to create urgency.</p>
                                 <button onClick={() => setIsCreating(true)} className="px-6 py-3 border border-neutral-200 hover:border-brand-pink text-neutral-600 hover:text-brand-pink text-[10px] font-black uppercase tracking-widest transition-all">

@@ -235,6 +235,9 @@ const ProductSchema = z.object({
     is_custom: z.boolean().optional(),
     is_ready: z.boolean().optional(),
     is_natural: z.boolean().optional(),
+    is_combo: z.boolean().optional(),
+    combo_items: z.array(z.string()).optional(),
+    artisan_id: z.string().optional(),
     status: z.string().optional()
 });
 
@@ -468,10 +471,13 @@ app.delete('/api/addresses/:id', authenticate, async (req, res) => {
 
 app.get('/api/products', async (req, res) => {
     try {
-        const { limit, category } = req.query;
+        const { limit, category, artisan_id, is_combo } = req.query;
         let query = supabase.from('products').select('*').eq('status', 'active');
         
         if (category) query = query.ilike('category', category);
+        if (artisan_id) query = query.eq('artisan_id', artisan_id);
+        if (is_combo === 'true') query = query.eq('is_combo', true);
+        if (is_combo === 'false') query = query.eq('is_combo', false);
         if (limit) query = query.limit(Number(limit));
         
         const { data, error } = await query.order('created_at', { ascending: false });
@@ -532,6 +538,16 @@ app.get('/api/artisans/:id', async (req, res) => {
 app.get('/api/promotions', async (req, res) => {
     try {
         const { data, error } = await supabase.from('promotions').select('*').eq('is_active', true);
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/combos', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('combos').select('*').order('tier', { ascending: true });
         if (error) throw error;
         res.json(data);
     } catch (error) {
@@ -785,7 +801,7 @@ app.post('/api/orders/:id/review', authenticate, async (req, res) => {
         const userName = user?.full_name || 'Verified Buyer';
 
         // Insert a review for each item in the order
-        const reviewPromises = order.order_items.map((item: any) =>
+        const reviewPromises = order.order_items.map((item) =>
             supabase.from('product_reviews').insert({
                 product_id: item.product_id,
                 user_name: userName,
@@ -1233,12 +1249,51 @@ app.post('/api/artisan/products', authenticate, authorize(['artisan']), validate
         const { data: artisan } = await supabase.from('artisans').select('id').eq('user_id', req.user.id).maybeSingle();
         if (!artisan) return res.status(404).json({ error: 'Artisan not found' });
 
-        const productData = { 
+        let productData = { 
             ...req.body, 
             id: `${slugify(req.body.name)}-${Math.random().toString(36).substr(2, 5)}`,
             artisan_id: artisan.id,
             status: 'pending' // Enforce pending status for new products
         };
+
+        // --- COMBOS LOGIC: Single-Unit Rule ---
+        if (productData.is_combo && productData.combo_items && Array.isArray(productData.combo_items)) {
+            // Fetch child products to enforce Custom Trap and Weight Math
+            const { data: children, error: childError } = await supabase
+                .from('products')
+                .select('id, is_custom, details')
+                .in('id', productData.combo_items)
+                .eq('artisan_id', artisan.id); // Single-origin enforcement
+
+            if (childError) throw childError;
+            if (!children || children.length !== productData.combo_items.length) {
+                return res.status(400).json({ error: 'One or more items in the combo are invalid or do not belong to you.' });
+            }
+
+            // Custom Trap: If ANY child is custom, the combo is custom
+            const hasCustom = children.some(child => child.is_custom === true);
+            if (hasCustom) {
+                productData.is_custom = true;
+                productData.is_customizable = true;
+            }
+
+            // Weight Math: Sum the weights of all children
+            let totalWeight = 0;
+            children.forEach(child => {
+                const weightStr = (child.details || []).find(d => d.startsWith('Weight:'));
+                if (weightStr) {
+                    const wMatch = weightStr.match(/(\d+)/);
+                    if (wMatch) totalWeight += parseInt(wMatch[1], 10);
+                }
+            });
+
+            // Ensure details is an object if not already, to inject the summed weight
+            if (!productData.details || typeof productData.details !== 'object' || Array.isArray(productData.details)) {
+                productData.details = { weight: totalWeight };
+            } else {
+                productData.details.weight = totalWeight;
+            }
+        }
 
         // Schema Compatibility: The database expects 'details' as an array of strings
         if (productData.details && typeof productData.details === 'object' && !Array.isArray(productData.details)) {
@@ -1265,6 +1320,46 @@ app.post('/api/artisan/products', authenticate, authorize(['artisan']), validate
         console.error('Error creating product:', error);
         res.status(400).json({ error: error.message }); 
     }
+});
+
+app.put('/api/artisan/products/:id', authenticate, authorize(['artisan']), async (req, res) => {
+    try {
+        const { data: artisan } = await supabase.from('artisans').select('id').eq('user_id', req.user.id).maybeSingle();
+        if (!artisan) return res.status(404).json({ error: 'Artisan not found' });
+
+        const { name, price, original_price, description, category, images, is_custom, is_customizable, tag, details, is_ready, is_natural } = req.body;
+
+        const updateData = { status: 'pending' }; // Re-submit for admin review on any edit
+        if (name !== undefined) updateData.name = sanitize(name);
+        if (price !== undefined) updateData.price = Number(price);
+        if (original_price !== undefined) updateData.original_price = original_price ? Number(original_price) : null;
+        if (description !== undefined) updateData.description = sanitize(description);
+        if (category !== undefined) updateData.category = category;
+        if (images !== undefined) updateData.images = images;
+        if (is_custom !== undefined) updateData.is_custom = is_custom;
+        if (is_customizable !== undefined) updateData.is_customizable = is_customizable;
+        if (tag !== undefined) updateData.tag = tag;
+        if (is_natural !== undefined) updateData.is_natural = is_natural;
+        if (details !== undefined) {
+            // Convert object details to array format if needed
+            if (typeof details === 'object' && !Array.isArray(details)) {
+                const detailsArray = [];
+                const d = details;
+                if (d.stateOfOrigin) detailsArray.push(`Origin: ${d.stateOfOrigin}`);
+                if (d.processingTime) detailsArray.push(`Processing Time: ${d.processingTime} days`);
+                if (d.weight) detailsArray.push(`Weight: ${d.weight}g`);
+                if (d.dimensions?.l) detailsArray.push(`Dimensions: ${d.dimensions.l}x${d.dimensions.w}x${d.dimensions.h} cm`);
+                updateData.details = detailsArray;
+            } else {
+                updateData.details = details;
+            }
+        }
+
+        const { data, error } = await supabase.from('products').update(updateData).eq('id', req.params.id).eq('artisan_id', artisan.id).select().maybeSingle();
+        if (error) throw error;
+        if (!data) return res.status(404).json({ error: 'Product not found or unauthorized' });
+        res.json(data);
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.delete('/api/artisan/products/:id', authenticate, authorize(['artisan']), async (req, res) => {
@@ -1297,7 +1392,7 @@ app.post('/api/artisan/disputes/:id/respond', authenticate, authorize(['artisan'
         if (!artisan) return res.status(404).json({ error: 'Artisan not found' });
         
         const { response } = req.body;
-        const { data, error } = await supabase.from('disputes').update({ description: response, status: 'under-review' }).eq('id', req.params.id).eq('artisan_id', artisan.id).select().maybeSingle();
+        const { data, error } = await supabase.from('disputes').update({ artisan_response: response, status: 'under-review' }).eq('id', req.params.id).eq('artisan_id', artisan.id).select().maybeSingle();
         if (error) throw error;
         res.json(data);
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -1711,6 +1806,7 @@ app.post('/api/admin/applications/:id/approve', authenticate, authorize(['admin'
             id: artisanId,
             user_id: user?.id || null,
             email: app.email,
+            whatsapp_number: app.whatsapp_number,
             name: app.creator_name,
             location: app.home_region || 'India',
             specialty: app.primary_craft_category || 'Artisan',
@@ -1736,6 +1832,19 @@ app.post('/api/admin/applications/:id/approve', authenticate, authorize(['admin'
 });
 
 // --- PRODUCT GOVERNANCE ROUTES ---
+
+// Admin delete/unpublish product
+app.delete('/api/admin/products/:id', authenticate, authorize(['admin']), async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', req.params.id);
+            
+        if (error) throw error;
+        res.json({ message: 'Product deleted successfully' });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
 
 // Get all pending products for admin review
 app.get('/api/admin/products/pending', authenticate, authorize(['admin']), async (req, res) => {
@@ -2169,6 +2278,31 @@ app.post('/api/admin/disputes/:id/rule', authenticate, authorize(['admin']), asy
     }
 });
 
+// --- ADMIN: Update dispute status (e.g., mark as under-review) ---
+app.patch('/api/admin/disputes/:id/status', authenticate, authorize(['admin']), async (req, res) => {
+    try {
+        const { status, admin_notes } = req.body;
+        const allowedStatuses = ['open', 'under-review'];
+        if (!status || !allowedStatuses.includes(status)) {
+            return res.status(400).json({ error: `Status must be one of: ${allowedStatuses.join(', ')}` });
+        }
+
+        const updateData = { status };
+        if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
+
+        const { data, error } = await supabase
+            .from('disputes')
+            .update(updateData)
+            .eq('id', req.params.id)
+            .select()
+            .maybeSingle();
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/admin/shipping-alerts', authenticate, authorize(['admin']), async (req, res) => {
     try {
         const { data: alerts, error } = await supabase
@@ -2334,7 +2468,79 @@ app.delete('/api/admin/promotions/:id', authenticate, authorize(['admin']), asyn
     try {
         const { error } = await supabase.from('promotions').delete().eq('id', req.params.id);
         if (error) throw error;
-        res.json({ success: true });
+        res.json({ message: 'Promotion deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/admin/combos', authenticate, authorize(['admin']), validate(ProductSchema), async (req, res) => {
+    try {
+        const { artisan_id, is_combo, combo_items, name } = req.body;
+        if (!artisan_id || !is_combo || !combo_items || !Array.isArray(combo_items)) {
+            return res.status(400).json({ error: 'artisan_id, is_combo, and an array of combo_items are required.' });
+        }
+
+        let productData = { 
+            ...req.body, 
+            id: `${slugify(name || 'combo')}-${Math.random().toString(36).substr(2, 5)}`,
+            status: 'active', // Admin creations go live immediately
+            is_ready: true
+        };
+
+        // --- COMBOS LOGIC: Single-Unit Rule ---
+        const { data: children, error: childError } = await supabase
+            .from('products')
+            .select('id, is_custom, details')
+            .in('id', combo_items)
+            .eq('artisan_id', artisan_id); // Single-origin enforcement
+
+        if (childError) throw childError;
+        if (!children || children.length !== combo_items.length) {
+            return res.status(400).json({ error: 'One or more items are invalid or do not belong to the selected Maker.' });
+        }
+
+        const hasCustom = children.some(child => child.is_custom === true);
+        if (hasCustom) {
+            productData.is_custom = true;
+            productData.is_customizable = true;
+        }
+
+        let totalWeight = 0;
+        children.forEach(child => {
+            const weightStr = (child.details || []).find(d => d.startsWith('Weight:'));
+            if (weightStr) {
+                const wMatch = weightStr.match(/(\d+)/);
+                if (wMatch) totalWeight += parseInt(wMatch[1], 10);
+            }
+        });
+
+        if (!productData.details || typeof productData.details !== 'object' || Array.isArray(productData.details)) {
+            productData.details = { weight: totalWeight };
+        } else {
+            productData.details.weight = totalWeight;
+        }
+
+        // Convert object details to string array format expected by DB
+        const detailsArray = [];
+        const d = productData.details;
+        if (d.stateOfOrigin) detailsArray.push(`Origin: ${d.stateOfOrigin}`);
+        if (d.processingTime) detailsArray.push(`Processing Time: ${d.processingTime} days`);
+        if (d.weight) detailsArray.push(`Weight: ${d.weight}g`);
+        if (d.dimensions && d.dimensions.l) {
+            detailsArray.push(`Dimensions: ${d.dimensions.l}x${d.dimensions.w}x${d.dimensions.h} cm`);
+        }
+        if (d.specFields && Array.isArray(d.specFields)) {
+            d.specFields.forEach((f) => {
+                if (f.label) detailsArray.push(`${f.label}: ${f.type || 'Custom'}`);
+            });
+        }
+        productData.details = detailsArray;
+
+        const { data, error } = await supabase.from('products').insert([productData]).select().maybeSingle();
+        if (error) throw error;
+        console.log(`[Admin] Created virtual product combo: ${productData.name}`);
+        res.status(201).json(data);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

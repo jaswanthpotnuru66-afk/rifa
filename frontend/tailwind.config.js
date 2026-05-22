@@ -32,6 +32,7 @@ export default {
           mauve:     '#9E5C7A',   // Deep mauve
           lavender:  '#7C6FCD',   // Indigo-lavender accent
           terracotta:'#C4603A',   // Warm terracotta
+          blush:     '#E295A2',   // Soft rose blush
           // Neutrals
           text:        '#0A0A0A',
           'menu-text': '#1A1A1A',

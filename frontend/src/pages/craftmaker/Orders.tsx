@@ -175,7 +175,7 @@ const Orders = () => {
                                     <div className="flex-1 flex items-center gap-3 min-w-0">
                                         <div className="w-10 h-10 bg-neutral-50 rounded-sm overflow-hidden flex-shrink-0 border border-neutral-100">
                                             {item.image_url ? (
-                                                <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                                                <img loading="lazy" src={item.image_url} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-neutral-200">
                                                     <Package size={16} />
@@ -207,7 +207,7 @@ const Orders = () => {
                             </motion.div>
                         )) : (
                             <div className="py-24 px-6 flex flex-col items-center text-center bg-white border border-dashed border-neutral-200 rounded-sm">
-                                <img src="https://illustrations.popsy.co/amber/falling-objects.svg" alt="Empty" className="w-48 h-48 opacity-80 mb-4" />
+                                <img loading="lazy" src="https://illustrations.popsy.co/amber/falling-objects.svg" alt="Empty" className="w-48 h-48 opacity-80 mb-4" />
                                 <h3 className="text-xl font-serif font-bold text-neutral-950 mb-2">No orders found</h3>
                                 <p className="text-neutral-500 text-sm max-w-sm mb-6">Looks like you don't have any sales yet. Keep creating and listings masterpieces!</p>
                             </div>

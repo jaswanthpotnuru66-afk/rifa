@@ -10,7 +10,7 @@ import { api } from '../../../lib/api';
 const Applications = () => {
     const [applications, setApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'all' | 'new' | 'approved' | 'rejected'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'new' | 'approved' | 'rejected'>('new');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedApp, setSelectedApp] = useState<any | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');

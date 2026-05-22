@@ -130,7 +130,7 @@ const CustomOrders = () => {
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3">
-                                            <img src={order.productThumbnail} alt="" className="w-8 h-8 rounded-sm object-cover border border-neutral-100" />
+                                            <img loading="lazy" src={order.productThumbnail} alt="" className="w-8 h-8 rounded-sm object-cover border border-neutral-100" />
                                             <span className="text-sm font-medium text-neutral-950 truncate">{order.productName}</span>
                                         </div>
                                     </div>

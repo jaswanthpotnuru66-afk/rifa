@@ -8,10 +8,11 @@ import {
     Globe, Clock, Heart, ShoppingBag, PenLine,
     ArrowRight, Package, Search, MessageSquare,
     Sparkles, Truck, AlertTriangle, RefreshCw,
-    ChevronRight, ArrowLeft, Loader2, CheckCircle2, X, Navigation, Download
+    ChevronRight, ArrowLeft, Loader2, CheckCircle2, X, Download, Navigation
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
+import { Skeleton } from '../../components/Skeleton';
 import type { StoredInquiry } from './CustomOrder';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -54,7 +55,6 @@ const MOCK_USER = {
     email: 'sai.sampath@example.com',
     phone: '+91 98765 43210',
     username: 'sai_sampath',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop',
     joined: 'October 2023',
     locations: [
         { id: '1', label: 'Primary Residence', address: '123 Art Lane, Jubilee Hills, Hyderabad, 500033', isDefault: true },
@@ -138,7 +138,7 @@ const BuyerProofDetails = ({ order, onUpdate }: { order: any; onUpdate: () => vo
                         <div className="space-y-2">
                             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">Submitted Design Proof</span>
                             <div className="relative group aspect-video rounded-sm overflow-hidden border border-neutral-200 bg-white">
-                                <img src={order.proofUrl} className="w-full h-full object-contain" alt="Bespoke Proof" />
+                                <img loading="lazy" src={order.proofUrl} className="w-full h-full object-contain" alt="Bespoke Proof" />
                                 <a 
                                     href={order.proofUrl} 
                                     download={`proof-${order.id.slice(0, 8)}.png`}
@@ -228,25 +228,16 @@ const Profile = () => {
     const [addresses, setAddresses] = useState<any[]>([]);
     const [wishlist, setWishlist] = useState<any[]>([]);
     const [cart, setCart] = useState<any[]>([]);
-    const [isLoadingData, setIsLoadingData] = useState(true);
+    
+    const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+    const [isLoadingWishlist, setIsLoadingWishlist] = useState(true);
 
     React.useEffect(() => {
-        const loadData = async () => {
-            const [u, o, a, w, c] = await Promise.all([
-                api.getMe(),
-                api.getOrders(),
-                api.getAddresses(),
-                api.getWishlist(),
-                api.getCart()
-            ]);
-            setUser(u);
-            setOrders(o);
-            setAddresses(a);
-            setWishlist(w);
-            setCart(c);
-            setIsLoadingData(false);
-        };
-        loadData();
+        api.getMe().then(u => { setUser(u); }).catch(() => {});
+        api.getOrders().then(o => { setOrders(o); setIsLoadingOrders(false); }).catch(() => setIsLoadingOrders(false));
+        api.getAddresses().then(a => { setAddresses(a); }).catch(() => {});
+        api.getWishlist().then(w => { setWishlist(w); setIsLoadingWishlist(false); }).catch(() => setIsLoadingWishlist(false));
+        api.getCart().then(c => { setCart(c); }).catch(() => {});
     }, []);
 
     React.useEffect(() => {
@@ -287,7 +278,7 @@ const Profile = () => {
     // Orders state
     const [contact, setContact] = useState('');
     const [inquiries, setInquiries] = useState<StoredInquiry[]>([]);
-    const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+    const [isSyncingOrders, setIsSyncingOrders] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [isSavingAddress, setIsSavingAddress] = useState(false);
@@ -317,6 +308,51 @@ const Profile = () => {
         description: '',
         evidenceUrl: ''
     });
+
+    // --- Review Modal State ---
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const [reviewSuccess, setReviewSuccess] = useState(false);
+    const [reviewForm, setReviewForm] = useState({
+        rating: 5,
+        reviewText: ''
+    });
+
+    // --- Cancel Order Handler ---
+    const handleCancelOrder = async (orderId: string) => {
+        if (!window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
+        try {
+            await api.cancelOrder(orderId);
+            alert('Order cancelled successfully.');
+            const updatedOrders = await api.getOrders();
+            setOrders(updatedOrders);
+        } catch (err) {
+            console.error('Cancel order error:', err);
+            alert('Failed to cancel order. Please try again or contact support.');
+        }
+    };
+
+    const handleSubmitReview = async () => {
+        if (!selectedOrderId) return;
+        setIsSubmittingReview(true);
+        try {
+            await api.submitReview(selectedOrderId, {
+                rating: reviewForm.rating,
+                comment: reviewForm.reviewText
+            });
+            setReviewSuccess(true);
+            setTimeout(() => {
+                setIsReviewModalOpen(false);
+                setReviewSuccess(false);
+                setReviewForm({ rating: 5, reviewText: '' });
+            }, 2000);
+        } catch (err) {
+            console.error('Submit review error:', err);
+            alert('Failed to submit review.');
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
 
     // --- Dispute / Reorder Handlers ---
     const handleReorder = async (rawOrder: any) => {
@@ -476,7 +512,7 @@ const Profile = () => {
     const handleSyncOrders = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!contact.trim()) return;
-        setIsLoadingOrders(true);
+        setIsSyncingOrders(true);
         try {
             const { data, error } = await supabase
                 .from('inquiries')
@@ -492,7 +528,7 @@ const Profile = () => {
         } catch (err) {
             console.error('Error syncing orders:', err);
         } finally {
-            setIsLoadingOrders(false);
+            setIsSyncingOrders(false);
         }
     };
 
@@ -648,28 +684,7 @@ const Profile = () => {
         { id: 'notifications', label: 'Notifications', icon: <Bell size={18} strokeWidth={1.5} /> },
     ];
 
-    if (isLoadingData) {
-        return (
-            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-                <div className="text-center space-y-6">
-                    <div className="relative w-24 h-24 mx-auto">
-                        <motion.div 
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                            className="absolute inset-0 border-t-2 border-brand-pink/30 rounded-full"
-                        />
-                        <div className="absolute inset-4 flex items-center justify-center">
-                            <Sparkles className="text-brand-pink animate-pulse" size={32} />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <h2 className="text-sm font-black uppercase tracking-[0.4em] text-neutral-900">Synchronizing Vault</h2>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Fetching artisan records & acquisitions</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // (Removed blocking isLoadingData screen to allow skeletons)
 
     return (
         <div className="min-h-screen bg-[#FDFBF7] pt-32 pb-20 selection:bg-brand-pink/20 font-sans">
@@ -827,8 +842,8 @@ const Profile = () => {
                                             <div className="flex items-center gap-10">
                                                 <div className="relative group">
                                                     <div className="w-24 h-24 rounded-full overflow-hidden border border-neutral-100 shadow-xl bg-neutral-50 flex items-center justify-center">
-                                                        {user?.avatar_url || MOCK_USER.avatar ? (
-                                                            <img src={user?.avatar_url || MOCK_USER.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                        {user?.avatar_url ? (
+                                                            <img loading="lazy" src={user?.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                                         ) : (
                                                             <User size={32} className="text-neutral-300" />
                                                         )}
@@ -974,15 +989,25 @@ const Profile = () => {
                                                     />
                                                     <button 
                                                         type="submit"
-                                                        disabled={isLoadingOrders}
+                                                        disabled={isSyncingOrders}
                                                         className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all"
                                                     >
-                                                        {isLoadingOrders ? <Loader2 size={10} className="animate-spin" /> : 'Sync'}
+                                                        {isSyncingOrders ? <Loader2 size={10} className="animate-spin" /> : 'Sync'}
                                                     </button>
                                                 </form>
 
                                                 <div className="space-y-4">
-                                                    {combinedOrders.length > 0 ? (
+                                                    {isLoadingOrders ? (
+                                                        Array.from({ length: 3 }).map((_, i) => (
+                                                            <div key={i} className="flex items-center gap-4 p-4 border border-neutral-100 bg-white">
+                                                                <Skeleton className="w-12 h-16 shrink-0" />
+                                                                <div className="space-y-2 w-1/2">
+                                                                    <Skeleton className="w-3/4 h-4" />
+                                                                    <Skeleton className="w-1/2 h-3" />
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    ) : combinedOrders.length > 0 ? (
                                                         combinedOrders.map((order) => (
                                                             <div 
                                                                 key={order.id}
@@ -992,7 +1017,7 @@ const Profile = () => {
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="w-12 h-16 bg-neutral-50 rounded flex items-center justify-center text-neutral-300 overflow-hidden shrink-0 border border-neutral-50">
                                                                         {order.image ? (
-                                                                            <img src={order.image} alt="" className="w-full h-full object-cover" />
+                                                                            <img loading="lazy" src={order.image} alt="" className="w-full h-full object-cover" />
                                                                         ) : (
                                                                             <Package size={20} strokeWidth={1} />
                                                                         )}
@@ -1049,7 +1074,7 @@ const Profile = () => {
                                                                 
                                                                 {selectedOrder?.image && (
                                                                     <div className="flex items-center gap-4 mt-6 p-4 bg-neutral-50 rounded-sm border border-neutral-100">
-                                                                        <img src={selectedOrder.image} className="w-12 h-16 object-cover border border-neutral-200" alt="" />
+                                                                        <img loading="lazy" src={selectedOrder.image} className="w-12 h-16 object-cover border border-neutral-200" alt="" />
                                                                         <div>
                                                                             <h5 className="text-xs font-bold text-neutral-950">{selectedOrder.name}</h5>
                                                                             <p className="text-[10px] text-neutral-400 font-light mt-0.5">{selectedOrder.price}</p>
@@ -1100,6 +1125,13 @@ const Profile = () => {
                                                                         <AlertTriangle size={12} />
                                                                         Request Refund / Exchange
                                                                     </button>
+                                                                    <button
+                                                                        onClick={() => setIsReviewModalOpen(true)}
+                                                                        className="flex items-center justify-center gap-2 px-5 py-3 bg-brand-pink text-white text-[11px] font-black uppercase tracking-widest hover:bg-brand-pink/90 transition-all"
+                                                                    >
+                                                                        <MessageSquare size={12} />
+                                                                        Write a Review
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1117,7 +1149,7 @@ const Profile = () => {
                                                             </div>
                                                         )}
 
-                                                        {rawOrder && !['in-production', 'shipped', 'delivered', 'disputed'].includes(rawOrder.status) && (
+                                                        {rawOrder && !['in-production', 'shipped', 'delivered', 'disputed', 'cancelled'].includes(rawOrder.status) && (
                                                             <BuyerProofDetails 
                                                                 order={rawOrder} 
                                                                 onUpdate={async () => {
@@ -1125,6 +1157,18 @@ const Profile = () => {
                                                                     setOrders(updatedOrders);
                                                                 }} 
                                                             />
+                                                        )}
+
+                                                        {rawOrder && ['pending', 'confirmed'].includes(rawOrder.status) && (
+                                                            <div className="mt-8 pt-6 border-t border-neutral-100 flex justify-end">
+                                                                <button
+                                                                    onClick={() => handleCancelOrder(rawOrder.id)}
+                                                                    className="flex items-center gap-2 px-5 py-3 bg-transparent border border-red-200 text-red-500 text-[11px] font-black uppercase tracking-widest hover:bg-red-50 hover:border-red-500 transition-all"
+                                                                >
+                                                                    <X size={12} />
+                                                                    Cancel Order
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 );
@@ -1154,7 +1198,7 @@ const Profile = () => {
                                                 cart.map((item: any) => (
                                                     <div key={item.id} className="flex items-center gap-6 p-4 bg-white border border-neutral-50 hover:border-neutral-200 transition-all group">
                                                         <Link to={`/product/${item.product_id}`} className="w-20 h-20 bg-neutral-100 flex-shrink-0 block overflow-hidden">
-                                                            <img src={item.image_url || 'https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=800'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                            <img loading="lazy" src={item.image_url || 'https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=800'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                                         </Link>
                                                         <div className="flex-1 min-w-0">
                                                             <Link to={`/product/${item.product_id}`}>
@@ -1196,11 +1240,19 @@ const Profile = () => {
                                 {activeTab === 'wishlist' && (
                                     <div className="space-y-10">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            {wishlist.length > 0 ? (
+                                            {isLoadingWishlist ? (
+                                                Array.from({ length: 2 }).map((_, i) => (
+                                                    <div key={i} className="bg-white border border-neutral-100 p-6">
+                                                        <Skeleton className="w-full aspect-[4/5] mb-4" />
+                                                        <Skeleton className="w-1/3 h-3 mb-2" />
+                                                        <Skeleton className="w-2/3 h-5" />
+                                                    </div>
+                                                ))
+                                            ) : wishlist.length > 0 ? (
                                                 wishlist.map((item: any) => (
                                                     <div key={item.id} className="bg-white border border-neutral-100 group overflow-hidden relative shadow-sm hover:shadow-2xl transition-all duration-500">
                                                         <Link to={`/product/${item.product_id}`} className="aspect-[4/5] overflow-hidden relative block">
-                                                            <img src={item.image_url || 'https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=800'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                                            <img loading="lazy" src={item.image_url || 'https://images.unsplash.com/photo-1459749411177-042180ce673c?q=80&w=800'} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                                             <div className="absolute inset-0 bg-neutral-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
                                                                 <button 
                                                                     onClick={(e) => { e.preventDefault(); handleAddToCartFromWishlist(item); }}
@@ -1637,6 +1689,103 @@ const Profile = () => {
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* ===== REVIEW MODAL ===== */}
+            <AnimatePresence>
+                {isReviewModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+                        onClick={(e) => { if (e.target === e.currentTarget) { setIsReviewModalOpen(false); setReviewForm({ rating: 5, reviewText: '' }); } }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                            className="relative w-full max-w-lg bg-neutral-950 border border-neutral-800 shadow-2xl"
+                        >
+                            <div className="flex items-center justify-between px-8 py-6 border-b border-neutral-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center">
+                                        <MessageSquare size={14} className="text-brand-pink" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-white">Write a Review</h3>
+                                        <p className="text-[10px] text-neutral-500 font-light mt-0.5">Share your experience with this masterpiece</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setIsReviewModalOpen(false); setReviewForm({ rating: 5, reviewText: '' }); }}
+                                    className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-full transition-all"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {reviewSuccess ? (
+                                <div className="flex flex-col items-center justify-center py-16 px-8 gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                        <CheckCircle2 size={28} className="text-emerald-400" />
+                                    </div>
+                                    <h4 className="text-sm font-black uppercase tracking-widest text-white">Review Published</h4>
+                                    <p className="text-[11px] text-neutral-400 font-light text-center leading-relaxed">
+                                        Thank you for sharing your thoughts! Your review helps artisans and other collectors.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="p-8 space-y-6">
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                                            Rating
+                                        </label>
+                                        <div className="flex gap-2">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                                                    className={`p-2 transition-colors ${
+                                                        reviewForm.rating >= star ? 'text-brand-pink' : 'text-neutral-700'
+                                                    }`}
+                                                >
+                                                    <Sparkles size={24} className={reviewForm.rating >= star ? "fill-brand-pink" : ""} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                                            Review
+                                        </label>
+                                        <textarea
+                                            value={reviewForm.reviewText}
+                                            onChange={(e) => setReviewForm({ ...reviewForm, reviewText: e.target.value })}
+                                            placeholder="Tell us about the craftsmanship, quality, and your overall experience..."
+                                            rows={4}
+                                            className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 text-white text-xs font-light focus:border-brand-pink outline-none transition-all resize-none placeholder:text-neutral-600"
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleSubmitReview}
+                                        disabled={isSubmittingReview || !reviewForm.reviewText.trim()}
+                                        className="w-full py-4 bg-brand-pink text-white text-[11px] font-black uppercase tracking-widest hover:bg-pink-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isSubmittingReview ? (
+                                            <><Loader2 size={13} className="animate-spin" /> Publishing...</>
+                                        ) : (
+                                            <><Check size={13} /> Publish Review</>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
                 )}
             </AnimatePresence>
 

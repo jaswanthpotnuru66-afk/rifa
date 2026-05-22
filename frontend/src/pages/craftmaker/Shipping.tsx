@@ -54,10 +54,10 @@ const Shipping = () => {
     const [profileLoading, setProfileLoading] = useState(true);
     const [alertsLoading, setAlertsLoading] = useState(true);
     
-    const [originPin, setOriginPin] = useState('302020');
-    const [city, setCity] = useState('Jaipur');
-    const [addressLine, setAddressLine] = useState('Sector 4, Mansarovar');
-    const [originState, setOriginState] = useState('Rajasthan');
+    const [originPin, setOriginPin] = useState('');
+    const [city, setCity] = useState('');
+    const [addressLine, setAddressLine] = useState('');
+    const [originState, setOriginState] = useState('');
 
     const [alerts, setAlerts] = useState<any[]>([]);
 
@@ -140,13 +140,13 @@ const Shipping = () => {
             setProfileLoading(true);
             const data = await api.getArtisanStats();
             if (data && data.artisan) {
-                setOriginPin(data.artisan.pincode || '302020');
-                setCity(data.artisan.location || 'Jaipur');
+                setOriginPin(data.artisan.pincode || '');
+                setCity(data.artisan.location || '');
                 // parse extra fields or use defaults
                 if (data.artisan.story && data.artisan.story.includes('Address:')) {
                     setAddressLine(data.artisan.story.split('Address:')[1].trim());
                 }
-                setOriginState(data.artisan.specialty || 'Rajasthan');
+                setOriginState(data.artisan.specialty || '');
             }
             setProfileLoading(false);
         };
@@ -185,7 +185,8 @@ const Shipping = () => {
                     <p className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-pink mb-2">Logistics</p>
                     <h1 className="text-4xl font-serif font-bold text-neutral-950 tracking-tight">Shipping & Logistics</h1>
                     <p className="text-neutral-500 text-sm font-light mt-1">
-                        Manage origin details and track your shipment history. · <span className="font-semibold text-brand-pink uppercase tracking-wider text-xs">{city || 'Vizag'}</span>
+                        Manage origin details and track your shipment history.
+                        {city && <span className="font-semibold text-brand-pink uppercase tracking-wider text-xs ml-1">· {city}</span>}
                     </p>
                 </div>
 

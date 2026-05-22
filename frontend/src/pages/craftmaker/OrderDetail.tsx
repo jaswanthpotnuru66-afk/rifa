@@ -66,6 +66,35 @@ const OrderDetail = () => {
         }
     };
 
+    const handleAcceptOrder = async () => {
+        setIsLoading(true);
+        try {
+            const res = await api.acceptArtisanOrder(order.id);
+            setData((prev: any) => ({ ...prev, order: { ...prev.order, ...res } }));
+        } catch (err) {
+            console.error(err);
+            alert('Failed to accept order.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRejectOrder = async () => {
+        const reason = window.prompt('Provide a reason for rejection (e.g. out of capacity, cannot fulfill):');
+        if (!reason) return;
+        
+        setIsLoading(true);
+        try {
+            const res = await api.rejectArtisanOrder(order.id, reason);
+            setData((prev: any) => ({ ...prev, order: { ...prev.order, ...res } }));
+        } catch (err) {
+            console.error(err);
+            alert('Failed to reject order.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const steps = [
         { label: 'Confirmed', status: 'confirmed' },
         { label: 'Proof Sent', status: 'proof-sent' },
@@ -109,6 +138,33 @@ const OrderDetail = () => {
                             </div>
                         </div>
 
+                        {/* Artisan Action Card (Accept/Reject) */}
+                        {order.status === 'confirmed' && (
+                            <div className="bg-brand-pink/5 border border-brand-pink/20 rounded-sm p-6 space-y-4">
+                                <div className="flex items-center gap-3 text-brand-pink">
+                                    <AlertTriangle size={18} />
+                                    <h3 className="text-sm font-black uppercase tracking-widest">New Order Action Required</h3>
+                                </div>
+                                <p className="text-sm text-neutral-700 font-medium">
+                                    You have received a new order! Please review the details and confirm if you can fulfill it.
+                                </p>
+                                <div className="flex gap-4 pt-2">
+                                    <button 
+                                        onClick={handleAcceptOrder}
+                                        className="flex-1 py-3 bg-brand-pink text-white text-[11px] font-black uppercase tracking-[0.2em] hover:bg-brand-pink/90 transition-all flex justify-center items-center gap-2"
+                                    >
+                                        <Check size={14} /> Accept & Start Production
+                                    </button>
+                                    <button 
+                                        onClick={handleRejectOrder}
+                                        className="flex-1 py-3 bg-white text-red-500 border border-red-200 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-red-50 transition-all flex justify-center items-center gap-2"
+                                    >
+                                        <X size={14} /> Reject Order
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Status Stepper */}
                         <div className="bg-white border border-neutral-100 rounded-sm p-10 shadow-sm relative overflow-hidden">
                             <div className="flex items-center justify-between relative z-10">
@@ -141,7 +197,7 @@ const OrderDetail = () => {
                             <div className="space-y-4">
                                 {items.map((item: any) => (
                                     <div key={item.id} className="flex items-center gap-6 p-4 hover:bg-neutral-50 transition-all rounded-sm group">
-                                        <img src={item.image_url} alt="" className="w-20 h-20 rounded-sm object-cover border border-neutral-100 group-hover:scale-105 transition-transform" />
+                                        <img loading="lazy" src={item.image_url} alt="" className="w-20 h-20 rounded-sm object-cover border border-neutral-100 group-hover:scale-105 transition-transform" />
                                         <div className="flex-1 min-w-0">
                                             <h3 className="text-lg font-serif font-bold text-neutral-950 mb-1">{item.product_name}</h3>
                                             <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -335,7 +391,7 @@ const OrderDetail = () => {
                                 <div className="space-y-4">
                                     {items.map((item: any) => (
                                         <div key={item.id} className="flex items-center gap-4">
-                                            <img src={item.image_url} alt="" className="w-12 h-12 rounded-sm object-cover grayscale" />
+                                            <img loading="lazy" src={item.image_url} alt="" className="w-12 h-12 rounded-sm object-cover grayscale" />
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-neutral-950 truncate">{item.product_name}</p>
                                                 <p className="text-[10px] text-neutral-400 font-bold uppercase mt-0.5 tracking-tight">Qty: {item.quantity}</p>
@@ -558,7 +614,7 @@ const ProofWorkflow = ({ order, onUpdateOrder }: { order: any, onUpdateOrder: (u
                     ) : (
                         <div className="space-y-4">
                             <div className="relative aspect-video bg-neutral-50 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
-                                <img src={selectedFile} alt="Preview" className="w-full h-full object-contain" />
+                                <img loading="lazy" src={selectedFile} alt="Preview" className="w-full h-full object-contain" />
                                 <button 
                                     onClick={() => setSelectedFile(null)}
                                     className="absolute top-3 right-3 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-all"
@@ -594,7 +650,7 @@ const ProofWorkflow = ({ order, onUpdateOrder }: { order: any, onUpdateOrder: (u
                 <div className="space-y-6">
                     <div className="relative aspect-video bg-neutral-50 rounded-sm overflow-hidden flex items-center justify-center border border-neutral-100">
                         {order.proofUrl && (
-                            <img src={order.proofUrl} alt="" className="w-full h-full object-contain opacity-50 grayscale" />
+                            <img loading="lazy" src={order.proofUrl} alt="" className="w-full h-full object-contain opacity-50 grayscale" />
                         )}
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-sm">
                             <Clock size={32} className="text-amber-500 mb-4 animate-pulse" />
@@ -637,7 +693,7 @@ const ProofWorkflow = ({ order, onUpdateOrder }: { order: any, onUpdateOrder: (u
                     </div>
                     {order.proofUrl && (
                         <div className="aspect-video bg-white rounded-sm overflow-hidden border border-neutral-100">
-                            <img src={order.proofUrl} alt="" className="w-full h-full object-contain" />
+                            <img loading="lazy" src={order.proofUrl} alt="" className="w-full h-full object-contain" />
                         </div>
                     )}
                     <button 
@@ -682,7 +738,7 @@ const ProofWorkflow = ({ order, onUpdateOrder }: { order: any, onUpdateOrder: (u
                     ) : (
                         <div className="space-y-4">
                             <div className="relative aspect-video bg-neutral-50 rounded-sm overflow-hidden border border-neutral-100 flex items-center justify-center">
-                                <img src={selectedFile} alt="Preview" className="w-full h-full object-contain" />
+                                <img loading="lazy" src={selectedFile} alt="Preview" className="w-full h-full object-contain" />
                                 <button 
                                     onClick={() => setSelectedFile(null)}
                                     className="absolute top-3 right-3 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-all"

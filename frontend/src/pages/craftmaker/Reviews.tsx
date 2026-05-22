@@ -155,7 +155,7 @@ const Reviews = () => {
                                     {review.product_image && (
                                         <div className="flex gap-2 mt-5">
                                             <div className="w-16 h-16 rounded-sm border border-neutral-100 overflow-hidden">
-                                                <img src={review.product_image} alt="" className="w-full h-full object-cover" />
+                                                <img loading="lazy" src={review.product_image} alt="" className="w-full h-full object-cover" />
                                             </div>
                                         </div>
                                     )}
@@ -210,7 +210,7 @@ const Reviews = () => {
 
                     {!loading && filtered.length === 0 && (
                         <div className="py-24 px-6 flex flex-col items-center text-center bg-white border border-dashed border-neutral-200 rounded-sm">
-                            <img src="https://illustrations.popsy.co/amber/shining-stars.svg" alt="Empty Reviews" className="w-48 h-48 opacity-80 mb-4" />
+                            <img loading="lazy" src="https://illustrations.popsy.co/amber/shining-stars.svg" alt="Empty Reviews" className="w-48 h-48 opacity-80 mb-4" />
                             <h3 className="text-xl font-serif font-bold text-neutral-950 mb-2">No reviews found</h3>
                             <p className="text-neutral-500 text-sm max-w-sm mb-6">Looks like you don't have any reviews in this filter. Don't worry, 5-star ratings are coming your way soon!</p>
                             <button onClick={() => setActiveTab('All')} className="bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 py-3 rounded-sm shadow-md hover:bg-brand-pink-dark transition-all">

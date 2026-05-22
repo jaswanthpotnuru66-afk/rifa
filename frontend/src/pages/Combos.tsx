@@ -18,63 +18,25 @@ const fallbackImages = [
 const getImg = (idx: number): string =>
     (galleryImages[idx] as string | undefined) ?? fallbackImages[idx % fallbackImages.length];
 
-const combos = [
-    {
-        tier:     '01',
-        title:    'Student Friendly',
-        subtitle: 'The Thoughtful Starter',
-        price:    '₹500',
-        tag:      'Great for Students',
-        imgIdx:   2,
-        dark:     false,
-        includes: [
-            'Handcrafted Keychain',
-            'Mini Resin Frame',
-            'Complimentary gift wrap',
-            'Personalised note card',
-        ],
-    },
-    {
-        tier:     '02',
-        title:    'Standard Love',
-        subtitle: 'The Signature Set',
-        price:    '₹1,000',
-        tag:      'Most Popular',
-        imgIdx:   10,
-        dark:     true,
-        includes: [
-            'Handcrafted Bouquet',
-            'Resin Photo Frame',
-            'Premium Chocolate',
-            'Complimentary gift wrap',
-            'Personalised note card',
-        ],
-    },
-    {
-        tier:     '03',
-        title:    'Premium Hamper',
-        subtitle: 'The Statement Gift',
-        price:    '₹1,500+',
-        tag:      'Best Value',
-        imgIdx:   18,
-        dark:     false,
-        includes: [
-            'Large Handcrafted Bouquet',
-            'Custom Resin Clock',
-            'Curated Gift Box',
-            'Surprise Add-ons',
-            'Complimentary gift wrap',
-            'Personalised note card',
-        ],
-    },
-];
 
 const Combos = () => {
+    const [virtualCombos, setVirtualCombos] = useState<any[]>([]);
     const [promotions, setPromotions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingCombos, setLoadingCombos] = useState(true);
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
     useEffect(() => {
+        const fetchCombos = async () => {
+            try {
+                const data = await api.getProducts({ is_combo: true });
+                setVirtualCombos(data || []);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoadingCombos(false);
+            }
+        };
         const fetchPromotions = async () => {
             try {
                 const data = await api.getPromotions();
@@ -85,6 +47,7 @@ const Combos = () => {
                 setLoading(false);
             }
         };
+        fetchCombos();
         fetchPromotions();
     }, []);
 
@@ -176,69 +139,81 @@ const Combos = () => {
 
                 {/* Combo Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-                    {combos.map((combo, idx) => {
-                        const img = getImg(combo.imgIdx);
+                    {loadingCombos ? (
+                        [1, 2, 3].map(n => (
+                            <div key={n} className="border border-neutral-200 bg-white flex flex-col overflow-hidden animate-pulse">
+                                <div className="aspect-[4/3] bg-neutral-100"></div>
+                                <div className="p-8 flex flex-col flex-grow space-y-4">
+                                    <div className="h-3 bg-neutral-100 rounded w-1/2" />
+                                    <div className="h-6 bg-neutral-100 rounded w-3/4" />
+                                    <div className="h-8 bg-neutral-100 rounded w-1/3 mb-4" />
+                                    <div className="space-y-2 pt-6 border-t border-neutral-100">
+                                        <div className="h-3 bg-neutral-100 rounded w-full" />
+                                        <div className="h-3 bg-neutral-100 rounded w-5/6" />
+                                        <div className="h-3 bg-neutral-100 rounded w-4/6" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : virtualCombos.map((combo, idx) => {
+                        const img = combo.images?.[0] || getImg(idx % galleryImages.length);
+                        const isDark = false; // Deprecated in virtual products
+
                         return (
                             <motion.div
-                                key={idx}
+                                key={combo.id || idx}
                                 initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                                 viewport={{ once: true }}
-                                className={`group flex flex-col overflow-hidden border ${combo.dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}
+                                className={`group flex flex-col overflow-hidden border ${isDark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}
                             >
                                 {/* Image */}
                                 <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
-                                    <img
+                                    <img loading="lazy"
                                         src={img}
-                                        alt={combo.title}
+                                        alt={combo.name}
                                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                                     />
-                                    <div className={`absolute inset-0 ${combo.dark ? 'bg-black/30' : 'bg-black/10'}`} />
+                                    <div className={`absolute inset-0 ${isDark ? 'bg-black/30' : 'bg-black/10'}`} />
 
-                                    {/* Tag badge */}
-                                    <span className={`absolute top-4 left-4 text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 ${combo.dark ? 'bg-white text-neutral-950' : 'bg-neutral-950 text-white'}`}>
-                                        {combo.tag}
-                                    </span>
-
-                                    {/* Tier number watermark */}
-                                    <span className={`absolute bottom-4 right-5 font-serif text-6xl font-bold leading-none ${combo.dark ? 'text-white/10' : 'text-white/30'}`}>
-                                        {combo.tier}
-                                    </span>
+                                    {/* Custom Order badge */}
+                                    {combo.is_custom && (
+                                        <span className={`absolute top-4 left-4 text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 ${isDark ? 'bg-brand-pink text-white' : 'bg-brand-pink text-white'}`}>
+                                            Custom Build
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* Content */}
-                                <div className={`p-8 flex flex-col flex-grow ${combo.dark ? 'text-white' : 'text-neutral-950'}`}>
-                                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-2 ${combo.dark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                                        {combo.subtitle}
+                                <div className={`p-8 flex flex-col flex-grow ${isDark ? 'text-white' : 'text-neutral-950'}`}>
+                                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                                        Curated by {combo.artisan?.store_name || 'Rifa Maker'}
                                     </p>
-                                    <h3 className="text-2xl font-serif font-bold mb-1">{combo.title}</h3>
-                                    <div className={`text-4xl font-serif font-light mb-6 ${combo.dark ? 'text-white' : 'text-neutral-950'}`}>
-                                        {combo.price}
+                                    <h3 className="text-2xl font-serif font-bold mb-1">{combo.name}</h3>
+                                    <div className={`text-4xl font-serif font-light mb-6 flex items-baseline gap-2 ${isDark ? 'text-white' : 'text-neutral-950'}`}>
+                                        ₹{combo.price}
+                                        {combo.original_price && <span className="text-lg text-neutral-400 line-through">₹{combo.original_price}</span>}
                                     </div>
 
-                                    {/* What's Included */}
-                                    <ul className={`space-y-2.5 mb-8 pt-6 border-t flex-grow ${combo.dark ? 'border-neutral-800' : 'border-neutral-100'}`}>
-                                        {combo.includes.map(item => (
-                                            <li key={item} className="flex items-center gap-3 text-sm font-light">
-                                                <Check size={13} className={`flex-shrink-0 ${combo.dark ? 'text-brand-pink' : 'text-brand-pink'}`} />
-                                                <span className={combo.dark ? 'text-neutral-300' : 'text-neutral-600'}>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    {/* Description */}
+                                    <div className={`text-sm font-light leading-relaxed flex-grow border-t pt-6 ${isDark ? 'text-neutral-300 border-neutral-800' : 'text-neutral-600 border-neutral-100'}`}>
+                                        {combo.description || 'A thoughtfully curated bundle.'}
+                                    </div>
 
-                                    {/* CTA */}
-                                    <Link
-                                        to="/custom-order"
-                                        className={`mt-auto w-full flex items-center justify-center gap-2 py-3.5 text-xs font-bold tracking-widest uppercase transition-all duration-500 group/btn ${
-                                            combo.dark
-                                                ? 'bg-white text-neutral-950 hover:bg-neutral-200'
-                                                : 'bg-neutral-950 text-white hover:bg-neutral-700'
-                                        }`}
-                                    >
-                                        Select This Combo
-                                        <ArrowRight size={13} className="group-hover/btn:translate-x-1 transition-transform" />
-                                    </Link>
+                                    {/* Action */}
+                                    <div className="mt-8">
+                                        <Link
+                                            to={combo.is_custom ? `/custom-product/${combo.id}` : `/product/${combo.id}`}
+                                            className={`block w-full text-center py-4 text-xs font-bold tracking-widest uppercase transition-colors ${
+                                                isDark 
+                                                    ? 'bg-white text-neutral-950 hover:bg-neutral-200' 
+                                                    : 'bg-neutral-950 text-white hover:bg-neutral-800'
+                                            }`}
+                                        >
+                                            View Bundle Details
+                                        </Link>
+                                    </div>
                                 </div>
                             </motion.div>
                         );

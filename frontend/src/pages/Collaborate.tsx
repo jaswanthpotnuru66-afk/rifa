@@ -14,6 +14,7 @@ import MagneticButton from '../components/MagneticButton';
 export type CreatorApplicationInputs = {
     // Step 1: Essentials
     mobileNumber: string;
+    whatsappNumber: string;
     fullName: string;
     email: string;
     password?: string;
@@ -66,6 +67,7 @@ export type CreatorApplication = {
     // Add compatibility fields for new form data
     fullName?: string;
     mobileNumber?: string;
+    whatsappNumber?: string;
     shopName?: string;
     shopSlug?: string;
     primaryCraftCategory?: string;
@@ -157,6 +159,7 @@ const Collaborate = () => {
     } = useForm<CreatorApplicationInputs>({
         defaultValues: {
             mobileNumber: defaultDraft.mobileNumber || getVerifiedMobile(),
+            whatsappNumber: defaultDraft.whatsappNumber || '',
             fullName: defaultDraft.fullName || '',
             email: defaultDraft.email || '',
             shopName: defaultDraft.shopName || '',
@@ -250,7 +253,7 @@ const Collaborate = () => {
 
     const handleNext = async () => {
         let fieldsToValidate: (keyof CreatorApplicationInputs)[] = [];
-        if (step === 1) fieldsToValidate = ['mobileNumber', 'fullName', 'email', 'password'];
+        if (step === 1) fieldsToValidate = ['mobileNumber', 'whatsappNumber', 'fullName', 'email', 'password'];
         else if (step === 2) fieldsToValidate = ['shopName', 'shopSlug', 'primaryCraftCategory', 'homeRegion', 'craftOriginStory'];
         else if (step === 3) fieldsToValidate = ['shippingOriginPinCode', 'processingTime', 'pickupAddress', 'city', 'state'];
         else if (step === 4) fieldsToValidate = ['pan', 'accountHolder', 'bankAccount', 'ifsc', 'aadhaar'];
@@ -298,6 +301,7 @@ const Collaborate = () => {
             social_link: `rifa.in/${data.shopSlug}`,
             image_url: shopLogoUrl || shopBannerUrl,
             mobile_number: data.mobileNumber,
+            whatsapp_number: data.whatsappNumber,
             shop_name: data.shopName,
             shop_slug: data.shopSlug,
             primary_craft_category: data.primaryCraftCategory,
@@ -450,7 +454,7 @@ const Collaborate = () => {
                             <div className="bg-white overflow-hidden border border-neutral-200 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)] transform hover:-translate-y-2 transition-transform duration-700">
                                 <div className="h-48 bg-neutral-50 relative overflow-hidden group">
                                     {previews.banner ? (
-                                        <img src={previews.banner} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Banner Preview" />
+                                        <img loading="lazy" src={previews.banner} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Banner Preview" />
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center text-neutral-200">
                                             <ImageIcon size={32} strokeWidth={1} />
@@ -460,7 +464,7 @@ const Collaborate = () => {
                                 <div className="px-10 pb-12 relative">
                                     <div className="w-24 h-24 bg-white border border-neutral-200 absolute -top-12 overflow-hidden shadow-xl flex items-center justify-center z-10">
                                         {previews.logo ? (
-                                            <img src={previews.logo} className="w-full h-full object-cover" alt="Logo Preview" />
+                                            <img loading="lazy" src={previews.logo} className="w-full h-full object-cover" alt="Logo Preview" />
                                         ) : (
                                             <Store size={32} strokeWidth={1} className="text-neutral-300" />
                                         )}
@@ -563,9 +567,12 @@ const Collaborate = () => {
                                                 <Field label="Full Name" error={errors.fullName && 'Enter your full name as per PAN'}>
                                                     <input {...register('fullName', { required: true })} className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium text-lg" placeholder="e.g. Aditi Sharma" />
                                                 </Field>
-                                                <div className="grid sm:grid-cols-2 gap-10">
+                                                <div className="grid sm:grid-cols-3 gap-10">
                                                     <Field label="Mobile Number" error={errors.mobileNumber && 'Invalid 10-digit number'}>
                                                         <input type="tel" {...register('mobileNumber', { required: true, pattern: /^[6-9]\d{9}$/ })} className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium text-lg" placeholder="9876543210" />
+                                                    </Field>
+                                                    <Field label="WhatsApp Number" error={errors.whatsappNumber && 'Invalid 10-digit number'}>
+                                                        <input type="tel" {...register('whatsappNumber', { required: true, pattern: /^[6-9]\d{9}$/ })} className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium text-lg" placeholder="9876543210" />
                                                     </Field>
                                                     <Field label="Email Address" error={errors.email && 'Enter a valid email'}>
                                                         <input type="email" {...register('email', { required: true, pattern: /^\S+@\S+$/i })} className="w-full px-0 py-4 border-b border-neutral-200 bg-transparent focus:border-neutral-950 transition-all outline-none text-neutral-950 placeholder:text-neutral-300 font-medium text-lg" placeholder="aditi@example.com" />
@@ -829,7 +836,7 @@ const AssetUploader = ({ label, helper, selectedFile, previewUrl, previewClassNa
         ) : (
             <div className="border border-neutral-100 bg-white p-3 shadow-sm group/file">
                 <div className={`relative bg-neutral-50 overflow-hidden ${previewClassName}`}>
-                    {previewUrl && <img src={previewUrl} alt="preview" className="w-full h-full object-cover transition-transform duration-1000 group-hover/file:scale-105" />}
+                    {previewUrl && <img loading="lazy" src={previewUrl} alt="preview" className="w-full h-full object-cover transition-transform duration-1000 group-hover/file:scale-105" />}
                     <div className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover/file:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
                         <button type="button" onClick={onRemove} className="px-6 py-3 bg-white text-[9px] font-bold text-neutral-950 uppercase tracking-[0.2em] hover:bg-neutral-50 transition-colors shadow-xl">
                             Replace

@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { 
     AlertTriangle, ArrowRight, UserPlus, 
     Truck, 
-    TrendingUp, Loader2, Check
+    TrendingUp, Check
 } from 'lucide-react';
 import AdminOpsLayout from '../../../layouts/AdminOpsLayout';
 import { api } from '../../../lib/api';
+import { Skeleton } from '../../../components/Skeleton';
 
 const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = false, loading = false, to }: { title: string; value: string | number; subText?: string; sub?: string; subColor?: string; alert?: boolean; loading?: boolean; to?: string }) => {
     const content = (
@@ -18,7 +19,7 @@ const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = fa
             <div className="relative z-10">
                 <p className="text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-8">{title}</p>
                 {loading ? (
-                    <Loader2 className="w-8 h-8 animate-spin text-neutral-200 mb-4" />
+                    <Skeleton className="w-3/4 h-12 mb-4" />
                 ) : (
                     <h3 
                         className="text-5xl font-extrabold text-neutral-950 tracking-tighter leading-none mb-4 group-hover:scale-[1.02] transition-transform origin-left font-inter"
@@ -59,27 +60,13 @@ const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = fa
 const AdminOpsDashboard = () => {
     const [stats, setStats] = useState<any>(null);
     const [orders, setOrders] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
+    const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
     useEffect(() => {
-        fetchDashboardData();
+        api.getAdminStats().then(s => { setStats(s); setIsLoadingStats(false); }).catch(() => setIsLoadingStats(false));
+        api.getAdminOrders().then(o => { setOrders(o.slice(0, 5)); setIsLoadingOrders(false); }).catch(() => setIsLoadingOrders(false));
     }, []);
-
-    const fetchDashboardData = async () => {
-        setLoading(true);
-        try {
-            const [statsData, ordersData] = await Promise.all([
-                api.getAdminStats(),
-                api.getAdminOrders()
-            ]);
-            setStats(statsData);
-            setOrders(ordersData.slice(0, 5));
-        } catch (error) {
-            console.error('Failed to fetch dashboard data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const pendingCount = stats?.pendingApps || 0;
     const pendingProductsCount = stats?.pendingProducts || 0;
@@ -119,7 +106,7 @@ const AdminOpsDashboard = () => {
                         value={`₹${(stats?.totalGMV || 0).toLocaleString()}`} 
                         sub="Live Platform Volume" 
                         subColor="text-neutral-400"
-                        loading={loading}
+                        loading={isLoadingStats}
                         to="/admin/ops/revenue"
                     />
                     <StatCard 
@@ -127,7 +114,7 @@ const AdminOpsDashboard = () => {
                         value={stats?.totalOrders || 0} 
                         sub="Across all artisans" 
                         subColor="text-neutral-400"
-                        loading={loading}
+                        loading={isLoadingStats}
                         to="/admin/ops/orders"
                     />
                     <StatCard 
@@ -135,14 +122,14 @@ const AdminOpsDashboard = () => {
                         value={stats?.activeArtisans || 0} 
                         sub={`${pendingCount} pending`} 
                         subColor={pendingCount > 0 ? "text-amber-600" : "text-neutral-400"}
-                        loading={loading}
+                        loading={isLoadingStats}
                         to="/admin/ops/makers"
                     />
                     <StatCard 
                         title="Commission" 
                         value={`₹${(stats?.commission || 0).toLocaleString()}`} 
                         sub={`${stats?.commissionRate || 5}% platform fee`} 
-                        loading={loading}
+                        loading={isLoadingStats}
                         to="/admin/ops/payouts"
                     />
                 </div>
@@ -208,7 +195,17 @@ const AdminOpsDashboard = () => {
                                 <div className="text-center">State</div>
                             </div>
                             <div className="divide-y divide-neutral-50">
-                                {orders.map(order => (
+                                {isLoadingOrders ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={i} className="grid grid-cols-[100px_1fr_1fr_100px_110px] gap-4 px-8 py-6 items-center">
+                                            <Skeleton className="w-16 h-4" />
+                                            <Skeleton className="w-24 h-4" />
+                                            <Skeleton className="w-24 h-4" />
+                                            <Skeleton className="w-16 h-4 ml-auto" />
+                                            <Skeleton className="w-16 h-4 mx-auto" />
+                                        </div>
+                                    ))
+                                ) : orders.map(order => (
                                     <Link to={`/admin/ops/orders/${order.id}`} key={order.id} className="grid grid-cols-[100px_1fr_1fr_100px_110px] gap-4 px-8 py-6 items-center hover:bg-neutral-50 transition-all cursor-pointer group">
                                         <div className="text-xs font-bold text-neutral-900">#{order.id.slice(0, 8)}</div>
                                         <div className="text-xs text-neutral-500 font-light truncate">{order.artisans?.brand_name || 'Individual'}</div>
@@ -230,7 +227,7 @@ const AdminOpsDashboard = () => {
                                         </div>
                                     </Link>
                                 ))}
-                                {orders.length === 0 && (
+                                {!isLoadingOrders && orders.length === 0 && (
                                     <div className="p-12 text-center text-[10px] font-black uppercase tracking-widest text-neutral-300 italic">
                                         No recent acquisitions recorded
                                     </div>

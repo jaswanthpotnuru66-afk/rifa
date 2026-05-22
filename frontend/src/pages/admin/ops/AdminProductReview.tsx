@@ -141,7 +141,7 @@ const AdminProductReview = () => {
                             >
                                 <div className="aspect-[4/5] bg-neutral-50 relative overflow-hidden">
                                     {product.images?.[0] ? (
-                                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                                        <img loading="lazy" src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-neutral-100">
                                             <Package size={64} strokeWidth={1} />
@@ -164,7 +164,7 @@ const AdminProductReview = () => {
                                     <h3 className="font-serif text-lg text-neutral-950 group-hover:italic transition-all truncate">{product.name}</h3>
                                     <div className="mt-4 pt-4 border-t border-neutral-50 flex items-center gap-3">
                                         {product.artisans?.img ? (
-                                            <img src={product.artisans.img} className="w-6 h-6 rounded-full object-cover" />
+                                            <img loading="lazy" src={product.artisans.img} className="w-6 h-6 rounded-full object-cover" />
                                         ) : (
                                             <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-300"><User size={12} /></div>
                                         )}
@@ -201,7 +201,7 @@ const AdminProductReview = () => {
 
                                 <div className="grid grid-cols-2 gap-8">
                                     <div className="aspect-[4/5] bg-neutral-50 overflow-hidden rounded-sm border border-neutral-100">
-                                        {selectedProduct.images?.[0] && <img src={selectedProduct.images[0]} className="w-full h-full object-cover" />}
+                                        {selectedProduct.images?.[0] && <img loading="lazy" src={selectedProduct.images[0]} className="w-full h-full object-cover" />}
                                     </div>
                                     <div className="space-y-8">
                                         <div>
