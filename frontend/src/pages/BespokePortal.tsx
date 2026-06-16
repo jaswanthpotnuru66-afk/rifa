@@ -76,7 +76,7 @@ const BespokePortal = () => {
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
                     <Link to="/" className="hover:text-brand-pink transition-colors">Shop</Link>
                     <ChevronRight size={10} />
-                    <Link to={`/rifa/${product.artisanId}`} className="hover:text-brand-pink transition-colors">Artisan</Link>
+                    <Link to="/craftmakers" className="hover:text-brand-pink transition-colors">Artisans</Link>
                     <ChevronRight size={10} />
                     <span className="text-neutral-900">{product.name}</span>
                 </div>

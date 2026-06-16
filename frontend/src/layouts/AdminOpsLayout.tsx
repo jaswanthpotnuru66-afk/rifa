@@ -101,60 +101,58 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
 
             {/* ═══════════════════ SIDEBAR ═══════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-[70] w-60 flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:shrink-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`fixed inset-y-0 left-0 z-[70] w-64 flex flex-col transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:shrink-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 style={{ backgroundColor: '#0a0a0a' }}
             >
                 {/* ── Top: Brand + Close ── */}
-                <div className="flex items-center justify-between px-5 pt-6 pb-5 shrink-0">
-                    <Link to="/" className="flex items-center gap-2.5 group" onClick={handleNavLinkClick}>
+                <div className="flex items-center justify-between px-6 pt-8 pb-6 shrink-0">
+                    <Link to="/" className="flex items-center gap-3 group" onClick={handleNavLinkClick}>
                         {/* Logo mark */}
                         <div className="relative w-8 h-8 shrink-0">
                             <div className="absolute inset-0 bg-brand-pink rounded-sm" />
                             <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-serif font-black">R</span>
                         </div>
                         <div className="min-w-0">
-                            <p className="text-white text-sm font-serif font-bold leading-tight tracking-tight">Rifa</p>
-                            <p className="text-brand-pink text-[9px] font-black uppercase tracking-[0.25em] leading-tight">Admin Ops</p>
+                            <p className="text-white text-base font-serif font-bold leading-tight tracking-tight">Rifa</p>
+                            <p className="text-brand-pink text-xs font-black uppercase tracking-[0.2em] leading-tight mt-0.5">Admin Ops</p>
                         </div>
                     </Link>
                     <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/30 hover:text-white transition-colors p-1">
-                        <X size={16} />
+                        <X size={18} />
                     </button>
                 </div>
 
                 {/* ── Admin identity card ── */}
-                <div className="mx-4 mb-4 rounded-sm overflow-hidden shrink-0" style={{ backgroundColor: '#171717' }}>
-                    <div className="px-5 pt-8 pb-6 relative z-10">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-14 h-14 rounded-full bg-[#3D252C] flex items-center justify-center text-[#D4547A] text-xl font-bold shrink-0 shadow-2xl relative overflow-hidden">
-                                <div className="absolute inset-0 bg-neutral-900/10" />
-                                <span className="relative z-10">SA</span>
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-white text-base font-bold tracking-tight leading-none mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Super Admin</p>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-[#4A8C6F] shrink-0" />
-                                    <span className="text-[9px] font-black text-[#4A8C6F] uppercase tracking-[0.2em]">System Online</span>
-                                </div>
-                            </div>
+                <div className="mx-6 mb-6 px-4 py-4 rounded-sm border border-white/5 bg-[#171717] shadow-sm shrink-0">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[#3D252C] flex items-center justify-center text-[#D4547A] text-sm font-black shrink-0 relative">
+                            SA
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#4A8C6F] border-2 border-[#171717]" />
                         </div>
-                        
-                        {/* Status Metrics */}
-                        <div className="flex items-center justify-between border-t border-white/5 pt-6">
-                            <div className="flex-1 text-center">
-                                <p className="text-white text-lg font-black tracking-tighter leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>{systemStats.modules}</p>
-                                <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1.5">Modules</p>
-                            </div>
-                            <div className="w-[1px] h-8 bg-white/5" />
-                            <div className="flex-1 text-center">
-                                <p className="text-[#F59E0B] text-lg font-black tracking-tighter leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>{unresolvedAlerts}</p>
-                                <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1.5">Alerts</p>
-                            </div>
-                            <div className="w-[1px] h-8 bg-white/5" />
-                            <div className="flex-1 text-center">
-                                <p className="text-white text-lg font-black tracking-tighter leading-none" style={{ fontFamily: "'Inter', sans-serif" }}>0</p>
-                                <p className="text-white/30 text-[8px] font-black uppercase tracking-widest mt-1.5">Errors</p>
-                            </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-white text-sm font-bold truncate">Super Admin</p>
+                            <p className="text-white/50 text-xs font-medium truncate mt-0.5 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#4A8C6F] shrink-0" />
+                                System Online
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* Status Metrics */}
+                    <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-xs font-black text-white">{systemStats.modules}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1">Mods</span>
+                        </div>
+                        <div className="w-[1px] h-5 bg-white/5" />
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-xs font-black text-amber-500">{unresolvedAlerts}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1">Alerts</span>
+                        </div>
+                        <div className="w-[1px] h-5 bg-white/5" />
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-xs font-black text-white/50">0</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1">Errs</span>
                         </div>
                     </div>
                 </div>
@@ -162,18 +160,18 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                 {/* ── Navigation ── */}
                 <div 
                     ref={navContainerRef}
-                    className="flex-1 overflow-y-auto px-3 pb-4" 
+                    className="flex-1 overflow-y-auto px-4 pb-4" 
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                 >
-
                     {/* Dashboard — always first, standalone */}
                     {(() => {
                         const item = NAV_ITEMS[0];
                         const active = isActive(item.path);
                         return (
                             <Link key={item.path} to={item.path} onClick={handleNavLinkClick}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-[11px] font-bold tracking-wide transition-all group mb-4 ${active ? 'bg-brand-pink text-white' : 'text-white/50 hover:text-white hover:bg-white/5'
-                                    }`}
+                                className={`flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-bold tracking-wide transition-all group mb-6 ${
+                                    active ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'
+                                }`}
                             >
                                 <item.icon size={15} className={active ? 'text-white' : 'text-white/30 group-hover:text-white/70'} />
                                 {item.name}
@@ -186,19 +184,20 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                     {SECTIONS.map(section => {
                         const items = NAV_ITEMS.filter(i => i.section === section);
                         return (
-                            <div key={section} className="mb-5">
-                                <p className="px-3 mb-1.5 text-[8px] font-black uppercase tracking-[0.35em] text-white/20">{section}</p>
-                                <div className="space-y-0.5">
+                            <div key={section} className="mb-6">
+                                <p className="px-3 mb-3 text-xs font-black uppercase tracking-[0.2em] text-white/30">{section}</p>
+                                <div className="space-y-1">
                                     {items.map(item => {
                                         const active = isActive(item.path);
                                         return (
                                             <Link key={item.path} to={item.path} onClick={handleNavLinkClick}
-                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-[11px] font-bold tracking-wide transition-all group ${active
-                                                        ? 'bg-white/10 text-white'
-                                                        : 'text-white/40 hover:text-white hover:bg-white/5'
-                                                    }`}
+                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-bold tracking-wide transition-all group ${
+                                                    active
+                                                        ? 'bg-brand-pink/10 text-brand-pink border-l-[3px] border-brand-pink'
+                                                        : 'text-white/40 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent'
+                                                }`}
                                             >
-                                                <item.icon size={14} className={active ? 'text-brand-pink' : 'text-white/25 group-hover:text-white/60'} strokeWidth={active ? 2.5 : 2} />
+                                                <item.icon size={14} className={active ? 'text-brand-pink' : 'text-white/30 group-hover:text-white/70'} strokeWidth={active ? 2.5 : 2} />
                                                 <span className="flex-1">{item.name}</span>
                                             </Link>
                                         );
@@ -212,8 +211,8 @@ const AdminOpsLayout: React.FC<AdminOpsLayoutProps> = ({ children }) => {
                 {/* ── Bottom Info Card (Just Logout now) ── */}
                 <div className="px-4 pb-6 shrink-0 pt-4 border-t border-white/5">
                     <button onClick={() => { sessionStorage.removeItem('admin_sidebar_scroll'); navigate('/'); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-white/25 hover:text-red-400 text-[10px] font-bold tracking-wide transition-colors rounded-sm hover:bg-white/5">
-                        <LogOut size={13} /> Sign Out
+                        className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-[#171717] border border-white/5 text-white/50 hover:text-red-400 hover:border-red-400/30 text-xs font-black uppercase tracking-widest transition-all rounded-sm">
+                        <LogOut size={16} /> Sign Out
                     </button>
                 </div>
             </aside>

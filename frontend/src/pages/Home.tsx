@@ -642,9 +642,8 @@ const Home = () => {
                                 <div key={i} className="animate-pulse aspect-[3/4] bg-neutral-200 rounded-sm" />
                             ))
                         ) : artisans.length > 0 ? artisans.map((maker, idx) => (
-                            <Link 
+                            <div 
                                 key={idx}
-                                to={`/rifa/${maker.id}`}
                                 className="block"
                             >
                                 <motion.div 
@@ -652,7 +651,7 @@ const Home = () => {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.1, duration: 0.5 }}
                                     viewport={{ once: true, margin: '-20px' }}
-                                    className="group relative aspect-[3/4] overflow-hidden cursor-pointer rounded-sm"
+                                    className="group relative aspect-[3/4] overflow-hidden rounded-sm"
                                 >
                                     {/* Background Image */}
                                     <img src={maker.img} alt={maker.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
@@ -666,9 +665,6 @@ const Home = () => {
                                             <span className="bg-white/10 backdrop-blur-md text-white text-[9px] uppercase tracking-widest px-3 py-1.5 border border-white/20">
                                                 {maker.product_count} items
                                             </span>
-                                            <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                                                <ArrowRight size={14} className="text-white -rotate-45" />
-                                            </div>
                                         </div>
                                         
                                         <div className="lg:translate-y-4 lg:group-hover:translate-y-0 transition-transform duration-400">
@@ -689,7 +685,7 @@ const Home = () => {
                                         </div>
                                     </div>
                                 </motion.div>
-                            </Link>
+                            </div>
                         )) : (
                             <div className="col-span-full py-20 text-center text-neutral-400 font-light">
                                 <p className="uppercase tracking-[0.3em] text-[10px] font-black">Collective Offline</p>

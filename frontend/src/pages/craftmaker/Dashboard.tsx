@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     IndianRupee, ShoppingCart, Clock, PlusCircle,
-    ArrowRight, Zap, Package, Settings
+    ArrowRight, Zap, Package
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import CraftMakerLayout from '../../layouts/CraftMakerLayout';
@@ -67,7 +67,7 @@ const Dashboard = () => {
                             className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-pink/10 border border-brand-pink/20 mb-4"
                         >
                             <span className="w-1.5 h-1.5 rounded-full bg-brand-pink animate-pulse" />
-                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-brand-pink">Artisan Studio Active</p>
+                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-brand-pink">Artisan Studio Active</p>
                         </motion.div>
                         <motion.h1 
                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -90,12 +90,12 @@ const Dashboard = () => {
                         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
                         className="flex flex-wrap gap-3 shrink-0"
                     >
-                        <Link to="/craftmaker/listings/new" className="relative overflow-hidden group flex items-center gap-2 bg-white text-neutral-950 text-[10px] font-black uppercase tracking-[0.2em] px-6 py-4 rounded-xl shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] transition-all duration-300">
+                        <Link to="/craftmaker/listings/new" className="relative overflow-hidden group flex items-center gap-2 bg-white text-neutral-950 text-xs font-black uppercase tracking-[0.2em] px-6 py-4 rounded-xl shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] transition-all duration-300">
                             <span className="absolute inset-0 bg-gradient-to-r from-white via-brand-pink/10 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <PlusCircle size={15} className="relative z-10" /> 
                             <span className="relative z-10">New Listing</span>
                         </Link>
-                        <Link to={`/rifa/${stats?.artisan?.id}`} className="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] px-6 py-4 rounded-xl transition-all duration-300">
+                        <Link to={`/rifa/${stats?.artisan?.id}`} className="flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 text-xs font-black uppercase tracking-[0.2em] px-6 py-4 rounded-xl transition-all duration-300">
                             <ArrowRight size={15} /> View Studio
                         </Link>
                     </motion.div>
@@ -126,9 +126,9 @@ const Dashboard = () => {
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-500 ${stat.accent ? 'bg-brand-pink/10 text-brand-pink group-hover:bg-brand-pink group-hover:text-white' : 'bg-neutral-50 text-neutral-500 group-hover:bg-neutral-900 group-hover:text-white'}`}>
                                     <stat.icon size={22} strokeWidth={1.5} />
                                 </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-1">{stat.label}</p>
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-400 mb-1">{stat.label}</p>
                                 <p className="text-3xl font-inter font-black text-neutral-900 tracking-tight">{stat.value}</p>
-                                <p className={`text-[10px] font-bold uppercase tracking-widest mt-3 flex items-center gap-1.5 ${stat.subColor}`}>
+                                <p className={`text-xs font-bold uppercase tracking-widest mt-3 flex items-center gap-1.5 ${stat.subColor}`}>
                                     <span className="w-1 h-1 rounded-full bg-current" /> {stat.sub}
                                 </p>
                             </div>
@@ -144,10 +144,10 @@ const Dashboard = () => {
                 <div className="lg:col-span-7">
                     <div className="flex items-end justify-between mb-6">
                         <div>
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-1">Activity</h2>
+                            <h2 className="text-xs font-black uppercase tracking-[0.3em] text-neutral-400 mb-1">Activity</h2>
                             <h3 className="text-xl font-serif font-bold text-neutral-900">Live Acquisition Stream</h3>
                         </div>
-                        <Link to="/craftmaker/orders" className="text-[10px] font-black uppercase tracking-widest text-brand-pink hover:text-brand-pink-dark transition-colors flex items-center gap-1.5 bg-brand-pink/5 px-4 py-2 rounded-lg">
+                        <Link to="/craftmaker/orders" className="text-xs font-black uppercase tracking-widest text-brand-pink hover:text-brand-pink-dark transition-colors flex items-center gap-1.5 bg-brand-pink/5 px-4 py-2 rounded-lg">
                             View All <ArrowRight size={12} />
                         </Link>
                     </div>
@@ -187,11 +187,11 @@ const Dashboard = () => {
                                             <img loading="lazy" src={order.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1 group-hover:text-brand-pink transition-colors">
+                                            <p className="text-xs font-black text-neutral-400 uppercase tracking-widest mb-1 group-hover:text-brand-pink transition-colors">
                                                 #{order.order_id.slice(0, 8)}
                                             </p>
                                             <p className="text-sm font-bold text-neutral-900 truncate">{order.product_name}</p>
-                                            <p className="text-[10px] text-neutral-400 font-medium mt-1">
+                                            <p className="text-xs text-neutral-400 font-medium mt-1">
                                                 {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
@@ -199,11 +199,11 @@ const Dashboard = () => {
                                     
                                     <div className="flex items-center gap-6 shrink-0">
                                         <div className="text-right hidden sm:block">
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Revenue</p>
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 mb-1">Revenue</p>
                                             <p className="text-sm font-black text-neutral-900 font-inter">₹{(order.price * order.quantity).toLocaleString()}</p>
                                         </div>
                                         <div className="w-28 text-right">
-                                            <span className={`inline-flex px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${statusConfig[order.orders?.status || 'pending']?.classes || 'bg-neutral-50 text-neutral-500'}`}>
+                                            <span className={`inline-flex px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest ${statusConfig[order.orders?.status || 'pending']?.classes || 'bg-neutral-50 text-neutral-500'}`}>
                                                 {statusConfig[order.orders?.status || 'pending']?.label || order.orders?.status || 'Pending'}
                                             </span>
                                         </div>
@@ -232,7 +232,7 @@ const Dashboard = () => {
                         
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-8">
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Gross Acquisitions</p>
+                                <p className="text-xs font-black uppercase tracking-[0.3em] text-white/50">Gross Acquisitions</p>
                                 <IndianRupee size={16} className="text-brand-pink" />
                             </div>
                             
@@ -241,22 +241,22 @@ const Dashboard = () => {
                             </p>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
                                 <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                                <p className="text-[9px] text-green-400 font-black uppercase tracking-widest font-inter">Verified Studio Revenue</p>
+                                <p className="text-[11px] text-green-400 font-black uppercase tracking-widest font-inter">Verified Studio Revenue</p>
                             </div>
 
                             <div className="mt-10 pt-8 border-t border-white/10 grid grid-cols-2 gap-6">
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-2">Live Catalog</p>
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-white/40 mb-2">Live Catalog</p>
                                     <p className="text-2xl font-serif font-bold text-white">{stats?.stats?.activeListings || 0}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-2">Efficiency</p>
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-white/40 mb-2">Efficiency</p>
                                     <p className="text-2xl font-serif font-bold text-white">98%</p>
                                 </div>
                             </div>
 
                             <Link to="/craftmaker/earnings" className="mt-8 flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white group-hover:text-brand-pink transition-colors">Studio Analytics</span>
+                                <span className="text-xs font-black uppercase tracking-widest text-white group-hover:text-brand-pink transition-colors">Studio Analytics</span>
                                 <ArrowRight size={14} className="text-white/50 group-hover:text-brand-pink transform group-hover:translate-x-1 transition-all" />
                             </Link>
                         </div>
@@ -270,7 +270,7 @@ const Dashboard = () => {
                                     <Package size={24} strokeWidth={1.5} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Inventory</p>
+                                    <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 mb-1">Inventory</p>
                                     <p className="text-lg font-serif font-bold text-neutral-900 group-hover:text-brand-pink transition-colors">Manage Creations</p>
                                 </div>
                             </div>
@@ -284,7 +284,7 @@ const Dashboard = () => {
                                 <Zap size={20} strokeWidth={1.5} />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Bespoke</p>
+                                <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 mb-1">Bespoke</p>
                                 <p className="text-sm font-serif font-bold text-neutral-900 flex items-center justify-between">
                                     Custom Requests
                                     <ArrowRight size={14} className="text-neutral-300 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" />
@@ -297,7 +297,7 @@ const Dashboard = () => {
                                 <IndianRupee size={20} strokeWidth={1.5} />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Growth</p>
+                                <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 mb-1">Growth</p>
                                 <p className="text-sm font-serif font-bold text-neutral-900 flex items-center justify-between">
                                     Promotions
                                     <ArrowRight size={14} className="text-neutral-300 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" />

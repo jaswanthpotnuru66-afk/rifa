@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogIn, Search, LogOut, MapPin } from 'lucide-react';
+import { Menu, X, User, LogIn, Search, LogOut, MapPin, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../lib/api';
 
@@ -16,6 +16,10 @@ const Navbar = () => {
     const [tempPin, setTempPin] = useState('');
     const [pinError, setPinError] = useState('');
     const [isLocating, setIsLocating] = useState(false);
+    
+    // Notifications State
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
     // Fallback to database addresses if geolocate fails or is denied
     const fallbackToDbAddress = async () => {
@@ -134,6 +138,64 @@ const Navbar = () => {
         fetchPromotions();
     }, []);
 
+    // Fetch Buyer Notifications
+    useEffect(() => {
+        const fetchBuyerNotifications = async () => {
+            if (!user || user.role === 'artisan' || user.role === 'admin') return;
+            try {
+                const ordersRes = await api.getOrders();
+                const list: any[] = [];
+                let notifId = 1;
+
+                if (ordersRes) {
+                    ordersRes.forEach((o: any) => {
+                        // Custom orders awaiting buyer approval of a proof
+                        if (o.proofStatus === 'uploaded' || o.proofStatus === 'ready-for-review' || o.status === 'awaiting-proof') {
+                            list.push({
+                                id: notifId++,
+                                type: 'alert',
+                                title: '🎨 Mockup Proof Ready!',
+                                desc: `The artisan uploaded a digital proof for order #${o.id.slice(0, 8)}. Please review.`,
+                                time: new Date(o.updated_at || o.created_at).toLocaleDateString(),
+                                read: false,
+                                link: `/profile`
+                            });
+                        }
+                        
+                        // Shipped orders
+                        if (o.status === 'shipped') {
+                            list.push({
+                                id: notifId++,
+                                type: 'success',
+                                title: '🚚 Order Shipped',
+                                desc: `Your order #${o.id.slice(0, 8)} is on the way!`,
+                                time: new Date(o.updated_at || o.created_at).toLocaleDateString(),
+                                read: false,
+                                link: `/profile`
+                            });
+                        }
+                    });
+                }
+                
+                if (list.length === 0) {
+                    list.push({
+                        id: notifId++,
+                        type: 'info',
+                        title: '✨ Welcome to Rifa',
+                        desc: 'Your notifications for order updates will appear here.',
+                        time: 'Just now',
+                        read: true,
+                        link: '/profile'
+                    });
+                }
+                setNotifications(list);
+            } catch (err) {
+                console.error('Failed to fetch buyer notifications', err);
+            }
+        };
+        fetchBuyerNotifications();
+    }, [user]);
+
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
@@ -167,6 +229,7 @@ const Navbar = () => {
     const navLinks = [
         { name: 'Home', path: '/' },
         { name: 'Shop', path: '/marketplace' },
+        { name: 'Makers', path: '/craftmakers' },
         { name: 'Creations', path: '/creations' },
         { name: 'Combos', path: '/combos' },
     ];
@@ -180,7 +243,7 @@ const Navbar = () => {
             }`}
         >
             {/* Dynamic Active Promotions Marquee */}
-            {promotions.length > 0 && (
+            {promotions.length > 0 && (location.pathname === '/' || location.pathname === '/marketplace') && (
                 <div 
                     className={`bg-neutral-950 text-white text-[9px] uppercase tracking-[0.25em] font-black overflow-hidden whitespace-nowrap border-b border-white/5 transition-all duration-500 relative z-50 ${
                         scrolled ? 'h-0 py-0 opacity-0 pointer-events-none' : 'py-2.5 opacity-100'
@@ -260,6 +323,65 @@ const Navbar = () => {
                                     Maker Dashboard
                                 </Link>
                             )}
+                            
+                            {/* Dynamic Buyer Notifications Dropdown */}
+                            {user.role === 'buyer' && (
+                                <div className="relative">
+                                    <button 
+                                        onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                                        className="relative cursor-pointer p-2 text-neutral-500 hover:text-neutral-950 transition-colors"
+                                        title="Notifications"
+                                    >
+                                        <Bell size={18} strokeWidth={1.5} />
+                                        {notifications.filter(n => !n.read).length > 0 && (
+                                            <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand-pink rounded-full border-2 border-white flex items-center justify-center text-[7px] font-black text-white">
+                                                {notifications.filter(n => !n.read).length}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {isNotificationsOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
+                                            <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-sm shadow-2xl border border-neutral-100 z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200 text-left">
+                                                <div className="px-5 py-4 border-b border-neutral-50 flex justify-between items-center bg-neutral-50/50">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-950">Notifications</span>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                                                            setIsNotificationsOpen(false);
+                                                        }}
+                                                        className="text-[9px] font-bold text-neutral-400 hover:text-brand-pink uppercase tracking-widest cursor-pointer"
+                                                    >
+                                                        Mark all read
+                                                    </button>
+                                                </div>
+                                                <div className="max-h-96 overflow-y-auto no-scrollbar">
+                                                    {notifications.map(notif => (
+                                                        <Link 
+                                                            key={notif.id} 
+                                                            to={notif.link}
+                                                            onClick={() => {
+                                                                setIsNotificationsOpen(false);
+                                                                setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                                                            }}
+                                                            className={`block p-5 border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50 transition-colors cursor-pointer ${!notif.read ? 'bg-brand-pink/[0.02]' : ''}`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-0.5">
+                                                                <p className={`text-xs font-bold ${!notif.read ? 'text-neutral-950' : 'text-neutral-700'}`}>{notif.title}</p>
+                                                                {!notif.read && <div className="w-1.5 h-1.5 rounded-full bg-brand-pink shrink-0 mt-1" />}
+                                                            </div>
+                                                            <p className="text-[11px] font-medium text-neutral-500 leading-snug">{notif.desc}</p>
+                                                            <p className="text-[9px] font-black text-neutral-300 mt-2 uppercase tracking-widest">{notif.time}</p>
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
                             <Link to="/profile" className="p-2 text-neutral-500 hover:text-neutral-950 transition-colors" title="Profile">
                                 <User size={18} strokeWidth={1.5} />
                             </Link>

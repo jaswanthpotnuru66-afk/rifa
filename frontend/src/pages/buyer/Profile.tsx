@@ -49,22 +49,6 @@ const MapClickHandler = ({ onLocationSelect }: { onLocationSelect: (lat: number,
     return null;
 };
 
-/* --- Mock User Data --- */
-const MOCK_USER = {
-    name: 'Sai Sampath',
-    email: 'sai.sampath@example.com',
-    phone: '+91 98765 43210',
-    username: 'sai_sampath',
-    joined: 'October 2023',
-    locations: [
-        { id: '1', label: 'Primary Residence', address: '123 Art Lane, Jubilee Hills, Hyderabad, 500033', isDefault: true },
-        { id: '2', label: 'Summer Home', address: '456 Heritage St, Banjara Hills, Hyderabad, 500034', isDefault: false }
-    ],
-    wishlist: [
-        { id: 'resin-ocean-frame', name: 'Ceramic Lotus Bowl', price: 1200, category: 'Pottery', image: '/products/mandala.png' },
-        { id: 'heritage-jamdani-saree', name: 'Silk Embroidered Tapestry', price: 4500, category: 'Textiles', image: '/products/earrings.png' }
-    ]
-};
 
 type SettingsTab = 'general' | 'security' | 'addresses' | 'notifications' | 'billing' | 'wishlist' | 'bag' | 'orders';
 
@@ -231,9 +215,15 @@ const Profile = () => {
     
     const [isLoadingOrders, setIsLoadingOrders] = useState(true);
     const [isLoadingWishlist, setIsLoadingWishlist] = useState(true);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
     React.useEffect(() => {
-        api.getMe().then(u => { setUser(u); }).catch(() => {});
+        api.getMe().then(u => { 
+            if (u) {
+                u.bio = u.bio || localStorage.getItem(`rifa_collector_vision_${u.id}`) || "";
+            }
+            setUser(u); 
+        }).catch(() => {});
         api.getOrders().then(o => { setOrders(o); setIsLoadingOrders(false); }).catch(() => setIsLoadingOrders(false));
         api.getAddresses().then(a => { setAddresses(a); }).catch(() => {});
         api.getWishlist().then(w => { setWishlist(w); setIsLoadingWishlist(false); }).catch(() => setIsLoadingWishlist(false));
@@ -264,14 +254,31 @@ const Profile = () => {
     const [showSuccess, setShowSuccess] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setUser({ ...user, avatar_url: reader.result as string });
-            };
-            reader.readAsDataURL(file);
+            setIsUploadingAvatar(true);
+            try {
+                const safeBaseName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+                const fileName = `avatars/${user?.id || 'anonymous'}-${Date.now()}-${safeBaseName}`;
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('creator-product-images')
+                    .upload(fileName, file);
+                
+                if (uploadError) throw uploadError;
+                
+                const { data } = supabase.storage
+                    .from('creator-product-images')
+                    .getPublicUrl(fileName);
+                
+                setUser({ ...user, avatar_url: data.publicUrl });
+            } catch (err: any) {
+                console.error('Avatar upload error:', err);
+                alert('Failed to upload image to the secure storage network: ' + (err.message || err));
+            } finally {
+                setIsUploadingAvatar(false);
+            }
         }
     };
 
@@ -481,6 +488,20 @@ const Profile = () => {
 
     const handleAddressSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const phoneRegex = /^[6-9][0-9]{9}$/;
+        const pincodeRegex = /^[1-9][0-9]{5}$/;
+        
+        if (!phoneRegex.test(addressForm.phone)) {
+            alert('Validation Error: Contact number must be a valid 10-digit Indian mobile number (e.g. 9876543210).');
+            return;
+        }
+        
+        if (!pincodeRegex.test(addressForm.pincode)) {
+            alert('Validation Error: PIN Code must be a valid 6-digit number (cannot start with 0).');
+            return;
+        }
+
         setIsSavingAddress(true);
         try {
             const res = await api.saveAddress({
@@ -639,6 +660,9 @@ const Profile = () => {
 
     const handleSave = async () => {
         setIsSaving(true);
+        if (user?.id) {
+            localStorage.setItem(`rifa_collector_vision_${user.id}`, user.bio || '');
+        }
         const res = await api.updateProfile({
             full_name: user.full_name,
             phone: user.phone,
@@ -647,7 +671,10 @@ const Profile = () => {
         });
         setIsSaving(false);
         if (!res.error) {
-            setUser(res);
+            setUser({
+                ...res,
+                bio: localStorage.getItem(`rifa_collector_vision_${res.id}`) || ""
+            });
             setIsEditing(false);
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);
@@ -841,11 +868,16 @@ const Profile = () => {
                                         <div className="flex items-center justify-between pb-4 border-b border-neutral-50">
                                             <div className="flex items-center gap-10">
                                                 <div className="relative group">
-                                                    <div className="w-24 h-24 rounded-full overflow-hidden border border-neutral-100 shadow-xl bg-neutral-50 flex items-center justify-center">
+                                                    <div className="w-24 h-24 rounded-full overflow-hidden border border-neutral-100 shadow-xl bg-neutral-50 flex items-center justify-center relative">
                                                         {user?.avatar_url ? (
-                                                            <img loading="lazy" src={user?.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                                            <img loading="lazy" src={user?.avatar_url} alt="Avatar" className={`w-full h-full object-cover ${isUploadingAvatar ? 'opacity-40' : ''}`} />
                                                         ) : (
-                                                            <User size={32} className="text-neutral-300" />
+                                                            <User size={32} className={`text-neutral-300 ${isUploadingAvatar ? 'opacity-40' : ''}`} />
+                                                        )}
+                                                        {isUploadingAvatar && (
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px]">
+                                                                <Loader2 size={24} className="text-brand-pink animate-spin" />
+                                                            </div>
                                                         )}
                                                     </div>
                                                     {isEditing && (
@@ -856,10 +888,12 @@ const Profile = () => {
                                                                 className="hidden" 
                                                                 ref={fileInputRef} 
                                                                 onChange={handleImageUpload} 
+                                                                disabled={isUploadingAvatar}
                                                             />
                                                             <button 
                                                                 onClick={() => fileInputRef.current?.click()}
-                                                                className="absolute bottom-0 right-0 w-8 h-8 bg-neutral-950 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all animate-in zoom-in duration-300"
+                                                                disabled={isUploadingAvatar}
+                                                                className="absolute bottom-0 right-0 w-8 h-8 bg-neutral-950 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 disabled:opacity-50 transition-all animate-in zoom-in duration-300"
                                                             >
                                                                 <Camera size={14} />
                                                             </button>
@@ -881,44 +915,90 @@ const Profile = () => {
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                                            {[
-                                                { label: 'Legal Name', value: user?.full_name || '', key: 'full_name' },
-                                                { label: 'Email Workspace', value: user?.email || '', key: 'email', disabled: true },
-                                                { label: 'Contact Number', value: user?.phone || user?.mobile_number || '', key: 'phone' },
-                                                { label: 'Primary Address', value: user?.location || '', key: 'location' }
-                                            ].map((field, i) => (
-                                                <div key={i} className="space-y-2">
-                                                    <label className="text-xs font-black uppercase tracking-widest text-neutral-400">{field.label}</label>
-                                                    {isEditing ? (
-                                                        <input 
-                                                            type="text" 
-                                                            value={field.value} 
-                                                            disabled={field.disabled}
-                                                            onChange={(e) => setUser({ ...user, [field.key]: e.target.value })}
-                                                            className="w-full px-0 py-3 border-b border-neutral-100 focus:border-brand-pink outline-none text-sm text-neutral-950 font-bold transition-all bg-transparent disabled:opacity-50" 
-                                                        />
-                                                    ) : (
-                                                        <p className="py-3 text-sm text-neutral-950 font-medium border-b border-transparent">{field.value || 'Not set'}</p>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                                         {isEditing ? (
+                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                 {[
+                                                     { label: 'Legal Name', value: user?.full_name || '', key: 'full_name', icon: <User size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Email Workspace', value: user?.email || '', key: 'email', disabled: true, icon: <Globe size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Contact Number', value: user?.phone || user?.mobile_number || '', key: 'phone', icon: <Smartphone size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Primary Address', value: user?.location || '', key: 'location', icon: <MapPin size={16} strokeWidth={1.5} /> }
+                                                 ].map((field, i) => (
+                                                     <div key={i} className="space-y-2">
+                                                         <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block pl-1">{field.label}</label>
+                                                         <div className="relative">
+                                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                                                                 {field.icon}
+                                                             </div>
+                                                             <input 
+                                                                 type="text" 
+                                                                 value={field.value} 
+                                                                 disabled={field.disabled}
+                                                                 onChange={(e) => setUser({ ...user, [field.key]: e.target.value })}
+                                                                 className="w-full pl-11 pr-4 py-3.5 bg-white border border-neutral-200 rounded-lg focus:border-brand-pink focus:ring-1 focus:ring-brand-pink/20 outline-none text-xs font-bold text-neutral-900 placeholder:text-neutral-300 transition-all shadow-inner disabled:bg-[#FAF6EE]/50 disabled:text-neutral-400" 
+                                                             />
+                                                         </div>
+                                                     </div>
+                                                 ))}
+                                             </div>
+                                         ) : (
+                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                 {[
+                                                     { label: 'Legal Name', value: user?.full_name || '', key: 'full_name', icon: <User size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Email Workspace', value: user?.email || '', key: 'email', disabled: true, icon: <Globe size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Contact Number', value: user?.phone || user?.mobile_number || '', key: 'phone', icon: <Smartphone size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Primary Address', value: user?.location || '', key: 'location', icon: <MapPin size={16} strokeWidth={1.5} /> }
+                                                 ].map((field, i) => (
+                                                     <div key={i} className="group relative overflow-hidden rounded-xl border border-neutral-100 bg-white/60 backdrop-blur-md p-6 shadow-sm hover:shadow-md hover:border-brand-pink/20 transition-all duration-300">
+                                                         <div className="absolute top-0 right-0 p-3 opacity-[0.03] text-neutral-900 group-hover:opacity-[0.06] transition-opacity pointer-events-none">
+                                                             {field.icon}
+                                                         </div>
+                                                         <div className="flex items-start gap-4">
+                                                             <div className="w-10 h-10 rounded-lg bg-[#FAF6EE] border border-neutral-100/50 flex items-center justify-center text-brand-pink shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                                                 {field.icon}
+                                                             </div>
+                                                             <div className="space-y-1 min-w-0 flex-1">
+                                                                 <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">{field.label}</span>
+                                                                 <p className="text-sm text-neutral-950 font-serif font-bold truncate leading-snug">
+                                                                     {field.value || <span className="text-xs font-light text-neutral-300 italic">Not set</span>}
+                                                                 </p>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                 ))}
+                                             </div>
+                                         )}
 
-                                        <div className="space-y-2 pt-6">
-                                            <label className="text-xs font-black uppercase tracking-widest text-neutral-400">Collector's Vision</label>
-                                            {isEditing ? (
-                                                <textarea 
-                                                    rows={4} 
-                                                    placeholder="Describe your taste—what draws you to specific art forms or artisan works?" 
-                                                    className="w-full px-0 py-4 border-b border-neutral-100 focus:border-brand-pink outline-none text-neutral-950 font-light leading-relaxed transition-all bg-transparent resize-none" 
-                                                />
-                                            ) : (
-                                                <p className="py-4 text-sm font-light text-neutral-600 leading-relaxed max-w-xl italic">
-                                                    "A collector of stories and handcrafted legacies. I'm particularly drawn to the intersection of modern geometry and traditional resin mastery."
-                                                </p>
-                                            )}
-                                        </div>
+                                         {isEditing ? (
+                                             <div className="space-y-2 pt-4">
+                                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block pl-1">Collector's Vision</label>
+                                                 <textarea 
+                                                     rows={4} 
+                                                     placeholder="Describe your taste—what draws you to specific art forms or artisan works?" 
+                                                     value={user?.bio || ''}
+                                                     onChange={(e) => setUser({ ...user, bio: e.target.value })}
+                                                     className="w-full p-5 bg-white border border-neutral-200 rounded-lg focus:border-brand-pink focus:ring-1 focus:ring-brand-pink/20 outline-none text-xs font-light text-neutral-800 leading-relaxed transition-all shadow-inner resize-none" 
+                                                 />
+                                             </div>
+                                         ) : (
+                                             <div className="relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-br from-[#FAF6EE] to-white p-8 shadow-sm">
+                                                 <div className="absolute -top-6 -left-6 text-9xl font-serif text-brand-pink/5 select-none pointer-events-none">“</div>
+                                                 <div className="absolute -bottom-16 -right-6 text-9xl font-serif text-brand-pink/5 select-none pointer-events-none">”</div>
+                                                 <div className="relative space-y-4">
+                                                     <div className="flex items-center gap-2">
+                                                         <div className="w-1.5 h-1.5 rounded-full bg-brand-pink" />
+                                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Curator Statement & Taste Profile</span>
+                                                     </div>
+                                                     <blockquote className="text-base font-serif italic font-medium text-neutral-850 leading-relaxed max-w-2xl pl-4 border-l-2 border-brand-pink/20">
+                                                         "{user?.bio || "A collector of stories and handcrafted legacies. I'm particularly drawn to the intersection of modern geometry and traditional resin mastery."}"
+                                                     </blockquote>
+                                                     <div className="pt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-neutral-400">
+                                                         <span>Vault Verification</span>
+                                                         <span>•</span>
+                                                         <span className="text-brand-pink flex items-center gap-1"><Sparkles size={8} /> Taste Verified</span>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
                                         
                                         {/* Edit Mode Controls */}
                                         <AnimatePresence>
@@ -1038,10 +1118,18 @@ const Profile = () => {
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div className="py-20 text-center border-2 border-dashed border-neutral-50">
-                                                            <Package size={32} className="mx-auto text-neutral-200 mb-4" />
-                                                            <p className="text-xs font-black uppercase tracking-widest text-neutral-400">No Orders in the Archive</p>
-                                                            <Link to="/marketplace" className="text-brand-pink text-[11px] font-bold mt-2 inline-block hover:underline">Begin your first acquisition</Link>
+                                                        <div className="py-24 text-center border border-neutral-100 bg-white shadow-sm flex flex-col items-center justify-center p-8 relative overflow-hidden group">
+                                                            <div className="absolute inset-0 bg-gradient-to-br from-neutral-50/50 via-transparent to-transparent pointer-events-none" />
+                                                            <div className="w-16 h-16 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 group-hover:text-brand-pink group-hover:bg-brand-pink/5 group-hover:scale-110 transition-all duration-500 mb-6">
+                                                                <Package size={28} strokeWidth={1.5} />
+                                                            </div>
+                                                            <h4 className="text-base font-serif font-bold text-neutral-950 mb-2">No Acquisitions Found</h4>
+                                                            <p className="text-xs text-neutral-400 font-light max-w-xs leading-relaxed mb-8">
+                                                                Your collection archive is currently empty. Explore our handpicked selection of original art pieces and masterpieces.
+                                                            </p>
+                                                            <Link to="/marketplace" className="px-8 py-3.5 bg-neutral-950 hover:bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-all duration-300">
+                                                                Explore Masterpieces
+                                                            </Link>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1223,13 +1311,18 @@ const Profile = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="py-20 text-center border-2 border-dashed border-neutral-50 flex flex-col items-center gap-4">
-                                                    <ShoppingBag size={32} className="text-neutral-100" />
-                                                    <div className="space-y-1">
-                                                        <p className="text-xs font-black uppercase tracking-widest text-neutral-400">Your bag is empty</p>
-                                                        <p className="text-[11px] text-neutral-300 font-light">Acquire your first masterpiece today.</p>
+                                                <div className="py-24 text-center border border-neutral-100 bg-white shadow-sm flex flex-col items-center justify-center p-8 relative overflow-hidden group">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-50/50 via-transparent to-transparent pointer-events-none" />
+                                                    <div className="w-16 h-16 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 group-hover:text-brand-pink group-hover:bg-brand-pink/5 group-hover:scale-110 transition-all duration-500 mb-6">
+                                                        <ShoppingBag size={26} strokeWidth={1.5} />
                                                     </div>
-                                                    <Link to="/marketplace" className="mt-2 px-8 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all">Go to Gallery</Link>
+                                                    <h4 className="text-base font-serif font-bold text-neutral-950 mb-2">Acquisition Bag is Empty</h4>
+                                                    <p className="text-xs text-neutral-400 font-light max-w-xs leading-relaxed mb-8">
+                                                        You haven't selected any artworks yet. Browse the marketplace and select creations that speak to your style.
+                                                    </p>
+                                                    <Link to="/marketplace" className="px-8 py-3.5 bg-neutral-950 hover:bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-all duration-300">
+                                                        Go to Gallery
+                                                    </Link>
                                                 </div>
                                             )}
                                         </div>
@@ -1280,13 +1373,18 @@ const Profile = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="col-span-full py-32 text-center border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center gap-4">
-                                                    <Heart size={32} className="text-neutral-100" />
-                                                    <div className="space-y-1">
-                                                        <p className="text-xs font-black uppercase tracking-widest text-neutral-400">Vault Wishlist Empty</p>
-                                                        <p className="text-[11px] text-neutral-300 font-light">Curate your personal collection from our gallery.</p>
+                                                <div className="col-span-full py-24 text-center border border-neutral-100 bg-white shadow-sm flex flex-col items-center justify-center p-8 relative overflow-hidden group">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-50/50 via-transparent to-transparent pointer-events-none" />
+                                                    <div className="w-16 h-16 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 group-hover:text-brand-pink group-hover:bg-brand-pink/5 group-hover:scale-110 transition-all duration-500 mb-6">
+                                                        <Heart size={26} strokeWidth={1.5} />
                                                     </div>
-                                                    <Link to="/marketplace" className="mt-2 px-8 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand-pink transition-all">Explore Creations</Link>
+                                                    <h4 className="text-base font-serif font-bold text-neutral-950 mb-2">Vault Wishlist Empty</h4>
+                                                    <p className="text-xs text-neutral-400 font-light max-w-xs leading-relaxed mb-8">
+                                                        Curate your personal dream collection. Save masterpieces you love while exploring our collections.
+                                                    </p>
+                                                    <Link to="/marketplace" className="px-8 py-3.5 bg-neutral-950 hover:bg-brand-pink text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-all duration-300">
+                                                        Explore Creations
+                                                    </Link>
                                                 </div>
                                             )}
                                             <div className="border-2 border-dashed border-neutral-100 p-8 flex flex-col items-center justify-center text-center gap-4 group hover:border-neutral-200 transition-all">
@@ -1384,9 +1482,14 @@ const Profile = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="col-span-full py-20 text-center border-2 border-dashed border-neutral-50">
-                                                    <MapPin size={32} className="mx-auto text-neutral-100 mb-4" />
-                                                    <p className="text-xs font-black uppercase tracking-widest text-neutral-400">No saved locations</p>
+                                                <div className="col-span-full py-16 text-center border border-neutral-100 bg-white shadow-sm flex flex-col items-center justify-center p-6 relative overflow-hidden group">
+                                                    <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-300 group-hover:text-brand-pink group-hover:bg-brand-pink/5 transition-all duration-500 mb-4">
+                                                        <MapPin size={22} strokeWidth={1.5} />
+                                                    </div>
+                                                    <h4 className="text-sm font-serif font-bold text-neutral-950 mb-1">No Saved Locations</h4>
+                                                    <p className="text-xs text-neutral-400 font-light max-w-xs leading-relaxed">
+                                                        You haven't archived any shipping destinations in your vault yet.
+                                                    </p>
                                                 </div>
                                             )}
                                             
@@ -1459,27 +1562,39 @@ const Profile = () => {
                                 {/* --- BILLING TAB --- */}
                                 {activeTab === 'billing' && (
                                     <div className="space-y-8">
-                                        <div className="bg-neutral-900 p-8 rounded-sm overflow-hidden relative group">
-                                            <div className="relative z-10 flex flex-col h-full justify-between gap-12">
+                                        <div className="bg-gradient-to-br from-[#1c1917]/95 via-[#0c0a09]/95 to-[#1c1917]/95 p-10 rounded-sm border border-neutral-800 relative group hover:scale-[1.02] hover:shadow-[0_30px_60px_rgba(219,39,119,0.12)] transition-all duration-500 overflow-hidden shadow-2xl">
+                                            {/* Glowing light overlays */}
+                                            <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-brand-pink/15 to-transparent rounded-full blur-[120px] pointer-events-none group-hover:scale-125 transition-transform duration-[750ms]" />
+                                            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-amber-500/5 to-transparent rounded-full blur-[120px] pointer-events-none" />
+                                            
+                                            <div className="relative z-10 flex flex-col h-full justify-between gap-16">
                                                 <div className="flex justify-between items-start">
-                                                    <CreditCard size={32} className="text-neutral-700" />
-                                                    <span className="text-neutral-500 text-xs font-black tracking-widest uppercase">Member Card</span>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <p className="text-white font-serif text-2xl tracking-widest font-bold">•••• •••• •••• 4321</p>
-                                                    <div className="flex justify-between items-end">
-                                                        <div>
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Holder</p>
-                                                            <p className="text-xs text-white uppercase font-bold tracking-widest">{MOCK_USER.name}</p>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-brand-pink/10 border border-brand-pink/20 flex items-center justify-center text-brand-pink">
+                                                            <Sparkles size={14} className="animate-pulse" />
                                                         </div>
                                                         <div>
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Expiry</p>
-                                                            <p className="text-xs text-white font-bold tracking-widest">12 / 28</p>
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-200">Collector's Club</p>
+                                                            <p className="text-[8px] font-medium uppercase tracking-[0.3em] text-brand-pink">Elite Tier</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-neutral-500 text-[10px] font-black tracking-[0.25em] uppercase px-3 py-1 bg-white/[0.03] border border-white/5 rounded-none">Member Card</span>
+                                                </div>
+                                                
+                                                <div className="space-y-6">
+                                                    <p className="text-white font-mono text-2xl tracking-[0.25em] font-semibold text-shadow-sm select-none">•••• •••• •••• 4321</p>
+                                                    <div className="flex justify-between items-end border-t border-white/5 pt-4">
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-neutral-500 mb-1">Card Holder</p>
+                                                            <p className="text-xs text-white uppercase font-black tracking-widest">{user?.full_name || 'Member Collector'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-neutral-500 mb-1">Expiry</p>
+                                                            <p className="text-xs text-neutral-300 font-bold tracking-widest">12 / 28</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-pink/10 rounded-full blur-[100px] -mr-32 -mt-32 transition-all group-hover:scale-125" />
                                         </div>
 
                                         <button className="w-full py-6 border-2 border-dashed border-neutral-100 flex flex-col items-center justify-center gap-3 text-neutral-300 hover:border-neutral-200 hover:text-neutral-500 transition-all">
@@ -1610,6 +1725,10 @@ const Profile = () => {
                                                         value={addressForm.phone}
                                                         onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
                                                         className="w-full px-0 py-3 border-b border-neutral-100 focus:border-brand-pink outline-none text-sm font-bold transition-all bg-transparent"
+                                                        placeholder="10-digit number"
+                                                        pattern="[6-9][0-9]{9}"
+                                                        title="Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9."
+                                                        maxLength={10}
                                                         required
                                                     />
                                                 </div>
@@ -1657,6 +1776,10 @@ const Profile = () => {
                                                         value={addressForm.pincode}
                                                         onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
                                                         className="w-full px-0 py-3 border-b border-neutral-100 focus:border-brand-pink outline-none text-sm font-bold transition-all bg-transparent"
+                                                        placeholder="6-digit PIN code"
+                                                        pattern="[1-9][0-9]{5}"
+                                                        title="Please enter a valid 6-digit Indian PIN code (cannot start with 0)."
+                                                        maxLength={6}
                                                         required
                                                     />
                                                 </div>

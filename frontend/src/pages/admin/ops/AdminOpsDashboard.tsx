@@ -17,7 +17,7 @@ const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = fa
             <div className="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-neutral-200 group-hover:border-brand-pink transition-colors" />
             
             <div className="relative z-10">
-                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-8">{title}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-8">{title}</p>
                 {loading ? (
                     <Skeleton className="w-3/4 h-12 mb-4" />
                 ) : (
@@ -32,7 +32,7 @@ const StatCard = ({ title, value, sub, subColor = "text-neutral-400", alert = fa
             <div className="flex items-center gap-2 relative z-10">
                 <div className={`h-[1px] w-4 ${subColor.replace('text-', 'bg-')} opacity-30`} />
                 <p 
-                    className={`text-[10px] font-bold uppercase tracking-widest ${subColor} font-inter`}
+                    className={`text-xs font-bold uppercase tracking-widest ${subColor} font-inter`}
                 >
                     {sub}
                 </p>
@@ -92,7 +92,7 @@ const AdminOpsDashboard = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-4 w-full md:w-auto">
-                            <Link to="/admin/ops/makers/applications" className="flex-1 md:flex-none text-center px-8 py-3.5 bg-neutral-950 text-white text-[9px] font-black uppercase tracking-[0.3em] hover:bg-neutral-800 transition-all shadow-xl shadow-neutral-950/20">
+                            <Link to="/admin/ops/makers/applications" className="flex-1 md:flex-none text-center px-8 py-3.5 bg-neutral-950 text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-neutral-800 transition-all shadow-xl shadow-neutral-950/20">
                                 Review Queue
                             </Link>
                         </div>
@@ -144,7 +144,7 @@ const AdminOpsDashboard = () => {
                             <ArrowRight size={16} className="text-neutral-200 group-hover:text-brand-pink group-hover:translate-x-1 transition-all" />
                         </div>
                         <div>
-                            <span className="block text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-2">Maker Review</span>
+                            <span className="block text-[11px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-2">Maker Review</span>
                             <span className="text-xl font-serif font-bold text-neutral-950 group-hover:text-brand-pink transition-colors leading-tight">Review Pending Applications</span>
                         </div>
                     </Link>
@@ -157,7 +157,7 @@ const AdminOpsDashboard = () => {
                             <ArrowRight size={16} className="text-neutral-200 group-hover:text-brand-pink group-hover:translate-x-1 transition-all" />
                         </div>
                         <div>
-                            <span className="block text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-2">Inventory Governance</span>
+                            <span className="block text-[11px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-2">Inventory Governance</span>
                             <span className="text-xl font-serif font-bold text-neutral-950 group-hover:text-brand-pink transition-colors leading-tight">Review {pendingProductsCount} New Listings</span>
                         </div>
                     </Link>
@@ -170,7 +170,7 @@ const AdminOpsDashboard = () => {
                             <ArrowRight size={16} className="text-neutral-200 group-hover:text-brand-pink group-hover:translate-x-1 transition-all" />
                         </div>
                         <div>
-                            <span className="block text-[8px] font-black uppercase tracking-[0.4em] text-neutral-400 mb-2">Order Ledger</span>
+                            <span className="block text-[11px] font-black uppercase tracking-[0.3em] text-neutral-400 mb-2">Order Ledger</span>
                             <span className="text-xl font-serif font-bold text-neutral-950 group-hover:text-brand-pink transition-colors leading-tight">Live Fulfillment View</span>
                         </div>
                     </Link>
@@ -181,13 +181,13 @@ const AdminOpsDashboard = () => {
                     <div className="lg:col-span-3 space-y-8">
                         <div className="flex items-end justify-between px-1">
                             <div className="space-y-2">
-                                <p className="text-[8px] font-black uppercase tracking-[0.5em] text-brand-pink">Settlements</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-brand-pink">Settlements</p>
                                 <h2 className="text-3xl font-serif font-bold text-neutral-950 tracking-tight">Recent Activity</h2>
                             </div>
-                            <Link to="/admin/ops/orders" className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400 hover:text-brand-pink transition-colors border-b border-neutral-100 pb-1">View Archives →</Link>
+                            <Link to="/admin/ops/orders" className="text-xs font-bold uppercase tracking-[0.15em] text-neutral-400 hover:text-brand-pink transition-colors border-b border-neutral-100 pb-1">View Archives →</Link>
                         </div>
                         <div className="bg-white border border-neutral-100 shadow-sm overflow-hidden">
-                            <div className="grid grid-cols-[100px_1fr_1fr_100px_110px] gap-4 px-8 py-5 border-b border-neutral-50 text-[8px] font-black uppercase tracking-[0.3em] text-neutral-300">
+                            <div className="grid grid-cols-[100px_1fr_1fr_100px_110px] gap-4 px-8 py-5 border-b border-neutral-50 text-[11px] font-black uppercase tracking-[0.2em] text-neutral-400">
                                 <div>Order ID</div>
                                 <div>Origin</div>
                                 <div>Recipient</div>
@@ -216,10 +216,10 @@ const AdminOpsDashboard = () => {
                                             ₹{(order.total_amount || 0).toLocaleString()}
                                         </div>
                                         <div className="flex justify-center">
-                                            <span className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-widest border ${
+                                            <span className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border rounded-sm ${
                                                 order.status === 'delivered' ? 'bg-green-50 text-green-700 border-green-100' :
                                                 order.status === 'disputed' ? 'bg-red-50 text-red-700 border-red-100' :
-                                                order.status === 'shipped' ? 'bg-neutral-50 text-neutral-400 border-neutral-100' :
+                                                order.status === 'shipped' ? 'bg-neutral-50 text-neutral-500 border-neutral-200' :
                                                 'bg-blue-50 text-blue-700 border-blue-100'
                                             }`}>
                                                 {order.status}
@@ -228,7 +228,7 @@ const AdminOpsDashboard = () => {
                                     </Link>
                                 ))}
                                 {!isLoadingOrders && orders.length === 0 && (
-                                    <div className="p-12 text-center text-[10px] font-black uppercase tracking-widest text-neutral-300 italic">
+                                    <div className="p-12 text-center text-xs font-black uppercase tracking-widest text-neutral-400 italic">
                                         No recent acquisitions recorded
                                     </div>
                                 )}
@@ -239,10 +239,10 @@ const AdminOpsDashboard = () => {
                     {/* Faux Data Notice */}
                     <div className="lg:col-span-2 space-y-8">
                          <div className="p-12 border border-dashed border-neutral-200 rounded-sm flex flex-col items-center justify-center text-center bg-[#FAF7F2]">
-                            <TrendingUp size={32} strokeWidth={1} className="text-brand-pink mb-6" />
+                            <TrendingUp size={32} strokeWidth={1.5} className="text-brand-pink mb-6" />
                             <h3 className="text-lg font-serif italic text-neutral-950 mb-2">Analytics Engine</h3>
-                            <p className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.4em] mb-4">Processing Nodes</p>
-                            <p className="text-xs text-neutral-500 font-light leading-relaxed italic">
+                            <p className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.3em] mb-4">Processing Nodes</p>
+                            <p className="text-sm text-neutral-500 font-medium leading-relaxed">
                                 Live forecasting and dispute tracking modules are currently being synchronized with the order ledger. 
                                 Real-time charts will appear as transaction density increases.
                             </p>

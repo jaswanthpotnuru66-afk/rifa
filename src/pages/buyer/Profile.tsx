@@ -47,6 +47,13 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [profile, setProfile] = useState({
+        name: MOCK_USER.name,
+        username: MOCK_USER.username,
+        email: MOCK_USER.email,
+        phone: MOCK_USER.phone,
+        bio: localStorage.getItem('mock_user_bio') || "A collector of stories and handcrafted legacies. I'm particularly drawn to the intersection of modern geometry and traditional resin mastery."
+    });
 
     // Orders state
     const [contact, setContact] = useState('');
@@ -121,6 +128,7 @@ const Profile = () => {
 
     const handleSave = () => {
         setIsSaving(true);
+        localStorage.setItem('mock_user_bio', profile.bio);
         setTimeout(() => {
             setIsSaving(false);
             setIsEditing(false);
@@ -260,42 +268,90 @@ const Profile = () => {
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                                            {[
-                                                { label: 'Legal Name', value: MOCK_USER.name, type: 'text' },
-                                                { label: 'Username', value: `@${MOCK_USER.username}`, type: 'text' },
-                                                { label: 'Email Workspace', value: MOCK_USER.email, type: 'email' },
-                                                { label: 'Contact Number', value: MOCK_USER.phone, type: 'text' }
-                                            ].map((field, i) => (
-                                                <div key={i} className="space-y-2">
-                                                    <label className="text-xs font-black uppercase tracking-widest text-neutral-400">{field.label}</label>
-                                                    {isEditing ? (
-                                                        <input 
-                                                            type={field.type} 
-                                                            defaultValue={field.value.startsWith('@') ? field.value.slice(1) : field.value} 
-                                                            className="w-full px-0 py-3 border-b border-neutral-100 focus:border-brand-pink outline-none text-sm text-neutral-950 font-bold transition-all bg-transparent" 
-                                                        />
-                                                    ) : (
-                                                        <p className="py-3 text-sm text-neutral-950 font-medium border-b border-transparent">{field.value}</p>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                                         {isEditing ? (
+                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                 {[
+                                                     { label: 'Legal Name', value: profile.name, key: 'name', icon: <User size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Username', value: `@${profile.username}`, key: 'username', icon: <User size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Email Workspace', value: profile.email, key: 'email', disabled: true, icon: <Globe size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Contact Number', value: profile.phone, key: 'phone', icon: <Smartphone size={16} strokeWidth={1.5} /> }
+                                                 ].map((field, i) => (
+                                                     <div key={i} className="space-y-2">
+                                                         <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block pl-1">{field.label}</label>
+                                                         <div className="relative">
+                                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                                                                 {field.icon}
+                                                             </div>
+                                                             <input 
+                                                                 type="text" 
+                                                                 value={field.value.startsWith('@') ? field.value.slice(1) : field.value} 
+                                                                 disabled={field.disabled}
+                                                                 onChange={(e) => setProfile({ ...profile, [field.key]: e.target.value })}
+                                                                 className="w-full pl-11 pr-4 py-3.5 bg-white border border-neutral-200 rounded-lg focus:border-brand-pink focus:ring-1 focus:ring-brand-pink/20 outline-none text-xs font-bold text-neutral-900 placeholder:text-neutral-300 transition-all shadow-inner disabled:bg-[#FAF6EE]/50 disabled:text-neutral-400" 
+                                                             />
+                                                         </div>
+                                                     </div>
+                                                 ))}
+                                             </div>
+                                         ) : (
+                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                 {[
+                                                     { label: 'Legal Name', value: profile.name, icon: <User size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Username', value: `@${profile.username}`, icon: <User size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Email Workspace', value: profile.email, icon: <Globe size={16} strokeWidth={1.5} /> },
+                                                     { label: 'Contact Number', value: profile.phone, icon: <Smartphone size={16} strokeWidth={1.5} /> }
+                                                 ].map((field, i) => (
+                                                     <div key={i} className="group relative overflow-hidden rounded-xl border border-neutral-100 bg-white/60 backdrop-blur-md p-6 shadow-sm hover:shadow-md hover:border-brand-pink/20 transition-all duration-300">
+                                                         <div className="absolute top-0 right-0 p-3 opacity-[0.03] text-neutral-900 group-hover:opacity-[0.06] transition-opacity pointer-events-none">
+                                                             {field.icon}
+                                                         </div>
+                                                         <div className="flex items-start gap-4">
+                                                             <div className="w-10 h-10 rounded-lg bg-[#FAF6EE] border border-neutral-100/50 flex items-center justify-center text-brand-pink shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                                                 {field.icon}
+                                                             </div>
+                                                             <div className="space-y-1 min-w-0 flex-1">
+                                                                 <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">{field.label}</span>
+                                                                 <p className="text-sm text-neutral-950 font-serif font-bold truncate leading-snug">
+                                                                     {field.value || <span className="text-xs font-light text-neutral-300 italic">Not set</span>}
+                                                                 </p>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                 ))}
+                                             </div>
+                                         )}
 
-                                        <div className="space-y-2 pt-6">
-                                            <label className="text-xs font-black uppercase tracking-widest text-neutral-400">Collector's Vision</label>
-                                            {isEditing ? (
-                                                <textarea 
-                                                    rows={4} 
-                                                    placeholder="Describe your taste—what draws you to specific art forms or artisan works?" 
-                                                    className="w-full px-0 py-4 border-b border-neutral-100 focus:border-brand-pink outline-none text-neutral-950 font-light leading-relaxed transition-all bg-transparent resize-none" 
-                                                />
-                                            ) : (
-                                                <p className="py-4 text-sm font-light text-neutral-600 leading-relaxed max-w-xl italic">
-                                                    "A collector of stories and handcrafted legacies. I'm particularly drawn to the intersection of modern geometry and traditional resin mastery."
-                                                </p>
-                                            )}
-                                        </div>
+                                         {isEditing ? (
+                                             <div className="space-y-2 pt-4">
+                                                 <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block pl-1">Collector's Vision</label>
+                                                 <textarea 
+                                                     rows={4} 
+                                                     placeholder="Describe your taste—what draws you to specific art forms or artisan works?" 
+                                                     value={profile.bio || ''}
+                                                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                                                     className="w-full p-5 bg-white border border-neutral-200 rounded-lg focus:border-brand-pink focus:ring-1 focus:ring-brand-pink/20 outline-none text-xs font-light text-neutral-800 leading-relaxed transition-all shadow-inner resize-none" 
+                                                 />
+                                             </div>
+                                         ) : (
+                                             <div className="relative overflow-hidden rounded-xl border border-neutral-100 bg-gradient-to-br from-[#FAF6EE] to-white p-8 shadow-sm">
+                                                 <div className="absolute -top-6 -left-6 text-9xl font-serif text-brand-pink/5 select-none pointer-events-none">“</div>
+                                                 <div className="absolute -bottom-16 -right-6 text-9xl font-serif text-brand-pink/5 select-none pointer-events-none">”</div>
+                                                 <div className="relative space-y-4">
+                                                     <div className="flex items-center gap-2">
+                                                         <div className="w-1.5 h-1.5 rounded-full bg-brand-pink" />
+                                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Curator Statement & Taste Profile</span>
+                                                     </div>
+                                                     <blockquote className="text-base font-serif italic font-medium text-neutral-850 leading-relaxed max-w-2xl pl-4 border-l-2 border-brand-pink/20">
+                                                         "{profile.bio || "A collector of stories and handcrafted legacies. I'm particularly drawn to the intersection of modern geometry and traditional resin mastery."}"
+                                                     </blockquote>
+                                                     <div className="pt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-neutral-400">
+                                                         <span>Vault Verification</span>
+                                                         <span>•</span>
+                                                         <span className="text-brand-pink flex items-center gap-1"><Sparkles size={8} /> Taste Verified</span>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
                                         
                                         {/* Edit Mode Controls */}
                                         <AnimatePresence>

@@ -363,7 +363,10 @@ const CraftMakerLayout: React.FC<CraftMakerLayoutProps> = ({ children }) => {
                                         <div className="px-5 py-4 border-b border-neutral-50 flex justify-between items-center bg-neutral-50/50">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-950">Notifications</span>
                                             <button 
-                                                onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                                                onClick={() => {
+                                                    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                                                    setIsNotificationsOpen(false);
+                                                }}
                                                 className="text-[9px] font-bold text-neutral-400 hover:text-brand-pink uppercase tracking-widest cursor-pointer"
                                             >
                                                 Mark all read

@@ -588,9 +588,8 @@ const ArtisanCard = ({ artisan }: { artisan: any }) => {
             viewport={{ once: true }}
             className="group"
         >
-            <Link 
-                to={`/rifa/${artisan.id}`} 
-                className="grid sm:grid-cols-5 gap-6 items-center bg-white p-6 border border-neutral-100 hover:border-brand-pink/20 hover:shadow-xl transition-all duration-500 rounded-sm"
+            <div 
+                className="grid sm:grid-cols-5 gap-6 items-center bg-white p-6 border border-neutral-100 transition-all duration-500 rounded-sm"
             >
                 <div className="sm:col-span-2 aspect-[4/5] overflow-hidden bg-[#FAF7F2] rounded-sm flex items-center justify-center">
                     {artisan.img ? (
@@ -614,7 +613,7 @@ const ArtisanCard = ({ artisan }: { artisan: any }) => {
                     </div>
 
                     <p className="text-xs font-light text-neutral-500 leading-relaxed line-clamp-3 italic">
-                        "{artisan.story || 'A regional master dedicated to conserving classical heritage and craft techniques.'}"
+                         "{artisan.story || 'A regional master dedicated to conserving classical heritage and craft techniques.'}"
                     </p>
 
                     <div className="pt-2 space-y-2 border-t border-neutral-50">
@@ -631,12 +630,12 @@ const ArtisanCard = ({ artisan }: { artisan: any }) => {
                     </div>
 
                     <div className="pt-2">
-                        <span className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-brand-pink group-hover:gap-4 transition-all duration-300">
-                            Explore Studio <ArrowRight size={10} />
+                        <span className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-brand-pink">
+                            Artisan Partner
                         </span>
                     </div>
                 </div>
-            </Link>
+            </div>
         </motion.div>
     );
 };

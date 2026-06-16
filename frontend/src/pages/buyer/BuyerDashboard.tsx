@@ -371,19 +371,19 @@ const BuyerDashboard = () => {
                         {isLoadingArtisans ? Array.from({ length: 3 }).map((_, i) => (
                             <div key={i} className="h-64 bg-neutral-900 animate-pulse" />
                         )) : artisans.slice(0, 3).map((artisan) => (
-                            <Link key={artisan.id} to={`/rifa/${artisan.id}`} className="group relative flex flex-col">
-                                <div className="aspect-square w-full overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700 relative">
+                            <div key={artisan.id} className="group relative flex flex-col">
+                                <div className="aspect-square w-full overflow-hidden grayscale transition-all duration-700 relative">
                                     <img src={artisan.img} alt={artisan.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s]" />
-                                    <div className="absolute inset-0 bg-neutral-950/20 group-hover:bg-transparent transition-colors" />
+                                    <div className="absolute inset-0 bg-neutral-950/20 transition-colors" />
                                 </div>
                                 <div className="mt-6 border-l border-brand-pink pl-6">
                                     <h4 className="font-serif text-2xl text-white mb-2">{artisan.name}</h4>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">{artisan.specialty}</p>
                                     <div className="mt-4 inline-flex items-center gap-2 text-brand-pink text-[10px] font-black uppercase tracking-widest">
-                                        Visit Studio <ArrowRight size={10} className="transform group-hover:translate-x-2 transition-transform" />
+                                        Artisan Partner
                                     </div>
                                 </div>
-                            </Link>
+                            </div>
                         ))}
                     </div>
                 </div>

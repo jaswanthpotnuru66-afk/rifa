@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-    Search, Filter, ChevronDown, 
+    Search, ChevronDown, 
     Star, ArrowRight, Sparkles, X
 } from 'lucide-react';
 import { Skeleton } from '../components/Skeleton';
@@ -17,8 +17,6 @@ const Marketplace = () => {
         return state?.category || 'All';
     });
     const [sortBy, setSortBy] = useState('Featured');
-    const [showFilters, setShowFilters] = useState(false);
-    const [view, setView] = useState<'products' | 'artisans'>('products');
     const [isConciergeOpen, setIsConciergeOpen] = useState(() => {
         const state = location.state as { openConcierge?: boolean } | null;
         return !!state?.openConcierge;
@@ -28,6 +26,8 @@ const Marketplace = () => {
         forWhom: '',
         occasion: ''
     });
+
+
 
     useEffect(() => {
         const state = location.state as { openConcierge?: boolean } | null;
@@ -40,7 +40,6 @@ const Marketplace = () => {
 
     // Dynamic Data States
     const [products, setProducts] = useState<any[]>([]);
-    const [artisans, setArtisans] = useState<any[]>([]);
     const [categoriesList, setCategoriesList] = useState<any[]>([]);
     const [conciergeQuestions, setConciergeQuestions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,24 +49,21 @@ const Marketplace = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [productsRes, artisansRes, categoriesRes, conciergeRes] = await Promise.all([
+                const [productsRes, categoriesRes, conciergeRes] = await Promise.all([
                     fetch(`${API_URL}/products`),
-                    fetch(`${API_URL}/artisans`),
                     fetch(`${API_URL}/categories`),
                     fetch(`${API_URL}/concierge/questions`)
                 ]);
 
-                if (!productsRes.ok || !artisansRes.ok) throw new Error('Failed to fetch data');
+                if (!productsRes.ok) throw new Error('Failed to fetch data');
 
-                const [productsData, artisansData, categoriesData, conciergeData] = await Promise.all([
+                const [productsData, categoriesData, conciergeData] = await Promise.all([
                     productsRes.json(),
-                    artisansRes.json(),
                     categoriesRes.ok ? categoriesRes.json() : [],
                     conciergeRes.ok ? conciergeRes.json() : []
                 ]);
 
                 setProducts(productsData);
-                setArtisans(artisansData);
                 setCategoriesList(categoriesData);
                 setConciergeQuestions(conciergeData);
             } catch (err: any) {
@@ -97,163 +93,116 @@ const Marketplace = () => {
         return 0; // Featured
     });
 
+
+
     return (
         <div className="min-h-screen bg-[#FAF7F2] pt-32 pb-20 selection:bg-brand-pink/20">
             <div className="max-w-7xl mx-auto px-4 md:px-8">
                 
-                {/* Editorial Header */}
-                <header className="mb-16 md:mb-24 text-center max-w-4xl mx-auto">
+                {/* ── Editorial Header with Atmospheric Blooms ── */}
+                <header className="relative mb-24 md:mb-32 text-center max-w-5xl mx-auto pt-10">
+                    
+                    {/* Atmospheric Orbs (Behind Text) */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center -z-10">
+                        <motion.div 
+                            animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.8, 0.5] }}
+                            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+                            className="w-[60vw] h-[60vw] max-w-[600px] max-h-[600px] rounded-full"
+                            style={{ background: 'radial-gradient(circle, rgba(212,84,122,0.06) 0%, transparent 70%)', filter: 'blur(40px)' }}
+                        />
+                    </div>
+
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                         className="space-y-6"
                     >
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-pink">Bespoke Artistry</span>
-                        <h1 className="text-6xl md:text-8xl font-serif font-bold text-neutral-950 tracking-tighter leading-none">
-                            The <br />
-                            <span className="italic font-light text-neutral-400 text-5xl md:text-7xl">Collective.</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-pink block mb-8">
+                            The Rifa Masterpieces
+                        </span>
+                        
+                        <h1 className="text-6xl md:text-[9rem] font-serif font-bold text-neutral-950 tracking-tighter leading-[0.85] text-balance">
+                            Curated <br />
+                            <span className="italic font-light text-neutral-400">Brilliance.</span>
                         </h1>
-                        <p className="text-lg font-light text-neutral-500 max-w-xl mx-auto leading-relaxed mt-8">
-                            A curated sanctuary for multi-disciplinary art and personalized treasures. Where your unique visions find their form through the hands of master artisans.
+                        
+                        <p className="text-base md:text-lg font-light text-neutral-500 max-w-xl mx-auto leading-relaxed mt-12 px-4">
+                            A sanctuary for multi-disciplinary art and personalized treasures. Where your unique visions find their form through the hands of master artisans.
                         </p>
                     </motion.div>
                 </header>
 
-                {/* View Toggle */}
-                <div className="flex justify-center mb-16">
-                    <div className="inline-flex bg-white p-1.5 rounded-full border border-neutral-100 shadow-sm">
-                        <button
-                            onClick={() => setView('products')}
-                            className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                                view === 'products'
-                                    ? 'bg-neutral-950 text-white shadow-lg'
-                                    : 'text-neutral-400 hover:text-neutral-600'
-                            }`}
-                        >
-                            Masterpieces
-                        </button>
-                        <button
-                            onClick={() => setView('artisans')}
-                            className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                                view === 'artisans'
-                                    ? 'bg-neutral-950 text-white shadow-lg'
-                                    : 'text-neutral-400 hover:text-neutral-600'
-                            }`}
-                        >
-                            The Artisans
-                        </button>
-                    </div>
-                </div>
-
-                {/* Refined Toolbar */}
-                <div className="z-30 bg-transparent border-b border-neutral-200 mb-16">
-                    <div className="flex flex-col md:flex-row items-center justify-between py-4 gap-4">
-                        {/* Search Bar */}
-                        <div className="relative w-full md:w-96 group">
-                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-brand-pink transition-colors" />
+                {/* ── Editorial Toolbar ── */}
+                <div className="border-b border-neutral-200/50 mb-16 md:mb-24 pb-6 pt-4">
+                    <div className="flex flex-col gap-8">
+                        {/* Search Bar (Minimalist Line) */}
+                        <div className="relative w-full max-w-2xl mx-auto group">
+                            <Search size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-brand-pink transition-colors" />
                             <input 
                                 type="text"
                                 placeholder="Search the collection..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 bg-white border border-neutral-100 rounded-sm focus:border-brand-pink outline-none text-sm font-medium transition-all"
+                                className="w-full pl-10 pr-4 py-4 bg-transparent border-b-2 border-neutral-200 focus:border-brand-pink outline-none text-lg md:text-xl font-serif italic text-neutral-900 transition-colors placeholder:text-neutral-300"
                             />
                         </div>
 
-                        {/* Filters & Sorting */}
-                        <div className="flex items-center gap-4 w-full md:w-auto">
-                            <button 
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 bg-white border border-neutral-100 rounded-sm text-xs font-bold tracking-widest uppercase hover:bg-neutral-50 transition-all"
-                            >
-                                <Filter size={14} /> 
-                                <span>{selectedCategory}</span>
-                                <ChevronDown size={14} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-                            </button>
+                        {/* Horizontal Categories & Sort */}
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            
+                            {/* Categories (Horizontal Scroll) */}
+                            <div className="flex items-center gap-6 overflow-x-auto w-full no-scrollbar pb-2">
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className={`shrink-0 text-[10px] font-black uppercase tracking-widest transition-all ${
+                                            selectedCategory === cat 
+                                            ? 'text-neutral-950 border-b-2 border-neutral-950 pb-1' 
+                                            : 'text-neutral-400 hover:text-neutral-700 border-b-2 border-transparent pb-1'
+                                        }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
 
-                            <div className="relative flex-1 md:flex-none">
-                                <select 
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                    className="w-full appearance-none px-6 py-3 bg-white border border-neutral-100 rounded-sm text-xs font-bold tracking-widest uppercase hover:bg-neutral-50 outline-none transition-all cursor-pointer pr-12"
-                                >
-                                    <option>Featured</option>
-                                    <option>Price: Low to High</option>
-                                    <option>Price: High to Low</option>
-                                    <option>Rating</option>
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                            {/* Sort (Minimalist Select) */}
+                            <div className="relative shrink-0 flex items-center gap-3">
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-neutral-400">Sort By</span>
+                                <div className="relative">
+                                    <select 
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                        className="appearance-none bg-transparent text-xs font-bold tracking-widest uppercase text-neutral-900 outline-none cursor-pointer pr-5 hover:text-brand-pink transition-colors"
+                                    >
+                                        <option>Featured</option>
+                                        <option>Price: Low to High</option>
+                                        <option>Price: High to Low</option>
+                                        <option>Rating</option>
+                                    </select>
+                                    <ChevronDown size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-neutral-900 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* Category Drawer */}
-                    <AnimatePresence>
-                        {showFilters && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden border-t border-neutral-100"
-                            >
-                                <div className="py-6 flex flex-wrap gap-3">
-                                    {categories.map(cat => (
-                                        <button
-                                            key={cat}
-                                            onClick={() => {
-                                                setSelectedCategory(cat);
-                                                setShowFilters(false);
-                                            }}
-                                            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                                selectedCategory === cat 
-                                                ? 'bg-neutral-950 text-white border-neutral-950' 
-                                                : 'bg-white text-neutral-400 border-neutral-200 hover:border-neutral-400'
-                                            }`}
-                                        >
-                                            {cat}
-                                        </button>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
                 </div>
 
             {loading ? (
-                view === 'products' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
-                        {Array.from({ length: 8 }).map((_, idx) => (
-                            <div key={idx} className="flex flex-col h-full">
-                                <Skeleton className="w-full aspect-[4/5] mb-6" />
-                                <div className="flex justify-between items-start mb-2">
-                                    <Skeleton className="w-16 h-3" />
-                                    <Skeleton className="w-8 h-3" />
-                                </div>
-                                <Skeleton className="w-3/4 h-6 mb-4" />
-                                <Skeleton className="w-24 h-5 mt-auto" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-24">
+                    {Array.from({ length: 8 }).map((_, idx) => (
+                        <div key={idx} className="flex flex-col h-full">
+                            <Skeleton className="w-full aspect-[4/5] mb-8" />
+                            <div className="flex justify-between items-start mb-4">
+                                <Skeleton className="w-16 h-3" />
+                                <Skeleton className="w-8 h-3" />
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        {Array.from({ length: 4 }).map((_, idx) => (
-                            <div key={idx} className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 border border-neutral-100">
-                                <Skeleton className="w-full aspect-[4/5]" />
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Skeleton className="w-16 h-3" />
-                                        <Skeleton className="w-3/4 h-8" />
-                                    </div>
-                                    <Skeleton className="w-full h-16" />
-                                    <div className="space-y-4">
-                                        <Skeleton className="w-full h-4" />
-                                        <Skeleton className="w-full h-4" />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )
+                            <Skeleton className="w-3/4 h-8 mb-4" />
+                            <Skeleton className="w-24 h-5 mt-auto" />
+                        </div>
+                    ))}
+                </div>
             ) : error ? (
                 <div className="py-40 text-center">
                     <p className="text-red-500 font-bold uppercase tracking-widest text-[10px] mb-4">Error loading collection</p>
@@ -267,78 +216,76 @@ const Marketplace = () => {
                 </div>
             ) : (
                 <>
-                    {/* Product/Artisan Grid */}
-                <AnimatePresence mode="wait">
-                    {view === 'products' ? (
-                        <motion.div
-                            key="products"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16">
+                    {/* Product Grid */}
+                    <motion.div
+                        key="products"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-24">
                                 {sortedProducts.map((product, idx) => (
                                     <motion.div
                                         key={product.id}
-                                        initial={{ opacity: 0, y: 20 }}
+                                        initial={{ opacity: 0, y: 30 }}
                                         whileInView={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: (idx % 4) * 0.1, duration: 0.6 }}
-                                        viewport={{ once: true }}
+                                        transition={{ delay: (idx % 4) * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                                        viewport={{ once: true, margin: "-100px" }}
                                         className="group flex flex-col"
                                     >
                                         <Link to={`/product/${product.id}`} className="flex flex-col h-full">
-                                            {/* Image Container */}
-                                            <div className="relative aspect-[4/5] bg-white overflow-hidden mb-6 border border-neutral-100">
+                                            {/* Image Container (Gallery style) */}
+                                            <div className="relative aspect-[4/5] bg-white overflow-hidden mb-8 border border-neutral-100 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.03)]">
                                                 <img loading="lazy" 
                                                     src={product.images && product.images.length > 0 ? product.images[0] : ''} 
                                                     alt={product.name}
-                                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                                                    className="w-full h-full object-cover transition-transform duration-1000 ease-[0.16,1,0.3,1] group-hover:scale-105"
                                                 />
                                                 
-                                                {/* Badges */}
-                                                <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+                                                {/* Minimal Badges */}
+                                                <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
                                                     {product.tag && (
-                                                        <span className="bg-brand-pink text-white text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 shadow-xl">
+                                                        <span className="bg-white/90 backdrop-blur-sm text-neutral-950 text-[8px] font-black px-3 py-1.5 uppercase tracking-widest border border-neutral-200">
                                                             {product.tag}
                                                         </span>
                                                     )}
-                                                    {product.isReady && (
-                                                        <span className="bg-neutral-950 text-white text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 shadow-xl">
-                                                            Ready to Ship
+                                                    {product.isBespoke && (
+                                                        <span className="bg-brand-pink text-white text-[8px] font-black px-3 py-1.5 uppercase tracking-widest flex items-center gap-1.5">
+                                                            <Sparkles size={8} /> Bespoke
                                                         </span>
                                                     )}
                                                 </div>
-
-                                                {/* Hover Overlay */}
-                                                <div className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                                                    <span className="px-8 py-4 bg-white text-neutral-950 text-[10px] font-black uppercase tracking-[0.3em] translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                                        Examine Piece
-                                                    </span>
-                                                </div>
                                             </div>
 
-                                            {/* Content */}
-                                            <div className="flex flex-col flex-grow">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 group-hover:text-brand-pink transition-colors">
+                                            {/* Content (Editorial Typography) */}
+                                            <div className="flex-1 flex flex-col">
+                                                <div className="flex justify-between items-baseline mb-4">
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-400">
                                                         {product.category}
                                                     </span>
-                                                    <div className="flex items-center gap-1">
-                                                        <Star size={10} className="fill-brand-gold text-brand-gold" />
-                                                        <span className="text-[10px] font-bold text-neutral-950">{product.rating}</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Star size={10} className="fill-brand-pink text-brand-pink" />
+                                                        <span className="text-[10px] font-mono text-neutral-500">{product.rating}</span>
                                                     </div>
                                                 </div>
                                                 
-                                                <h3 className="font-serif text-xl text-neutral-950 mb-4 leading-snug group-hover:italic transition-all">
+                                                <h3 className="font-serif text-2xl font-bold text-neutral-950 mb-1 leading-tight group-hover:text-brand-pink transition-colors line-clamp-2">
                                                     {product.name}
                                                 </h3>
                                                 
-                                                <div className="mt-auto flex items-baseline gap-3">
-                                                    <span className="text-xl font-bold text-neutral-950">Rs. {product.price.toLocaleString()}</span>
-                                                    {product.originalPrice && (
-                                                        <span className="text-sm text-neutral-300 line-through font-light">Rs. {product.originalPrice.toLocaleString()}</span>
-                                                    )}
+                                                {product.makerName && (
+                                                    <p className="text-[11px] font-serif italic text-neutral-400 mb-6">
+                                                        by <span className="text-neutral-600">{product.makerName}</span>
+                                                    </p>
+                                                )}
+                                                
+                                                <div className="mt-auto flex items-end justify-between pt-6 border-t border-neutral-100/50">
+                                                    <p className="font-mono text-sm tracking-wider text-neutral-950">
+                                                        ${product.price?.toLocaleString()}
+                                                    </p>
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-300 group-hover:text-neutral-950 transition-colors flex items-center gap-2">
+                                                        View Details <span className="opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all duration-300">→</span>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </Link>
@@ -366,65 +313,6 @@ const Marketplace = () => {
                                 </div>
                             )}
                         </motion.div>
-                    ) : (
-                        <motion.div
-                            key="artisans"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                {artisans.map((artisan, idx) => (
-                                    <motion.div
-                                        key={artisan.id}
-                                        initial={{ opacity: 0, x: idx % 2 === 0 ? -20 : 20 }}
-                                        whileInView={{ opacity: 1, x: 0 }}
-                                        transition={{ duration: 0.8 }}
-                                        viewport={{ once: true }}
-                                        className="group"
-                                    >
-                                        <Link to={`/rifa/${artisan.id}`} className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 border border-neutral-100 hover:border-brand-pink/30 transition-all duration-500">
-                                            <div className="aspect-[4/5] overflow-hidden">
-                                                <img loading="lazy" 
-                                                    src={artisan.img} 
-                                                    alt={artisan.name}
-                                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-110 group-hover:scale-100"
-                                                />
-                                            </div>
-                                            <div className="space-y-6">
-                                                <div className="space-y-2">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">{artisan.location}</span>
-                                                    <h3 className="text-3xl font-serif font-bold text-neutral-950 leading-tight">
-                                                        {artisan.name}
-                                                    </h3>
-                                                </div>
-                                                <p className="text-sm font-light text-neutral-500 leading-relaxed line-clamp-3 italic">
-                                                    "{artisan.story}"
-                                                </p>
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest border-b border-neutral-50 pb-2">
-                                                        <span className="text-neutral-300">Specialty</span>
-                                                        <span className="text-neutral-950">{artisan.specialty}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest border-b border-neutral-50 pb-2">
-                                                        <span className="text-neutral-300">Collection</span>
-                                                        <span className="text-neutral-950">{artisan.productCount} Pieces</span>
-                                                    </div>
-                                                </div>
-                                                <div className="pt-4">
-                                                    <span className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-brand-pink group-hover:gap-5 transition-all">
-                                                        Explore Studio <ArrowRight size={14} />
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
                 </>
             )}
 
@@ -678,6 +566,8 @@ const Marketplace = () => {
                     </>
                 )}
             </AnimatePresence>
+
+
         </div>
     );
 };

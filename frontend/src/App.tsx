@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import PageTransition from './components/PageTransition';
-import { FloatingWidget } from './components/FloatingElements';
 
 // Lazy load Pages
 const Home = React.lazy(() => import('./pages/Home'));
@@ -27,6 +26,7 @@ const Cart = React.lazy(() => import('./pages/buyer/Cart'));
 const Success = React.lazy(() => import('./pages/buyer/Success'));
 const BuyerDashboard = React.lazy(() => import('./pages/buyer/BuyerDashboard'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
+const Craftmakers = React.lazy(() => import('./pages/Craftmakers'));
 
 // CraftMaker Pages
 const CraftMakerPending = React.lazy(() => import('./pages/craftmaker/Pending'));
@@ -111,6 +111,7 @@ const AnimatedRoutes = () => {
           <Route path="/collaborate"  element={<PageTransition><Collaborate /></PageTransition>} />
           <Route path="/why-rifa"     element={<PageTransition><WhyRifa /></PageTransition>} />
           <Route path="/contact"      element={<PageTransition><Contact /></PageTransition>} />
+          <Route path="/craftmakers"  element={<PageTransition><Craftmakers /></PageTransition>} />
           <Route path="/profile"      element={<PageTransition><Profile /></PageTransition>} />
           <Route path="/admin"        element={<PageTransition><Auth /></PageTransition>} />
           
@@ -178,14 +179,6 @@ const ConditionalFooter = () => {
   return <Footer />;
 };
 
-const ConditionalFloatingWidget = () => {
-  const { pathname } = useLocation();
-  // Show on buyer-facing discovery pages: home, marketplace, search, artisan profiles
-  const shouldShow = pathname === '/' || pathname === '/marketplace' || pathname === '/search' || pathname.startsWith('/rifa/');
-  if (!shouldShow) return null;
-  return <FloatingWidget />;
-};
-
 function App() {
   return (
     <Router>
@@ -199,7 +192,7 @@ function App() {
         />
         
         <ConditionalNavbar />
-        <ConditionalFloatingWidget />
+
         <main className="flex-grow">
           <AnimatedRoutes />
         </main>
